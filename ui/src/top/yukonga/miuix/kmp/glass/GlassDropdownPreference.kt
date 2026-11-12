@@ -19,13 +19,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -41,10 +39,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 
 /**
- * 标准 Miuix 偏好设置行，搭配由 Scaffold 承载的 [GlassDropdownPopup]。
+ * 由 Scaffold 承载 [GlassDropdownPopup] 的偏好设置行。
  *
- * 组件负责展开、锚点测量与关闭；调用方负责选择。
- * [backdrop] 必须排除弹出层宿主，以免材质采样到自身。
+ * 选择由调用方控制。[backdrop] 必须排除弹出层宿主，以免采样到自身。
  *
  * @param onSelectedIndexChange 以选中项的索引回调。
  * @param items 可选项列表。空列表会禁用该偏好设置。
@@ -55,7 +52,7 @@ import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
  * @param itemIconGap 选项前置图标与其标签之间的间距。
  * @param selectedIndex 当前选中项的索引。
  * @param title 偏好设置标题，使用标准 [BasicComponent] 排版。
- * @param backdrop 干净的页面录制；null 时使用弹出层的不透明回退色。
+ * @param backdrop 页面 backdrop；`null` 时使用不透明的弹出层填充。
  * @param modifier 应用于偏好设置行的修饰符。
  * @param enabled 该行是否能打开弹出层。
  * @param showValue 是否在箭头旁显示选中的选项。
@@ -78,6 +75,7 @@ fun GlassDropdownPreference(
     title: String,
     backdrop: Backdrop?,
     modifier: Modifier = Modifier,
+    // FORK（FlyCat）：下拉条目的前置图标、可用态与图标尺寸增强（icons/itemEnabled/itemIconSize/itemIconGap）。
     icons: List<ImageVector?>? = null,
     itemEnabled: List<Boolean>? = null,
     itemIconSize: Dp = GlassPopupDefaults.ItemIconSize,
@@ -121,7 +119,7 @@ fun GlassDropdownPreference(
     }
 
     BasicComponent(
-        modifier = modifier.onGloballyPositioned { rowBounds = it.boundsInRoot() },
+        modifier = modifier.onGloballyPositioned { rowBounds = it.boundsInWindow() },
         title = title,
         titleColor = titleColor,
         summary = summary,
@@ -166,8 +164,8 @@ fun GlassDropdownPreference(
         exitTransition = ExitTransition.None,
         renderInRootScaffold = renderInRootScaffold,
     ) {
-        var hostOrigin by remember { mutableStateOf(Offset.Zero) }
-        Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { hostOrigin = it.positionInRoot() }) {
+        // 该 Box 是下拉框的整页点击关闭层。
+        Box(modifier = Modifier.fillMaxSize()) {
             GlassDropdownPopupContent(
                 show = expanded && actualEnabled,
                 onDismissRequest = { setExpanded(false) },
@@ -176,12 +174,12 @@ fun GlassDropdownPreference(
                 anchor = anchor,
                 sizing = sizing,
                 visuals = visuals,
-                coordinateOrigin = hostOrigin,
                 onDismissFinished = { mounted.value = false },
             ) {
                 items.forEachIndexed { index, item ->
                     GlassPopupItem(
                         text = item,
+                        // FORK（FlyCat）：向条目透传前置图标、图标尺寸与条目可用态。
                         icon = icons?.getOrNull(index),
                         iconSize = itemIconSize,
                         iconGap = itemIconGap,

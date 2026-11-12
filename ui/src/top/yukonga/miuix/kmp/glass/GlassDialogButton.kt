@@ -37,7 +37,7 @@ import top.yukonga.miuix.kmp.basic.ButtonColors
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** 原生对话框的色调、填充和提醒操作变体。 */
+/** 对话框操作的视觉角色。 */
 enum class GlassDialogButtonRole {
     Normal,
     Primary,
@@ -45,23 +45,23 @@ enum class GlassDialogButtonRole {
 }
 
 /**
- * 绘制在 [glassDialogSurface] 提供的材质之上的对话框操作项。
+ * 用于 [glassDialogSurface] 之上的对话框操作按钮。
  *
- * 普通和破坏性操作使用半透明色调；主要操作使用主题的主要填充色。
- * 没有单独的背景或模糊效果。按压反馈同时覆盖填充色和内容，不包含波纹、缩放动画或颜色过渡。
+ * 普通和破坏性操作使用半透明色调；主要操作使用主题的主要填充色。按钮不添加背景模糊。
+ * 按压反馈同时覆盖在填充色和内容之上。
  *
- * @param onClick 当启用的操作项被点击时调用。
- * @param modifier 应用于操作项的修饰符。
- * @param enabled 操作项是否接受输入。
+ * @param onClick 启用的操作被点击时调用。
+ * @param modifier 应用于操作的修饰符。
+ * @param enabled 操作是否接受输入。
  * @param role 调性、主要或破坏性处理方式。
- * @param cornerRadius 填充色、内容裁剪和按压反馈共享的圆角。
- * @param minWidth 操作项最小宽度；对话框的操作行通常提供其宽度。
- * @param minHeight 操作项最小高度。
+ * @param cornerRadius 填充、内容裁剪和按压反馈共用的圆角。
+ * @param minWidth 操作最小宽度；对话框的操作行通常提供其宽度。
+ * @param minHeight 操作最小高度。
  * @param colors 启用和禁用状态的填充色/内容颜色。
- * @param pressedColor 按压时的前景覆盖层。
- * @param insideMargin 操作项内容周围的内边距。
- * @param interactionSource 可选的用于观察或驱动交互的来源。
- * @param content 居中的操作项内容。文本请使用 MiuixTheme.textStyles.button。
+ * @param pressedColor 按压时的前景覆盖色。
+ * @param insideMargin 操作内容周围的内边距。
+ * @param interactionSource 可选的用于观察或驱动交互的交互源。
+ * @param content 居中的操作内容。文本请使用 MiuixTheme.textStyles.button。
  */
 @Composable
 fun GlassDialogButton(
@@ -108,7 +108,8 @@ object GlassDialogButtonDefaults {
     val MinWidth = 0.dp
     val MinHeight = 50.dp
     val InsideMargin = PaddingValues(horizontal = 24.dp)
-    /** 使用原生对话框的色调和禁用透明度的主题颜色。 */
+
+    /** 当前主题的启用与禁用操作颜色。 */
     @Composable
     fun buttonColors(role: GlassDialogButtonRole = GlassDialogButtonRole.Normal): ButtonColors {
         val scheme = MiuixTheme.colorScheme
@@ -130,7 +131,8 @@ object GlassDialogButtonDefaults {
             ButtonColors(color, disabledColor, contentColor, disabledContentColor)
         }
     }
-    /** 原生前景装饰：浅色模式下为 #1F000000，深色模式下为 #24FFFFFF。 */
+
+    /** 当前主题的按压覆盖色。 */
     @Composable
     fun pressedColor(): Color {
         val scheme = MiuixTheme.colorScheme
@@ -143,9 +145,13 @@ private data class DialogButtonIndication(val color: Color) : IndicationNodeFact
     override fun create(interactionSource: InteractionSource): DelegatableNode = DialogButtonIndicationNode(interactionSource, color)
 }
 
-private class DialogButtonIndicationNode(private val interactionSource: InteractionSource, private val color: Color) : Modifier.Node(),
+private class DialogButtonIndicationNode(
+    private val interactionSource: InteractionSource,
+    private val color: Color,
+) : Modifier.Node(),
     DrawModifierNode {
     private val presses = mutableSetOf<PressInteraction.Press>()
+
     override fun onAttach() {
         coroutineScope.launch {
             interactionSource.interactions.collect { interaction ->
@@ -159,9 +165,11 @@ private class DialogButtonIndicationNode(private val interactionSource: Interact
             }
         }
     }
+
     override fun onDetach() {
         presses.clear()
     }
+
     override fun ContentDrawScope.draw() {
         drawContent()
         if (presses.isNotEmpty()) drawRect(color)

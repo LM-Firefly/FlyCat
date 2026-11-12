@@ -46,7 +46,8 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -140,7 +141,7 @@ private fun ProfileLinkList(
                     }
                     IconButton(onClick = { onDelete(link.id) }) {
                         Icon(
-                            imageVector = MiuixIcons.Delete,
+                            imageVector = MiuixIcons.Glass.Delete,
                             contentDescription = FlyTxt.Component.Action.Delete,
                             tint = MiuixTheme.colorScheme.error,
                         )

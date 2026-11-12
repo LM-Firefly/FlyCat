@@ -6,7 +6,6 @@ package top.yukonga.miuix.kmp.glass
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.BoxScope
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -36,7 +34,6 @@ import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,72 +45,79 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.basic.Check
+import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassMaterials
+import top.yukonga.miuix.kmp.material.GlassShadow
+import top.yukonga.miuix.kmp.material.GlassShadows
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** [GlassPopup] 的默认值。 */
 object GlassPopupDefaults {
 
-    /** 弹出窗口允许的最小宽度：`miuix_popup_window_min_width`。 */
+    /** 弹出窗口的最小宽度。 */
     val MinWidth: Dp = 200.dp
 
-    /** 弹出窗口允许的最大宽度：`miuix_popup_window_max_width`。 */
+    /** 弹出窗口的最大宽度。 */
     val MaxWidth: Dp = 288.dp
 
-    /** 列表开始滚动前的最大高度：`miuix_popup_window_max_height`。 */
+    /** 内容开始滚动前的最大高度。 */
     val MaxHeight: Dp = 416.dp
 
-    /** 弹出窗口与窗口边缘保持的间距：`miuix_popup_window_safe_margin`。 */
+    /** 距窗口安全区与弹出层宿主边缘的最小边距。 */
     val SafeMargin: Dp = 12.dp
 
-    /** 第一个元素上方和最后一个元素下方的内边距：`miuix_popup_window_vertical_padding`。 */
+    /** 内容的垂直内边距。 */
     val ContentPaddingVertical: Dp = 8.dp
 
-    /** 锚定菜单的圆角半径：`miuix_theme_radius_demi_big`。 */
+    /** 锚定菜单的圆角半径。 */
     val CornerRadius: Dp = 24.dp
 
-    /** 列表下拉菜单的圆角半径：`miuix_theme_radius_demi_big`。 */
+    /** 列表下拉菜单的圆角半径。 */
     val DropdownCornerRadius: Dp = 24.dp
 
-    /** 菜单项允许的最小高度：`miuix_appcompat_popup_menu_item_min_height`。 */
+    /** 菜单项的最小高度。 */
     val ItemMinHeight: Dp = 44.dp
 
-    /** 菜单项内部的水平内边距：`miuix_appcompat_popup_menu_item_padding_left`。 */
+    /** 菜单项的水平内边距。 */
     val ItemPaddingHorizontal: Dp = 20.dp
 
-    /** 菜单项标签上下的内边距：`miuix_appcompat_popup_menu_item_padding_vertical`。 */
+    /** 菜单项的垂直内边距。 */
     val ItemPaddingVertical: Dp = 10.dp
 
-    /** 行首图标的尺寸：`miuix_appcompat_menu_icon_width`。 */
+    /** 行首图标的尺寸。 */
     val ItemIconSize: Dp = 24.dp
 
-    /** 行标签与其旁边元素之间的间距。 */
+    /** 菜单项标签与相邻图标之间的间距。 */
     val ItemIconGap: Dp = 8.dp
 
-    /**
-     * 两组行之间分隔线的水平内缩：`popup_menu_divider_line` 自身的内缩。
-     * 该线位于一个 16dp 的区块内，正是这个区块把两组行分开。
-     */
+    /** 分隔线的水平内缩。 */
     val DividerPaddingHorizontal: Dp = 20.dp
 
-    /** 分隔线上下的间距，即其 16dp 区块扣除内缩后的剩余部分。 */
+    /** 分隔线上下的内边距。 */
     val DividerPaddingVertical: Dp = 7.75.dp
 
-    /** 分隔线的粗细：区块扣除内缩后剩下的 0.5dp。 */
+    /** 分隔线的粗细。 */
     val DividerThickness: Dp = 0.5.dp
 
-    /** 当前行勾选标记的尺寸。 */
+    /** 选中项勾选标记的尺寸。 */
     val ItemTickSize: Dp = 24.dp
 
-    /** 通向下一级菜单的行上箭头图标的尺寸。 */
+    /** 子菜单箭头图标的尺寸。 */
     val ItemArrowSize: Dp = 16.dp
 
-    /** 按压行背后色块相对面板自身边缘内缩的距离。 */
+    /** 按压项背景的水平内缩。 */
     val ItemPressInset: Dp = 7.dp
 
-    /** 按压行背后色块的圆角半径。 */
+    /** 按压项背景的圆角半径。 */
     val ItemPressRadius: Dp = 15.dp
 
-    /** 按压行背后色块的填充色。 */
+    /** 按压项背景的颜色。 */
     @Composable
     fun itemPressedColor(): Color = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) {
         Color.White.copy(alpha = 0.1f)
@@ -121,7 +125,7 @@ object GlassPopupDefaults {
         Color.Black.copy(alpha = 0.1f)
     }
 
-    /** 第二个菜单挡在本菜单之前时蒙上的一层罩色：`hyperMenuMask`，浅色主题下为 0.4 的白色，深色主题下为 0.4 的黑色。它是向页面底色的轻度罩染（浅色主题提亮、深色主题压暗）而非模态压暗，因为后面的菜单只是失焦，并未离开。 */
+    /** 主菜单被次级菜单挡在后面时蒙上的罩色。 */
     @Composable
     fun maskColor(): Color = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) {
         Color.Black.copy(alpha = 0.4f)
@@ -129,36 +133,36 @@ object GlassPopupDefaults {
         Color.White.copy(alpha = 0.4f)
     }
 
-    /** 菜单表面的材质构成，使用预置 token 作为默认值。 */
+    /** 创建弹出层的表面外观。 */
     @Composable
     fun visuals(
         style: GlassStyle = GlassDefaults.Style,
         alpha: Float = 1f,
-        stroke: GlassStroke? = stroke(),
+        stroke: EdgeStroke? = stroke(),
         shadow: GlassShadow? = GlassShadows.Regular,
         material: GlassMaterial? = material(),
         containerColor: Color = containerColor(),
     ): GlassPopupVisuals = GlassPopupVisuals(style, alpha, stroke, shadow, material, containerColor)
 
-    /** 弹出层的轮廓形状。 */
+    /** 创建弹出层的形状。 */
     @Composable
     fun shape(cornerRadius: Dp = CornerRadius): GlassShape = GlassShape(cornerRadius)
 
-    /** 弹出层自身的主体：`popupview-glass`，带 60dp 的蒙版模糊。 */
+    /** 当前主题的默认弹出层材质。 */
     @Composable
     fun material(): GlassMaterial = GlassMaterials.popupViewGlass(
         isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
     )
 
-    /** `popupview-glass` 声明的小号泛光描边。 */
+    /** 当前主题的默认弹出层泛光描边。 */
     @Composable
-    fun stroke(): GlassStroke = GlassStrokes.forTheme(
+    fun stroke(): EdgeStroke = GlassEdgeStrokes.forTheme(
         isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
-        light = GlassStrokes.SmallLight,
-        dark = GlassStrokes.SmallDark,
+        light = GlassEdgeStrokes.SmallLight,
+        dark = GlassEdgeStrokes.SmallDark,
     )
 
-    /** 弹出层不带材质时垫在它下面的填充色：`miuix_default_color_surface_highest`，浅色主题为白色，深色主题为 `#2C2C2C`。 */
+    /** 当前主题的不透明回退色。 */
     @Composable
     fun containerColor(): Color = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) {
         Color(0xFF2C2C2C)
@@ -168,22 +172,21 @@ object GlassPopupDefaults {
 }
 
 /**
- * 在所属控件的角落展开的玻璃菜单。
+ * 锚定在控件旁、带边缘展开过渡的玻璃菜单。
  *
- * 三种开场动画中的第一种，普通控件获得的就是这一种。面板有两条边从不动，另外两条边做插值，因此面板先又宽又扁，随后才放出高度。
- * 把它放在页面根部的 [BoxScope] 中，而不是放在控件旁边——锚点所在的容器会裁剪掉面板。收起动画完成前请保持此调用处于组合状态。
+ * 把它放在页面根部的 [BoxScope] 中，以免被锚点所在的容器裁剪。收起动画完成前请保持其处于组合状态。
  *
  * @param show 弹出菜单是否打开。
  * @param onDismissRequest 点击外部或按返回键请求关闭时调用。
- * @param anchorBounds 控件的边界，位于此组合函数自身的坐标空间中。当锚点属于被缩放的主菜单时请使用静止边界，否则本菜单会被拖离原位。
- * @param backdrop 玻璃背后的 [Backdrop]，采样时须排除弹窗自身。`null` 时使用不透明填充，同时保留已配置的泛光描边和 Compose 阴影。
+ * @param anchorBounds 触发区域的边界，使用窗口坐标（`boundsInWindow()`）；当锚点属于被缩放的主菜单时请使用静止边界。
+ * @param backdrop 面板采样的背景。须排除弹出层自身。`null` 时使用不透明填充，同时保留已配置的泛光描边与阴影。
  * @param modifier 应用于面板的修饰符。
  * @param sizing 面板的尺寸限制与窗口边距。
- * @param visuals 面板表面的材质构成。
- * @param cornerRadius 面板最终停留的圆角半径。
- * @param secondary 此菜单是否从另一个菜单的行中打开。委托给 [GlassSecondaryPopup] 的几何；直接使用该组件则可通过 `materialAnchor` 继承主弹出层的展开外观。
+ * @param visuals 面板表面外观。
+ * @param cornerRadius 面板展开后的圆角半径。
+ * @param secondary 是否使用 [GlassSecondaryPopup] 的几何。直接使用该组件则可通过 `materialAnchor` 共享主弹出层的外观。
  * @param contentPadding 各项周围的内边距。
- * @param content 各项。
+ * @param content 菜单各项。
  */
 @Composable
 fun BoxScope.GlassPopup(
@@ -247,14 +250,13 @@ fun BoxScope.GlassPopup(
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         backdrop = backdrop,
-        modifier = modifier,
         sizing = sizing,
         visuals = visuals,
         contentPadding = contentPadding,
         panelLayer = {},
         overlay = {},
-        frame = { end, page ->
-            val settled = placeGlassPopup(anchorBounds, end, sizing.safeMargin.toPx(), page, layoutDirection)
+        frame = { end, windowBounds ->
+            val settled = placeGlassPopup(anchorBounds, end, sizing.safeMargin.toPx(), windowBounds, layoutDirection)
             directionFrame(settled, end, progress.value, startRadius, cornerRadius, layoutDirection)
         },
         contentLayer = { _, _ ->
@@ -266,12 +268,13 @@ fun BoxScope.GlassPopup(
             renderEffect = if (blur > 0.5f) BlurEffect(blur, blur, TileMode.Decal) else null
             alpha = fade
         },
+        modifier = modifier,
         scrollable = true,
         content = content,
     )
 }
 
-/** 开场过程中面板的矩形，其中两条边保持不动。 */
+/** 插值面板边界，同时保持两条边不动。 */
 private fun directionFrame(
     placement: GlassPopupPlacement,
     end: Size,
@@ -299,26 +302,24 @@ private fun directionFrame(
 }
 
 /**
- * [GlassPopup] 的一行。
- *
- * 必填的只有 [text] 与 [onClick]：图标、副标题、勾选标记和箭头图标均可单独或组合出现。
+ * 带可选图标、副标题、选中勾选标记与子菜单箭头的菜单项。
  *
  * @param text 标签文本。
  * @param onClick 点击该行时调用。
  * @param modifier 应用于该行的修饰符。
  * @param icon 标签前的可选图标。
- * @param iconSize [icon] 的尺寸。默认为 MIUI 菜单图标宽度。
- * @param iconGap [icon] 与标签之间的间距。默认为 MIUI 菜单图标间距。
+ * @param iconSize FORK（FlyCat）：[icon] 的尺寸。默认为 MIUI 菜单图标宽度。
+ * @param iconGap FORK（FlyCat）：[icon] 与标签之间的间距。默认为 MIUI 菜单图标间距。
  * @param summary 标签下方的可选第二行文本。通常是该行当前的设置值。
  * @param enabled 该行是否响应点击。
- * @param selected 该行是否为当前选项，选中时在其末尾显示勾选标记。
- * @param showArrow 该行是否通向下一级菜单，是则在其末尾显示箭头图标。
- * @param arrowRotation 箭头图标的旋转角度（度）。菜单打开的行按级联弹出菜单的箭头旋转量旋转它。
+ * @param selected 是否显示选中勾选标记。
+ * @param showArrow 是否显示子菜单箭头。
+ * @param arrowRotation 箭头的旋转角度（度）。打开的子菜单使用 [CascadingPopupDefaults.arrowRotation]。
  * @param contentColor 标签与图标的颜色。
  * @param summaryColor 第二行文本的颜色。
  * @param selectedContentColor 选中行的标签及其勾选标记的颜色。
- * @param pressedColor 手指按住该行时其背后色块的填充色。
- * @param textMaxLines 标签文本允许换行的最大行数，超出则以省略号截断。
+ * @param pressedColor 按压时的背景颜色。
+ * @param textMaxLines FORK（FlyCat）：标签文本允许换行的最大行数，超出则以省略号截断。
  */
 @Composable
 fun GlassPopupItem(
@@ -326,6 +327,7 @@ fun GlassPopupItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
+    // FORK（FlyCat）：图标尺寸与图标/标签间距可由调用方指定（详见 KDoc）。
     iconSize: Dp = GlassPopupDefaults.ItemIconSize,
     iconGap: Dp = GlassPopupDefaults.ItemIconGap,
     summary: String? = null,
@@ -337,6 +339,7 @@ fun GlassPopupItem(
     summaryColor: Color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
     selectedContentColor: Color = MiuixTheme.colorScheme.primary,
     pressedColor: Color = GlassPopupDefaults.itemPressedColor(),
+    // FORK（FlyCat）：标签文本允许换行的最大行数（详见 KDoc）。
     textMaxLines: Int = 1,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -378,6 +381,7 @@ fun GlassPopupItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
+                // FORK（FlyCat）：图标尺寸与图标/标签间距由参数指定（上游取 ItemIconSize 与图标固有尺寸的较大值）。
                 modifier = Modifier
                     .padding(end = iconGap)
                     .size(iconSize),
@@ -390,6 +394,7 @@ fun GlassPopupItem(
                 fontSize = MiuixTheme.textStyles.body1.fontSize,
                 fontWeight = FontWeight.Medium,
                 color = color,
+                // FORK（FlyCat）：标签行数由 textMaxLines 指定（上游写死 1）。
                 maxLines = textMaxLines,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -403,16 +408,14 @@ fun GlassPopupItem(
                 )
             }
         }
-        if (selected) {
-            Icon(
-                imageVector = MiuixIcons.Basic.Check,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(start = GlassPopupDefaults.ItemIconGap)
-                    .size(GlassPopupDefaults.ItemTickSize),
-                tint = selectedContentColor,
-            )
-        }
+        Icon(
+            imageVector = MiuixIcons.Basic.Check,
+            contentDescription = null,
+            modifier = Modifier
+                .padding(start = GlassPopupDefaults.ItemIconGap)
+                .size(GlassPopupDefaults.ItemTickSize),
+            tint = if (selected) selectedContentColor else Color.Transparent,
+        )
         if (showArrow) {
             Icon(
                 imageVector = MiuixIcons.Basic.ArrowRight,

@@ -97,10 +97,11 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Download
-import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Download
+import top.yukonga.miuix.kmp.icon.glass.Filter
+import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -183,7 +184,7 @@ fun AppLogScreen(navigator: Navigator) {
                     val levelMenuAnchor = rememberGlassPopupAnchor()
                     GlassTopIconButton(
                         action = GlassTopAction(
-                            icon = MiuixIcons.Filter,
+                            icon = MiuixIcons.Glass.Filter,
                             contentDescription = FlyTxt.Log.App.LevelTitle,
                             onClick = { showLevelPopup = true },
                             anchor = levelMenuAnchor,
@@ -192,7 +193,7 @@ fun AppLogScreen(navigator: Navigator) {
                                     show = showLevelPopup,
                                     onDismissRequest = { showLevelPopup = false },
                                     anchor = levelMenuAnchor,
-                                    anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Filter) },
+                                    anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Glass.Filter) },
                                 ) {
                                     AppLogLevelOptions.forEachIndexed { index, label ->
                                         GlassMenuItem(
@@ -220,7 +221,7 @@ fun AppLogScreen(navigator: Navigator) {
             ) {
                 GlassTopIconButton(
                     action = GlassTopAction(
-                        icon = MiuixIcons.Download,
+                        icon = MiuixIcons.Glass.Download,
                         contentDescription = FlyTxt.Log.Action.SaveRecentLogs,
                         tint = MiuixTheme.colorScheme.primary,
                         onClick = {
@@ -247,7 +248,7 @@ fun AppLogScreen(navigator: Navigator) {
                 )
                 GlassTopIconButton(
                     action = GlassTopAction(
-                        icon = MiuixIcons.Delete,
+                        icon = MiuixIcons.Glass.Delete,
                         contentDescription = FlyTxt.Log.Action.ClearLogs,
                         tint = MiuixTheme.colorScheme.primary,
                         onClick = { viewModel.deleteAllLogs() },
@@ -374,7 +375,7 @@ fun LogDetailScreen(
                 }
                 GlassTopIconButton(
                     action = GlassTopAction(
-                        icon = MiuixIcons.Download,
+                        icon = MiuixIcons.Glass.Download,
                         contentDescription = FlyTxt.Log.Action.Save,
                         tint = MiuixTheme.colorScheme.primary,
                         onClick = {
@@ -387,7 +388,7 @@ fun LogDetailScreen(
                 )
                 GlassTopIconButton(
                     action = GlassTopAction(
-                        icon = MiuixIcons.Delete,
+                        icon = MiuixIcons.Glass.Delete,
                         contentDescription = FlyTxt.Log.Action.Delete,
                         tint = MiuixTheme.colorScheme.primary,
                         onClick = {

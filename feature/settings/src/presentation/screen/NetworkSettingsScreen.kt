@@ -105,7 +105,8 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.glass.Glass
+import top.yukonga.miuix.kmp.icon.glass.Info
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
@@ -778,7 +779,7 @@ private fun CustomKernelSheet(
                                 modifier = Modifier.size(36.dp),
                             ) {
                                 Icon(
-                                    imageVector = MiuixIcons.Info,
+                                    imageVector = MiuixIcons.Glass.Info,
                                     contentDescription = null,
                                     tint = colorScheme.onSurfaceVariantSummary,
                                     modifier = Modifier.size(20.dp),

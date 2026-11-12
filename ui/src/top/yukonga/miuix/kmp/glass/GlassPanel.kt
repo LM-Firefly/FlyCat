@@ -8,22 +8,30 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.internal.drawGlassStroke
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassShadow
+import top.yukonga.miuix.kmp.material.GlassShadows
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassStyle
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
 
 /**
- * 将此可组合项变成覆盖在 [backdrop] 之上的一片玻璃，并带上它投下的阴影。
+ * 将玻璃表面和阴影施加到 [backdrop] 之上。
  *
- * 没有运行时着色器的设备没有可采样的背景，此时由 [fallback] 说明表面是什么。
+ * 如果运行时着色器不可用或 [backdrop] 为 `null`，则由 [fallback] 定义表面。
  *
- * @param backdrop 玻璃背后的 [Backdrop]。`null` 使用 [fallback]。
- * @param shape 轮廓。它同时驱动阴影、裁剪和着色器。
- * @param style 材质样式。
- * @param alpha 整个表面（含阴影）的不透明度乘数。
- * @param material 面板自身的主体。`null` 表示以模糊后的背景作为整个主体。
- * @param stroke 沿边缘的可选泛光描边。
- * @param shadow 阴影。`null` 表示移除。
- * @param shading 表面是否对其所覆盖的内容进行折射和着色。控件设为 `true`，条或菜单设为 `false`。
- * @param fallback 没有背景时表面的形态。默认裁剪到 [shape]，并让调用方接着绘制的内容作为主体。
+ * @param backdrop 玻璃背后的背景。`null` 使用 [fallback]。
+ * @param shape 轮廓。它同时驱动阴影、裁剪和渲染几何。
+ * @param style 玻璃外观。
+ * @param alpha 表面和阴影的不透明度乘数。
+ * @param material 表面主体。`null` 表示以模糊后的背景作为主体。
+ * @param stroke 沿轮廓的可选泛光描边。
+ * @param shadow 阴影配置。`null` 表示禁用阴影。
+ * @param shading 是否对背景进行折射和着色。条和菜单请使用 `false`。
+ * @param fallback 没有背景时使用的表面修饰符。默认裁剪到 [shape]，
+ *   并让调用方后续的内容作为主体。
  */
 fun Modifier.glassPanel(
     backdrop: Backdrop?,
@@ -31,7 +39,7 @@ fun Modifier.glassPanel(
     style: GlassStyle = GlassDefaults.Style,
     alpha: Float = 1f,
     material: GlassMaterial? = null,
-    stroke: GlassStroke? = null,
+    stroke: EdgeStroke? = null,
     shadow: GlassShadow? = GlassShadows.Regular,
     shading: Boolean = true,
     fallback: Modifier = Modifier.clip(shape),
@@ -42,7 +50,7 @@ fun Modifier.glassPanel(
         .then(fallback)
         .drawWithContent {
             drawContent()
-            stroke?.let { drawGlassStroke(shape, layoutDirection, it, 1f) }
+            stroke?.let { drawEdgeStroke(shape, it, 1f) }
         }
 } else {
     this

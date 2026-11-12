@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.Density
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.BackdropEffectScope
 
-/** 在模糊处理之前，向含边距填充的背景录制施加一层蒙层（scrim）。 */
+/** 在模糊之前对带边距的背景录制层施加遮罩。 */
 @Stable
 internal class ScrimBackdrop(
     private val backdrop: Backdrop,
@@ -27,6 +27,7 @@ internal class ScrimBackdrop(
         density: Density,
         coordinates: LayoutCoordinates?,
         layerBlock: (GraphicsLayerScope.() -> Unit)?,
+        // FORK（FlyCat）：0.9.4 Backdrop.drawBackdrop 的 downscaleFactor 为 Int（上游 #479 起为 Float）。
         downscaleFactor: Int,
     ) {
         with(backdrop) {
@@ -35,7 +36,7 @@ internal class ScrimBackdrop(
                 coordinates = coordinates,
                 layerBlock = {
                     layerBlock?.invoke(this)
-                    // 宿主已应用该缩放，采样期间只需反向抵消。
+                    // 宿主已经应用了该缩放。只在采样时反向抵消。
                     scale?.let {
                         scaleX *= it.value
                         scaleY *= it.value
@@ -47,13 +48,9 @@ internal class ScrimBackdrop(
         val color = scrimColor.value
         if (color.alpha > 0f) {
             val padding = (density as? BackdropEffectScope)?.padding ?: 0f
-            val scaledPadding = if (downscaleFactor > 1) {
-                (padding / downscaleFactor).toInt().toFloat()
-            } else {
-                padding
-            }
-            // 录制已平移了 padding，这段边距也要覆盖，但不要填充场景外的像素：
-            // SrcAtop 保留它们的 alpha，从而避免产生暗色光晕。
+            // 精确边距：录制会偏移 `padding / level`，取整会留下一条缝。
+            val scaledPadding = padding / downscaleFactor
+            // 盖住录制边距；SrcAtop 保留透明的场景像素以防止光晕。
             drawRect(color, topLeft = Offset(-scaledPadding, -scaledPadding), size = size, blendMode = BlendMode.SrcAtop)
         }
     }

@@ -54,6 +54,5 @@ dependencies {
     implementation(libs.sketch.http)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
-    implementation(libs.miuix.icons)
     implementation(libs.smali.dexlib2)
 }

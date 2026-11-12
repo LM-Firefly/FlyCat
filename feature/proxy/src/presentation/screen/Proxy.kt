@@ -123,7 +123,8 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.glass.Back
+import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
@@ -619,7 +620,7 @@ internal fun ProxyTopBar(
                 if (showBack) {
                     GlassTopIconButton(
                         action = GlassTopAction(
-                            icon = MiuixIcons.Back,
+                            icon = MiuixIcons.Glass.Back,
                             contentDescription = FlyTxt.Component.Navigation.Back,
                             onClick = onBack,
                         ),

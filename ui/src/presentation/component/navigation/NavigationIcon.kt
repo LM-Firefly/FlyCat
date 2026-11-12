@@ -48,7 +48,8 @@ import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.glass.Back
+import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
@@ -80,7 +81,7 @@ fun NavigationBackIcon(
     Box(modifier = Modifier.padding(start = extraStartPadding)) {
         GlassTopIconButton(
             action = GlassTopAction(
-                icon = MiuixIcons.Back,
+                icon = MiuixIcons.Glass.Back,
                 contentDescription = contentDescription,
                 onClick = dropUnlessResumed { onNavigateBack() },
             ),

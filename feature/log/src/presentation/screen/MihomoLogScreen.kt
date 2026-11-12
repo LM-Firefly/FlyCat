@@ -103,8 +103,9 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Download
-import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.glass.Download
+import top.yukonga.miuix.kmp.icon.glass.Filter
+import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -195,7 +196,7 @@ fun MihomoLogScreen(navigator: Navigator) {
                     GlassTopActionPill(
                         actions = listOfNotNull(
                             GlassTopAction(
-                                icon = MiuixIcons.Filter,
+                                icon = MiuixIcons.Glass.Filter,
                                 contentDescription = FlyTxt.Log.Level.Filter,
                                 onClick = { showLevelPopup = true },
                                 anchor = levelMenuAnchor,
@@ -204,7 +205,7 @@ fun MihomoLogScreen(navigator: Navigator) {
                                         show = showLevelPopup,
                                         onDismissRequest = { showLevelPopup = false },
                                         anchor = levelMenuAnchor,
-                                        anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Filter) },
+                                        anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Glass.Filter) },
                                     ) {
                                         LevelFilters.forEachIndexed { index, filter ->
                                             GlassMenuItem(
@@ -233,7 +234,7 @@ fun MihomoLogScreen(navigator: Navigator) {
                             ),
                             if (filteredEntries.isNotEmpty()) {
                                 GlassTopAction(
-                                    icon = MiuixIcons.Download,
+                                    icon = MiuixIcons.Glass.Download,
                                     contentDescription = FlyTxt.Log.Mihomo.Export,
                                     onClick = { exportLauncher.launch("mihomo_log_${System.currentTimeMillis()}.txt") },
                                 )

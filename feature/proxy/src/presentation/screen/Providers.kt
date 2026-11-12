@@ -109,7 +109,8 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.glass.Edit
+import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -332,7 +333,7 @@ private fun ProviderCard(
                             ) {
                                 Icon(
                                     modifier = Modifier.size(UiDp.dp20),
-                                    imageVector = MiuixIcons.Edit,
+                                    imageVector = MiuixIcons.Glass.Edit,
                                     tint = updateTint,
                                     contentDescription = FlyTxt.Providers.Action.Operation,
                                 )
@@ -352,7 +353,7 @@ private fun ProviderCard(
                             anchor = actionsAnchor,
                             anchorContent = {
                                 Icon(
-                                    imageVector = MiuixIcons.Edit,
+                                    imageVector = MiuixIcons.Glass.Edit,
                                     contentDescription = FlyTxt.Providers.Action.Operation,
                                     modifier = Modifier.size(UiDp.dp20),
                                 )

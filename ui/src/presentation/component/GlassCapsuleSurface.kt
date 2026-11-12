@@ -29,18 +29,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import com.github.lmfirefly.flycat.presentation.theme.FlyBlur.glassSurface
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.kyant.shapes.Capsule
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.glass.GlassDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
-import top.yukonga.miuix.kmp.glass.GlassShape
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.PublishGlassAnchorSurface
 import top.yukonga.miuix.kmp.glass.glassPanel
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
+import top.yukonga.miuix.kmp.glass.rememberGlassAnchorSurface
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -106,18 +108,11 @@ fun GlassCapsuleSurface(
                         fallback = Modifier.background(fallbackColor),
                     )
                 } else {
-                    Modifier.glassSurface(
-                        backdrop = sampleBackdrop,
+                    // 无 RuntimeShader 时按库语义纯色回退（原 FlyBlur.glassSurface 的纹理模糊分支在此不可达，已删）。
+                    Modifier.background(fallbackColor, capsuleShape)
+                    .edgeStroke(
                         shape = capsuleShape,
-                        fallbackColor = fallbackColor,
-                        tint = glass.tint,
-                    )
-                    .edgeLight(
-                        shape = capsuleShape,
-                        color = glass.edgeLightColor,
-                        width = glass.edgeLightWidth,
-                        blurRadius = EdgeLightDefaults.BlurRadius,
-                        blendMode = glass.edgeLightBlendMode,
+                        stroke = GlassTopAppBarDefaults.buttonStroke(),
                     )
                 },
             ),

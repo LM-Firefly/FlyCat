@@ -55,9 +55,9 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.glass.GlassBottomSheetDefaults
-import top.yukonga.miuix.kmp.glass.GlassMaterial
-import top.yukonga.miuix.kmp.glass.GlassStroke
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 object AppBottomSheetDefaults {
@@ -150,7 +150,7 @@ fun AppActionBottomSheet(
     renderInRootScaffold: Boolean = true,
     onSheetTopPositioned: ((Float) -> Unit)? = null,
     material: GlassMaterial = GlassBottomSheetDefaults.material(),
-    stroke: GlassStroke? = GlassBottomSheetDefaults.stroke(),
+    stroke: EdgeStroke? = GlassBottomSheetDefaults.stroke(),
     content: @Composable () -> Unit,
 ) {
     val resolvedBackgroundColor = if (backgroundColor == Color.Unspecified) { AppBottomSheetDefaults.backgroundColor() } else { backgroundColor }

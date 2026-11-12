@@ -1,12 +1,11 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package top.yukonga.miuix.kmp.glass
+package top.yukonga.miuix.kmp.material
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.blur.BlurDefaults
 
 /** 玻璃材质的默认值。 */
 object GlassDefaults {
@@ -20,7 +19,7 @@ object GlassDefaults {
      */
     val SourceDensity: Float = 3f
     /** 背景模糊的默认噪点抖动系数。0 表示禁用噪点。 */
-    val NoiseCoefficient: Float = BlurDefaults.NoiseCoefficient
+    val NoiseCoefficient: Float = 0.0045f
     /** 材质在轮廓之外延伸的距离，单位为 dp。全分辨率蒙版通道会在之后裁剪边缘，因此材质只需超出轮廓即可。 */
     val Overspill: Float = 3f
     /** 默认材质。 */

@@ -54,7 +54,6 @@ dependencies {
     implementation(libs.aboutlibraries.compose)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
-    implementation(libs.miuix.icons)
     implementation(libs.miuix.blur.android)
     implementation(libs.androidx.core.ktx)
 }

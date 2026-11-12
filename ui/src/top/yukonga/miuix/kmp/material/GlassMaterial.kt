@@ -1,7 +1,7 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package top.yukonga.miuix.kmp.glass
+package top.yukonga.miuix.kmp.material
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
@@ -66,7 +66,7 @@ data class GlassMaterial(
 }
 
 /** 把子级与衬底的模糊方差合并，供共享的单趟背景滤镜使用。 */
-internal fun GlassMaterial.withUnderlayBlur(underlay: GlassMaterial?): GlassMaterial = if (underlay == null) {
+fun GlassMaterial.withUnderlayBlur(underlay: GlassMaterial?): GlassMaterial = if (underlay == null) {
     this
 } else {
     copy(blurRadius = sqrt(blurRadius.value * blurRadius.value + underlay.blurRadius.value * underlay.blurRadius.value).dp)

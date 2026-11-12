@@ -19,6 +19,8 @@ import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference as MiuixGlassDropdownPreference
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -110,14 +112,10 @@ fun <T> GlassDropdownPreference(
 @Composable
 private fun Modifier.glassDropdownRowSurface(): Modifier {
     val shape = RoundedCornerShape(UiDp.dp18)
-    val isLightTheme = !isDarkTheme()
     return clip(shape)
         .glassCardSurface(shape, fallbackColor = MiuixTheme.colorScheme.secondaryContainer)
-        .edgeLight(
+        .edgeStroke(
             shape = shape,
-            color = EdgeLightDefaults.tint(MiuixTheme.colorScheme.secondaryContainer, isLightTheme),
-            width = EdgeLightDefaults.width(isLightTheme),
-            blurRadius = EdgeLightDefaults.BlurRadius,
-            blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+            stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
         )
 }

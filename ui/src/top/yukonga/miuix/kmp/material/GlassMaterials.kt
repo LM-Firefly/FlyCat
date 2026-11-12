@@ -1,7 +1,7 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package top.yukonga.miuix.kmp.glass
+package top.yukonga.miuix.kmp.material
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color

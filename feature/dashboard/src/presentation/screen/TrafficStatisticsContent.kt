@@ -70,8 +70,9 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Sort
+import top.yukonga.miuix.kmp.icon.glass.Glass
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Sort
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowListPopup
 
@@ -101,7 +102,7 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                 actions = {
                     GlassTopIconButton(
                         action = GlassTopAction(
-                            icon = MiuixIcons.Delete,
+                            icon = MiuixIcons.Glass.Delete,
                             contentDescription = FlyTxt.TrafficStatistics.Action.Clear,
                             onClick = {
                                 viewModel.clearAllStatistics()
@@ -187,7 +188,7 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                                 Box(modifier = Modifier.matchParentSize().layerBackdrop(buttonBackdrop))
                                 GlassTopIconButton(
                                     action = GlassTopAction(
-                                        icon = MiuixIcons.Sort,
+                                        icon = MiuixIcons.Glass.Sort,
                                         contentDescription = FlyTxt.Proxy.Action.Sort,
                                         onClick = { sortExpanded = true },
                                         // 自动接线锚点：按钮上报边界并隐藏自身，弹窗折叠端点直接复用按钮玻璃材质，关闭动画落点即玻璃圆钮本体。
@@ -197,7 +198,7 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                                                 show = sortExpanded,
                                                 onDismissRequest = { sortExpanded = false },
                                                 anchor = sortMenuAnchor,
-                                                anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Sort) },
+                                                anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Glass.Sort) },
                                             ) {
                                                 sortOptions.forEachIndexed { index, (mode, label) ->
                                                     val arrow = if (currentMode == mode) { if (currentAscending) " ↑" else " ↓" } else ""

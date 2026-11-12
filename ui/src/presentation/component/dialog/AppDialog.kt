@@ -38,49 +38,10 @@ import com.github.lmfirefly.flycat.presentation.component.rememberSurfaceBackdro
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurBlendMode
-import top.yukonga.miuix.kmp.blur.BlurColors
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.textureBlur
-import top.yukonga.miuix.kmp.glass.GlassColorBlendMode
-import top.yukonga.miuix.kmp.glass.GlassMaterial
-import top.yukonga.miuix.kmp.glass.GlassMaterials
+import top.yukonga.miuix.kmp.glass.glassDialogSurface
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
-/** 把 [GlassMaterial] 的颜色层映射为 [textureBlur] 的 [BlurColors]；配方单一来源为 [GlassMaterials.dialogGlass]（与历史手写配方逐像素一致）。 */
-internal fun GlassMaterial.toBlurColors(): BlurColors = BlurColors(
-    blendColors = listOfNotNull(first, second, third).map { BlendColorEntry(it.color, it.mode.toBlurBlendMode()) },
-)
-
-internal fun GlassColorBlendMode.toBlurBlendMode(): BlurBlendMode = when (this) {
-    GlassColorBlendMode.SrcOver -> BlurBlendMode.SrcOver
-    GlassColorBlendMode.PlusDarker -> BlurBlendMode.PlusDarker
-    GlassColorBlendMode.PlusLighter -> BlurBlendMode.PlusLighter
-    GlassColorBlendMode.SoftLight -> BlurBlendMode.SoftLight
-    GlassColorBlendMode.HardLight -> BlurBlendMode.HardLight
-    GlassColorBlendMode.Overlay -> BlurBlendMode.Overlay
-    GlassColorBlendMode.Luminosity -> BlurBlendMode.Luminosity
-    GlassColorBlendMode.ColorDodge -> BlurBlendMode.ColorDodge
-    GlassColorBlendMode.ColorBurn -> BlurBlendMode.ColorBurn
-}
-
-/** 弹层面板玻璃表面：配方取自 [GlassMaterials.dialogGlass]，采样页面壁纸层（跨层安全）；无壁纸/无 shader 时回退实色。 */
-@Composable
-internal fun Modifier.dialogGlassSurface(shape: Shape, fallbackColor: Color, backdrop: LayerBackdrop?): Modifier = if (backdrop != null && isRuntimeShaderSupported()) {
-    val material = GlassMaterials.dialogGlass(isDarkTheme())
-    textureBlur(
-        backdrop = backdrop,
-        shape = shape,
-        blurRadius = material.blurRadius.value,
-        colors = material.toBlurColors(),
-    )
-} else {
-    background(fallbackColor, shape)
-}
 
 object AppDialogDefaults {
     @Composable fun titleColor(): Color = DialogDefaults.titleColor()
@@ -115,24 +76,24 @@ fun AppDialog(
     renderInRootScaffold: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    // 面板级玻璃实验：同 AppActionBottomSheet——玻璃配方（GlassMaterials.dialogGlass）采样页面壁纸层，激活时透明背景。
+    // 面板级玻璃表面：委托库 glassDialogSurface（材质单源 GlassDialogDefaults.material()，stroke=null 保持现观感；
+    // 库默认带 ScrimBackdrop 压暗）。自带无 shader/无背景的实色回退。
     val pageWallpaperBackdrop = LocalGlassBackdrop.current
-    val glassActive = pageWallpaperBackdrop != null && isRuntimeShaderSupported()
-    val dialogShape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
     OverlayDialog(
         show = show,
         modifier = modifier.then(
-            if (glassActive) {
-                Modifier.clip(dialogShape).dialogGlassSurface(dialogShape, fallbackColor = backgroundColor, backdrop = pageWallpaperBackdrop)
-            } else {
-                Modifier
-            }
+            glassDialogSurface(
+                backdrop = pageWallpaperBackdrop,
+                cornerRadius = cornerRadius,
+                stroke = null,
+                containerColor = backgroundColor,
+            )
         ),
         title = title,
         titleColor = titleColor,
         summary = summary,
         summaryColor = summaryColor,
-        backgroundColor = if (glassActive) Color.Transparent else backgroundColor,
+        backgroundColor = Color.Transparent,
         enableWindowDim = enableWindowDim,
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,

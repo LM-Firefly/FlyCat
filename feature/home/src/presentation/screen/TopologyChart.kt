@@ -39,9 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.ConnectionInfo
 import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
-import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
-import com.github.lmfirefly.flycat.presentation.component.edgeLight
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import kotlin.math.log10
 import kotlin.math.max
@@ -50,6 +48,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val TopologyChartShape = RoundedCornerShape(16.dp)
@@ -85,11 +85,9 @@ fun TopologyChart(connections: List<ConnectionInfo>, onClick: () -> Unit, modifi
                 Modifier.matchParentSize()
                     .glassCardSurface(shape = TopologyChartShape, fallbackColor = colorScheme.surface)
                     .graphicsLayer { alpha = TOPOLOGY_GLASS_ALPHA }
-                    .edgeLight(
+                    .edgeStroke(
                         shape = TopologyChartShape,
-                        color = EdgeLightDefaults.tint(colorScheme.surface, isLightTheme),
-                        width = EdgeLightDefaults.width(isLightTheme),
-                        blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+                        stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
                     ),
             )
             Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -116,11 +114,9 @@ fun TopologyChart(connections: List<ConnectionInfo>, onClick: () -> Unit, modifi
         val layoutResult = remember(sankeyData, widthPx, contentHeightPx, textHeights, nodeTextLayoutMap, density) { calculateSankeyLayout(sankeyData = sankeyData, size = Size(widthPx, contentHeightPx), textHeights = textHeights, nodeTextLayoutMap = nodeTextLayoutMap, density = density) }
         Box(modifier = Modifier.fillMaxWidth().height(viewportHeightDp).clip(TopologyChartShape)) {
             // 玻璃作为固定降透明度底层，图表内容在其上滚动，避免整卡发白。
-            Box(Modifier.matchParentSize().glassCardSurface(shape = TopologyChartShape, fallbackColor = colorScheme.surface).graphicsLayer { alpha = TOPOLOGY_GLASS_ALPHA }.edgeLight(
+            Box(Modifier.matchParentSize().glassCardSurface(shape = TopologyChartShape, fallbackColor = colorScheme.surface).graphicsLayer { alpha = TOPOLOGY_GLASS_ALPHA }.edgeStroke(
                     shape = TopologyChartShape,
-                    color = EdgeLightDefaults.tint(colorScheme.surface, isLightTheme),
-                    width = EdgeLightDefaults.width(isLightTheme),
-                    blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+                    stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
                 ),
             )
             Box(modifier = Modifier.fillMaxWidth().height(viewportHeightDp).clipToBounds().then(if (isScrollable) Modifier.verticalScroll(scrollState) else Modifier)) {

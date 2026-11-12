@@ -49,6 +49,5 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
-    implementation(libs.miuix.icons)
     implementation(libs.reorderable)
 }

@@ -56,15 +56,17 @@ import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import com.kyant.shapes.Capsule
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.glass.GlassDefaults
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchorElement
-import top.yukonga.miuix.kmp.glass.GlassShape
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.PublishGlassAnchorSurfaces
 import top.yukonga.miuix.kmp.glass.glassPanel
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
-import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.rememberGlassAnchorSurface
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** NexioSchedule 顶栏 chrome 尺寸：42dp 容器承载 22dp 图标。 */
@@ -152,13 +154,7 @@ fun GlassTopActionPill(actions: List<GlassTopAction>, backdrop: LayerBackdrop?, 
     PublishGlassAnchorSurfaces(resolvedPopupAnchors, popupSurface, surfaceProgress = collapsedSurfaceProgress, surfaceFloating = false)
     val pillShape = remember { Capsule() }
     Box(
-        modifier = modifier.height(GlassTopActionDefaults.ContainerSize).graphicsLayer {
-            shape = pillShape
-            clip = false
-            shadowElevation = glass.shadowElevationPx
-            ambientShadowColor = glass.shadowColor
-            spotShadowColor = glass.shadowColor
-        }.glassPanel(
+        modifier = modifier.height(GlassTopActionDefaults.ContainerSize).glassPanel(
             backdrop = backdrop,
             shape = GlassShape(GlassTopActionDefaults.ContainerSize / 2),
             style = GlassDefaults.Style,
@@ -261,11 +257,6 @@ private fun Color.takeOr(fallback: Color): Color = if (this == Color.Unspecified
 internal class GlassTopActionStyle(
     val fallbackColor: Color,
     val tint: Color,
-    val shadowColor: Color,
-    val shadowElevationPx: Float,
-    val edgeLightColor: Color,
-    val edgeLightWidth: Dp,
-    val edgeLightBlendMode: BlendMode,
     val iconTint: Color,
 )
 
@@ -281,11 +272,6 @@ internal fun rememberGlassTopActionStyle(): GlassTopActionStyle {
             fallbackColor = surfaceContainer,
             // 顶部栏自带的渐进模糊效果已经让后面的页面变得模糊不清，因此其色调比底部栏略微深一些，以确保界面元素清晰可辨。
             tint = surfaceContainer.copy(alpha = if (isLightTheme) 0.62f else 0.72f),
-            shadowColor = Color.Black.copy(alpha = if (isLightTheme) opacity.softOverlay else opacity.surfaceSoft),
-            shadowElevationPx = 0f,
-            edgeLightColor = EdgeLightDefaults.tint(surfaceContainer, isLightTheme),
-            edgeLightWidth = EdgeLightDefaults.width(isLightTheme),
-            edgeLightBlendMode = EdgeLightDefaults.blendMode(isLightTheme),
             iconTint = colorScheme.onSurface,
         )
     }

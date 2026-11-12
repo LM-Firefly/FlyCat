@@ -5,25 +5,25 @@ package top.yukonga.miuix.kmp.glass.internal
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.ui.unit.LayoutDirection
 import top.yukonga.miuix.kmp.blur.BackdropEffectScope
 import top.yukonga.miuix.kmp.blur.runtimeShaderEffect
-import top.yukonga.miuix.kmp.glass.GlassColorBlendMode
-import top.yukonga.miuix.kmp.glass.GlassDefaults
-import top.yukonga.miuix.kmp.glass.GlassMaterial
-import top.yukonga.miuix.kmp.glass.GlassShape
-import top.yukonga.miuix.kmp.glass.GlassStyle
+import top.yukonga.miuix.kmp.material.GlassColorBlendMode
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassStyle
+import top.yukonga.miuix.kmp.material.setSilhouetteUniforms
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * 将玻璃材质链入效果管线。
+ * 把玻璃材质接入背景效果管线。
  *
- * @param style 要渲染的材质。
- * @param shape 轮廓。其各角尺寸与平滑度驱动着色器的距离场。
- * @param alpha 不透明度乘数，与材质自身透明度相乘后折入。
- * @param tint 指定时覆盖 [top.yukonga.miuix.kmp.glass.GlassInner.tint]，其 alpha 取代样式的着色强度。
+ * @param style 玻璃样式。
+ * @param shape 表面形状。
+ * @param alpha 材质不透明度乘数。
+ * @param tint 可选的染色覆盖；其 alpha 取代样式的染色强度。
  */
 internal fun BackdropEffectScope.glassEffect(
     style: GlassStyle,
@@ -35,22 +35,12 @@ internal fun BackdropEffectScope.glassEffect(
     val height = size.height
     if (width <= 0f || height <= 0f) return
 
+    // FORK（FlyCat）：0.9.4 BackdropEffectScope.downscaleFactor 为 Int（上游 #479 起为 Float），转 Float 保持后续运算一致。
     val scale = downscaleFactor.toFloat()
     val paddedWidth = width + padding * 2f
     val paddedHeight = height + padding * 2f
-    val textureWidth = (paddedWidth.toInt() / downscaleFactor).coerceAtLeast(1).toFloat()
-    val textureHeight = (paddedHeight.toInt() / downscaleFactor).coerceAtLeast(1).toFloat()
-
-    val halfMin = min(width, height) * 0.5f
-    val isLtr = layoutDirection == LayoutDirection.Ltr
-    val start = shape.topStart.toPx(size, this)
-    val end = shape.topEnd.toPx(size, this)
-    val bottomEnd = shape.bottomEnd.toPx(size, this)
-    val bottomStart = shape.bottomStart.toPx(size, this)
-    val topLeft = (if (isLtr) start else end).coerceIn(0f, halfMin) / scale
-    val topRight = (if (isLtr) end else start).coerceIn(0f, halfMin) / scale
-    val bottomRight = (if (isLtr) bottomEnd else bottomStart).coerceIn(0f, halfMin) / scale
-    val bottomLeft = (if (isLtr) bottomStart else bottomEnd).coerceIn(0f, halfMin) / scale
+    val textureWidth = (paddedWidth / downscaleFactor).coerceAtLeast(1f)
+    val textureHeight = (paddedHeight / downscaleFactor).coerceAtLeast(1f)
 
     val sourceScale = density / GlassDefaults.SourceDensity
     val edgeFullPx = (style.edge.width * sourceScale).coerceAtLeast(1f)
@@ -64,11 +54,9 @@ internal fun BackdropEffectScope.glassEffect(
         .coerceIn(0f, 1f)
 
     runtimeShaderEffect(GLASS_SHADER_KEY, GLASS_SHADER, "child") {
-        setFloatUniform("in_size", width / scale, height / scale)
+        setSilhouetteUniforms(shape, layoutDirection, size, this@glassEffect, scale)
         setFloatUniform("in_pad", padding / scale, padding / scale)
         setFloatUniform("in_maxCoord", textureWidth - 0.5f, textureHeight - 0.5f)
-        setFloatUniform("in_radii", topLeft, topRight, bottomRight, bottomLeft)
-        setFloatUniform("in_smoothing", shape.smoothing.coerceIn(0f, 1f))
         setFloatUniform(
             "in_alphaEdge",
             (style.inner.alpha * alpha).coerceIn(0f, 1f),
@@ -137,10 +125,10 @@ internal fun BackdropEffectScope.glassEffect(
 }
 
 /**
- * 将色彩处理链入效果管线。
+ * 把混色接入背景效果管线。
  *
- * @param material 要应用的材质，其图层自靠近背景的一侧起依次施加。
- * @param alpha 不透明度乘数，折入每一个材质图层。
+ * @param material 有序颜色层，最贴近背景的在前。
+ * @param alpha 各层的不透明度乘数。
  */
 internal fun BackdropEffectScope.colorBlendEffect(
     material: GlassMaterial,
@@ -167,7 +155,7 @@ internal fun BackdropEffectScope.colorBlendEffect(
     }
 }
 
-/** 供着色器混合分支读取的 id，须与 `GLASS_COLOR_BLEND_SHADER` 保持一致。 */
+/** 混合模式 ID；必须与 `GLASS_COLOR_BLEND_SHADER` 中的 switch 保持一致。 */
 private val GlassColorBlendMode.id: Float
     get() = when (this) {
         GlassColorBlendMode.SrcOver -> 0f

@@ -50,7 +50,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.CompositeBackdrop
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowDownUp
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Bolt
@@ -67,13 +66,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.CompositeBackdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.glass.GlassColorBlendMode
-import top.yukonga.miuix.kmp.glass.GlassColorLayer
-import top.yukonga.miuix.kmp.glass.GlassMaterial
-import top.yukonga.miuix.kmp.glass.GlassMaterials
 import top.yukonga.miuix.kmp.glass.GlassNavigationBar
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
+import top.yukonga.miuix.kmp.material.GlassColorBlendMode
+import top.yukonga.miuix.kmp.material.GlassColorLayer
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassMaterials
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.max
 

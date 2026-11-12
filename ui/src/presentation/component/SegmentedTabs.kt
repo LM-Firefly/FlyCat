@@ -68,13 +68,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.glass.GlassDefaults
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.glass
-import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 

@@ -85,7 +85,8 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.glass.Back
+import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
@@ -205,7 +206,7 @@ private fun ProxySheetContentInner(onDismiss: () -> Unit, proxyViewModel: ProxyV
                 if (selectedGroup != null) {
                     AppBottomSheetIconAction(
                         action = AppBottomSheetAction(
-                            icon = MiuixIcons.Back,
+                            icon = MiuixIcons.Glass.Back,
                             contentDescription = FlyTxt.Component.Navigation.Back,
                             onClick = clearSelectionAndRedraw,
                         )

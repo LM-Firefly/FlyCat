@@ -23,18 +23,10 @@
 
 package com.github.lmfirefly.flycat.presentation.theme
 
-import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 活动表面是否呈现深色主题。 */
@@ -59,24 +51,3 @@ val LocalTopBarBackdrop = compositionLocalOf<LayerBackdrop?> { null }
 /** 锚定玻璃表面应采样的背景：当宿主提供了共享背景时，使用页面的共享背景，否则使用顶栏的背景。浮动菜单向此查询，而不是自行编写回退逻辑，因此“页面背景优先，栏背景其次”这一规则只维护一处。 */
 @Composable
 fun glassSurfaceBackdrop(): LayerBackdrop? = LocalGlassBackdrop.current ?: LocalTopBarBackdrop.current
-
-/** 在 `miuix-blur` 之上提供模糊与玻璃效果。不支持 RuntimeShader 的设备（Android < 33）将所有玻璃表面渲染为纯色回退效果——绝不会直接透明显示。 */
-object FlyBlur {
-    /** 默认玻璃模糊半径（dp 浮点值，遵循 miuix-blur 惯例，上限为 150）。 */
-    const val GlassBlurRadius = 26f
-    /** 磨砂玻璃表面，模糊其后的页面 [backdrop]；当背景不存在或设备不支持 RuntimeShader 时，显示纯色 [fallbackColor]。[tint] 叠加在模糊效果之上（NexioSchedule 风格的半透明表面着色）。 */
-    fun Modifier.glassSurface(backdrop: LayerBackdrop?, shape: Shape, fallbackColor: Color, blurRadius: Float = GlassBlurRadius, tint: Color? = null): Modifier = if (backdrop != null && isRuntimeShaderSupported()) {
-        textureBlur(
-            backdrop = backdrop,
-            shape = shape,
-            blurRadius = blurRadius,
-            colors = if (tint != null) {
-                BlurColors(blendColors = listOf(BlendColorEntry(color = tint)))
-            } else {
-                BlurColors()
-            },
-        )
-    } else {
-        background(fallbackColor, shape)
-    }
-}

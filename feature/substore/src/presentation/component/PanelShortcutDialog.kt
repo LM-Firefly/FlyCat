@@ -59,7 +59,8 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Reset
+import top.yukonga.miuix.kmp.icon.glass.Glass
+import top.yukonga.miuix.kmp.icon.glass.Reset
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 创建桌面快捷方式对话框：图标预览、可编辑名称、选图标/恢复默认。 */
@@ -136,7 +137,7 @@ fun PanelShortcutDialog(
                         modifier = Modifier.padding(start = spacing.space12),
                     ) {
                         Icon(
-                            imageVector = MiuixIcons.Reset,
+                            imageVector = MiuixIcons.Glass.Reset,
                             contentDescription = FlyTxt.Feature.Panel.ShortcutResetIcon,
                             tint = MiuixTheme.colorScheme.onSurface,
                             modifier = Modifier.size(28.dp),

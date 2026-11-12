@@ -17,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlurEffect
@@ -28,28 +27,35 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.Backdrop
 
-/** [GlassDropdownPopup] 的默认值 */
+/** [GlassDropdownPopup] 的默认值。 */
 object GlassDropdownDefaults {
-    /** 面板停靠时的圆角半径：`miuix_appcompat_drop_down_menu_radius`。 */
+
+    /** 展开后面板的圆角半径。 */
     val CornerRadius: Dp = 24.dp
-    /** 面板展开起始的圆角半径。 */
+
+    /** 初始面板圆角半径。 */
     val StartCornerRadius: Dp = 4.dp
 }
 
 /**
- * 从设置行下方弹出的选项列表，悬浮在玻璃层之上。
- * 三个开口中的第三个，也是唯一一个不再保持边缘静止的开口：面板的尺寸及其中心由两个不同速度的弹簧驱动，因此它沿弧线移动，而不是从固定的角落生长出来。
- * @param show 面板是否处于打开状态。当其变为 false 时，行输入和无障碍操作会立即停止，同时退出动画继续完成。
- * @param onDismissRequest 当点击面板外部或按返回键请求关闭时调用。
- * @param anchorBounds 该行的边界，位于此组合函数自身的坐标空间中。
- * @param backdrop 玻璃层背后的 [Backdrop]，须排除弹出层自身。`null` 将使用不透明填充，同时保留已配置的辉光描边和 Compose 阴影。
+ * 锚定到设置行的玻璃下拉菜单。
+ *
+ * 请保持其组合状态直到退出动画完成。
+ *
+ * @param show 面板是否打开。此项变为 false 时，行的输入与无障碍操作立即停止，
+ *   退出动画则继续完成。
+ * @param onDismissRequest 点击外部或按返回键请求关闭时调用。
+ * @param anchorBounds 行的边界，使用窗口坐标（`boundsInWindow()`）。
+ * @param backdrop 面板采样的背景。排除弹出层自身。`null` 时使用不透明填充，
+ *   同时保留配置的泛光描边与阴影。
  * @param modifier 应用于面板的修饰符。
- * @param anchor 该行的可选句柄。若提供了句柄，面板打开时会让该行显示的值淡出让位，并水平对齐到 [glassPopupAnchorValue] 报告的值边界；若没有报告的值，则使用 [anchorBounds] 进行定位。
- * @param sizing 面板允许的最大宽度和高度。
- * @param visuals 面板表面的材质构成。
- * @param cornerRadius 面板最终停留的圆角半径。
- * @param contentPadding 行周围的内边距。
- * @param content 各行。使用 `selected` 的 [GlassPopupItem] 会显示一个勾选标记。
+ * @param anchor 可选的行锚点。打开时隐藏所显示的值，并按 [glassPopupAnchorValue] 报告的
+ *   边界水平对齐面板；不可用时使用 [anchorBounds]。
+ * @param sizing 面板尺寸限制与窗口边距。
+ * @param visuals 面板表面外观。
+ * @param cornerRadius 展开后面板的圆角半径。
+ * @param contentPadding 各行周围的内边距。
+ * @param content 各行。带 `selected` 的 [GlassPopupItem] 会显示对勾。
  */
 @Composable
 fun BoxScope.GlassDropdownPopup(
@@ -80,7 +86,7 @@ fun BoxScope.GlassDropdownPopup(
     )
 }
 
-/** 共享下拉渲染器；Scaffold 宿主以根坐标提供其原点。 */
+/** 共享的下拉渲染器；surface 把窗口边界映射进宿主。 */
 @Composable
 internal fun BoxScope.GlassDropdownPopupContent(
     show: Boolean,
@@ -93,11 +99,10 @@ internal fun BoxScope.GlassDropdownPopupContent(
     visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
     cornerRadius: Dp = GlassDropdownDefaults.CornerRadius,
     contentPadding: PaddingValues = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical),
-    coordinateOrigin: Offset = Offset.Zero,
     onDismissFinished: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    // Scaffold 宿主的内容是在行已请求打开之后才首次组合的。保留关闭的初始状态，以便首次组合仍具有进入过渡动画。
+    // Scaffold 宿主在请求打开之后才组合；从关闭状态开始以保留进入过渡。
     val visibility = remember { MutableTransitionState(false) }
     LaunchedEffect(show) {
         visibility.targetState = show
@@ -141,7 +146,7 @@ internal fun BoxScope.GlassDropdownPopupContent(
         anchor?.dropdownRetainedValueAlpha = 0f
         onDispose {
             if (anchor?.dropdownBackProgressState === backProgress) {
-                // 锚点的淡出会在 Scaffold 移除本弹出宿主之后继续。
+                // Scaffold 移除此弹出层宿主后，锚点的淡出仍在继续。
                 anchor.dropdownRetainedValueAlpha = backProgress.value.coerceIn(0f, 1f)
                 anchor.dropdownBackProgressState = null
             }
@@ -157,14 +162,13 @@ internal fun BoxScope.GlassDropdownPopupContent(
         onDispose { anchor?.contentHidden = false }
     }
     if (!standingDown) return
+
     val startRadius = GlassDropdownDefaults.StartCornerRadius
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         backdrop = backdrop,
-        modifier = modifier,
         sizing = sizing,
         visuals = visuals,
-        interactive = show,
         contentPadding = contentPadding,
         panelLayer = {
             alpha = if (show && geometryProgress() <= GlassMotion.ARC_VISIBLE_FRACTION) 0f else fadeProgress()
@@ -172,12 +176,12 @@ internal fun BoxScope.GlassDropdownPopupContent(
             renderEffect = if (blur > 0.5f) BlurEffect(blur, blur, TileMode.Decal) else null
         },
         overlay = {},
-        frame = { end, page ->
+        frame = { end, windowBounds ->
             arcFrame(
-                anchorBounds.translate(-coordinateOrigin),
-                anchor?.dropdownValueBounds?.translate(-coordinateOrigin),
+                anchorBounds,
+                anchor?.dropdownValueBounds,
                 end,
-                page,
+                windowBounds,
                 sizing.safeMargin.toPx(),
                 geometryProgress(),
                 positionProgress(),
@@ -192,17 +196,19 @@ internal fun BoxScope.GlassDropdownPopupContent(
             scaleX = scale
             scaleY = scale
         },
+        modifier = modifier,
+        interactive = show,
         scrollable = true,
         content = content,
     )
 }
 
-/** 沿弧线部分的面板矩形。由两个分数驱动，而非一个：宽度和宽高比遵循 [sizeFraction]，而中心位置遵循更快的 [positionFraction]。 */
+/** 为下拉的曲线运动独立插值尺寸与中心。 */
 private fun arcFrame(
     anchor: Rect,
     valueAnchor: Rect?,
     end: Size,
-    page: Size,
+    window: Rect,
     margin: Float,
     sizeFraction: Float,
     positionFraction: Float,
@@ -210,14 +216,15 @@ private fun arcFrame(
     endRadius: Dp,
     layoutDirection: LayoutDirection,
 ): GlassPopupFrame {
-    val placement = placeGlassDropdownPopup(anchor, valueAnchor, end, margin, page, layoutDirection)
+    val placement = placeGlassDropdownPopup(anchor, valueAnchor, end, margin, window, layoutDirection)
     val startWidth = end.width * GlassMotion.ARC_START_WIDTH
     val startHeight = startWidth * GlassMotion.ARC_START_RATIO
     val width = startWidth + (end.width - startWidth) * sizeFraction
     val endRatio = if (end.width > 0f) end.height / end.width else 1f
     val ratio = GlassMotion.ARC_START_RATIO + (endRatio - GlassMotion.ARC_START_RATIO) * sizeFraction
     val height = ratio * width
-    val alignLeft = valueAnchor?.let { it.center.x <= page.width / 2f } ?: (layoutDirection == LayoutDirection.Rtl)
+
+    val alignLeft = valueAnchor?.let { it.center.x <= window.center.x } ?: (layoutDirection == LayoutDirection.Rtl)
     val startCenterX = if (alignLeft) {
         placement.rect.left + startWidth / 2f
     } else {
@@ -247,18 +254,19 @@ internal fun placeGlassDropdownPopup(
     valueAnchor: Rect?,
     size: Size,
     margin: Float,
-    page: Size,
+    window: Rect,
     direction: LayoutDirection = LayoutDirection.Ltr,
 ): GlassPopupPlacement {
-    if (valueAnchor == null) return placeGlassPopup(row, size, margin, page, direction)
-    // 选择器根据控件值位于页面哪一半，决定面板的左边缘还是右边缘与该值对齐。
-    val wantedLeft = if (valueAnchor.center.x <= page.width / 2f) {
+    if (valueAnchor == null) return placeGlassPopup(row, size, margin, window, direction)
+    // 对齐到值在窗口中最近的水平边。
+    val wantedLeft = if (valueAnchor.center.x <= window.center.x) {
         valueAnchor.left
     } else {
         valueAnchor.right - size.width
     }
-    val left = wantedLeft.coerceIn(margin, (page.width - size.width - margin).coerceAtLeast(margin))
-    val verticalPlacement = placeGlassPopup(row, size, margin, page, LayoutDirection.Ltr)
+    val minLeft = window.left + margin
+    val left = wantedLeft.coerceIn(minLeft, (window.right - size.width - margin).coerceAtLeast(minLeft))
+    val verticalPlacement = placeGlassPopup(row, size, margin, window, LayoutDirection.Ltr)
     return GlassPopupPlacement(
         rect = Rect(left, verticalPlacement.rect.top, left + size.width, verticalPlacement.rect.bottom),
         alignTop = verticalPlacement.alignTop,

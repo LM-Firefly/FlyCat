@@ -29,24 +29,24 @@ import kotlinx.coroutines.flow.first
 import top.yukonga.miuix.kmp.blur.Backdrop
 
 /**
- * 从主菜单的行生长出来的次级菜单，而不是从边缘展开的普通弹出层。
+ * 从主菜单行展开的玻璃子菜单，在 LTR 与 RTL 下均与其起始边对齐。
  *
- * 该行加上 [contentPadding] 构成初始裁剪矩形；四条边一起运动到测量出的菜单边界，各行保持
- * 自身尺寸并随裁剪移动。起始边与该行对齐，RTL 下镜像。展开过程中各行可接收输入，一旦请求
- * 关闭立即停止。预测性返回会预览收起过程，取消时恢复，完成时关闭。
+ * 过渡期间各行保持尺寸不变，并在请求关闭后立即停止接受输入。预测性返回（Predictive Back）
+ * 的预览会收起，取消时恢复，完成时关闭。
  *
- * @param show 次级菜单是否展开。收起过程中请保持此调用处于组合状态。
- * @param onDismissRequest 点击外部或按返回键回到主菜单时调用。
- * @param anchorBounds 触发行的静止边界，与本弹出层处于同一根坐标系。在设置主 [GlassTransformPopup] 的 `stacked` 标志之前先冻结这些边界。
- * @param backdrop 此菜单背后采样的背景。把主弹出层也放进这一层（使其渲染内容在下方被模糊），但排除本子菜单。`null` 使用锚点的背景采样。
+ * @param show 二级菜单是否展开。收起过程中请保持此调用处于组合状态。
+ * @param onDismissRequest 点击外部或按返回键时调用，以回到主菜单。
+ * @param anchorBounds 静止时触发行的边界，使用窗口坐标（`boundsInWindow()`）。
+ *   请在设置主 [GlassTransformPopup] 的 `stacked` 标志之前将其冻结。
+ * @param backdrop 菜单采样的背景。包含主弹出层但不包含此子菜单。`null` 使用锚点的背景。
  * @param modifier 应用于面板的修饰符。
- * @param materialAnchor 主弹出层的按钮锚点。传入同一锚点可在两层之间共享其展开态弹出外观。
- * @param sizing 面板限制。把 `minWidth` 设为主面板的测量宽度。
- * @param visuals 表面外观，在拿不到主弹出层外观时使用。
+ * @param materialAnchor 主弹出层的按钮锚点。传入同一锚点可在两级之间共享其展开后的外观。
+ * @param sizing 面板尺寸限制。将 `minWidth` 设为主面板的测量宽度。
+ * @param visuals 表面外观，在没有主弹出层外观时使用。
  * @param cornerRadius 整个过渡期间使用的圆角裁剪半径。
- * @param contentPadding 菜单各行周围的内边距，收起状态的行周围也包含它。
+ * @param contentPadding 菜单行周围的内边距，收起的行周围也包含在内。
  * @param onDismissFinished 收起动画完成时调用。
- * @param content 先是标题行，然后是次级选项。标题行应请求收起。
+ * @param content 头部行，随后是二级选项。头部应当请求收起。
  */
 @Composable
 fun BoxScope.GlassSecondaryPopup(
@@ -105,16 +105,13 @@ fun BoxScope.GlassSecondaryPopup(
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         backdrop = backdrop ?: source?.backdrop,
-        modifier = modifier,
         sizing = sizing,
         visuals = resolvedVisuals,
-        interactive = show,
-        scrollable = true,
         contentPadding = contentPadding,
         panelLayer = {},
         overlay = {},
-        frame = { end, page ->
-            val settled = placeGlassSecondaryPopup(anchorBounds, end, sizing.safeMargin.toPx(), page, direction)
+        frame = { end, windowBounds ->
+            val settled = placeGlassSecondaryPopup(anchorBounds, end, sizing.safeMargin.toPx(), windowBounds, direction)
             GlassPopupFrame(
                 secondaryPopupRect(
                     anchorBounds,
@@ -127,21 +124,26 @@ fun BoxScope.GlassSecondaryPopup(
             )
         },
         contentLayer = { _, _ -> },
+        modifier = modifier,
+        interactive = show,
+        scrollable = true,
         content = content,
     )
 }
 
-/** 起始边对齐，然后整体上移以放入页面内。 */
-internal fun placeGlassSecondaryPopup(anchor: Rect, size: Size, margin: Float, page: Size, direction: LayoutDirection): Rect {
-    val width = size.width.coerceAtMost((page.width - margin * 2f).coerceAtLeast(0f))
-    val height = size.height.coerceAtMost((page.height - margin * 2f).coerceAtLeast(0f))
+/** 先按起始边对齐，再上移以适配窗口安全区。 */
+internal fun placeGlassSecondaryPopup(anchor: Rect, size: Size, margin: Float, window: Rect, direction: LayoutDirection): Rect {
+    val width = size.width.coerceAtMost((window.width - margin * 2f).coerceAtLeast(0f))
+    val height = size.height.coerceAtMost((window.height - margin * 2f).coerceAtLeast(0f))
     val x = if (direction == LayoutDirection.Ltr) anchor.left else anchor.right - width
-    val left = x.coerceIn(margin, (page.width - margin - width).coerceAtLeast(margin))
-    val top = anchor.top.coerceIn(margin, (page.height - margin - height).coerceAtLeast(margin))
+    val minLeft = window.left + margin
+    val left = x.coerceIn(minLeft, (window.right - margin - width).coerceAtLeast(minLeft))
+    val minTop = window.top + margin
+    val top = anchor.top.coerceIn(minTop, (window.bottom - margin - height).coerceAtLeast(minTop))
     return Rect(left, top, left + width, top + height)
 }
 
-/** 全尺寸内容随一个从带内边距的触发行生长出的圆角裁剪一起移动。 */
+/** 全尺寸内容随圆角裁剪一起移动，该裁剪从带内边距的触发行向外长大。 */
 internal fun secondaryPopupRect(anchor: Rect, end: Rect, topPadding: Float, bottomPadding: Float, fraction: Float): Rect {
     val t = fraction.coerceIn(0f, 1f)
     return Rect(

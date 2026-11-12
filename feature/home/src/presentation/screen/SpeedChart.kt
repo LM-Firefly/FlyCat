@@ -50,13 +50,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.github.lmfirefly.flycat.core.model.traffic.TrafficData
-import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.component.chart.TrafficChartConfig
-import com.github.lmfirefly.flycat.presentation.component.edgeLight
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val SPEED_CHART_SAMPLE_LIMIT = 24
@@ -108,11 +108,9 @@ fun SpeedChart(
                 modifier = Modifier.matchParentSize()
                     .glassCardSurface(shape = chartShape, fallbackColor = MiuixTheme.colorScheme.surface)
                     .graphicsLayer { alpha = SPEED_CHART_GLASS_ALPHA }
-                    .edgeLight(
+                    .edgeStroke(
                         shape = chartShape,
-                        color = EdgeLightDefaults.tint(MiuixTheme.colorScheme.surface, isLightTheme),
-                        width = EdgeLightDefaults.width(isLightTheme),
-                        blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+                        stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
                     ),
             )
             Canvas(modifier = Modifier.matchParentSize()) {

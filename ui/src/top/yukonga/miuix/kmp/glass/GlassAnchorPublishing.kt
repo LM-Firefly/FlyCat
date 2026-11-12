@@ -1,25 +1,7 @@
-/*
- * This file is part of FlyCat.
- *
- * FlyCat is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * Copyright (c)  YumeYucca 2025 - Present
- * Based on YumeBox by YumeYucca
- *
- */
+// Copyright 2026, compose-miuix-ui contributors
+// SPDX-License-Identifier: Apache-2.0
 
-package com.github.lmfirefly.flycat.presentation.component
+package top.yukonga.miuix.kmp.glass
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,21 +11,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.Color
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.GlassAnchorSurface
-import top.yukonga.miuix.kmp.glass.GlassDefaults
-import top.yukonga.miuix.kmp.glass.GlassMaterial
-import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
-import top.yukonga.miuix.kmp.glass.GlassStroke
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassMaterial
+
+// FORK（FlyCat）：锚点表面发布公共化。上游 GlassButtonSurface 内联同款发布逻辑，此处抽为公共 API
+// 供按钮与药丸/胶囊容器共用（拟上游化为库 API；多锚点变体为库缺能力）。
 
 /**
  * 构建弹窗变换折叠端点所用的玻璃表面：固定 [GlassDefaults.Style]、无衬底材质，
- * 与库 `GlassButtonSurface` 的发布语义一致（药丸/圆钮/胶囊共用）。
+ * 与 [GlassIconButton] 的发布语义一致（药丸/圆钮/胶囊共用）。
  */
 @Composable
 internal fun rememberGlassAnchorSurface(
     backdrop: Backdrop?,
     material: GlassMaterial,
-    stroke: GlassStroke?,
+    stroke: EdgeStroke?,
     fill: Color,
 ): GlassAnchorSurface = remember(backdrop, material, stroke, fill) {
     GlassAnchorSurface(
@@ -65,7 +48,7 @@ internal fun PublishGlassAnchorSurface(
     anchor: GlassPopupAnchor?,
     surface: GlassAnchorSurface,
     surfaceProgress: State<Float>? = null,
-    surfaceOpacity: Float = 1f,
+    surfaceMaterialAlpha: Float = 1f,
     surfaceFloating: Boolean = true,
 ) {
     if (anchor == null) return
@@ -79,9 +62,11 @@ internal fun PublishGlassAnchorSurface(
         }
     }
     SideEffect {
-        anchor.surface = surface
+        // FORK（FlyCat）：采样受限兄弟纯色层的锚点不得把其表面当作折叠端点，否则展开面板里会留下
+        // 按钮大小的不透明方块；此类锚点以纯玻璃形态生长（suppressTransformSurface）。
+        anchor.surface = if (anchor.suppressTransformSurface) null else surface
         anchor.surfaceProgress = surfaceProgress
-        anchor.surfaceOpacity = surfaceOpacity
+        anchor.surfaceMaterialAlpha = surfaceMaterialAlpha
         anchor.surfaceFloating = surfaceFloating
     }
 }
@@ -95,7 +80,7 @@ internal fun PublishGlassAnchorSurfaces(
     anchors: List<GlassPopupAnchor>,
     surface: GlassAnchorSurface,
     surfaceProgress: State<Float>? = null,
-    surfaceOpacity: Float = 1f,
+    surfaceMaterialAlpha: Float = 1f,
     surfaceFloating: Boolean = false,
 ) {
     val currentAnchors = rememberUpdatedState(anchors)
@@ -112,9 +97,9 @@ internal fun PublishGlassAnchorSurfaces(
     }
     SideEffect {
         anchors.forEach { anchor ->
-            anchor.surface = surface
+            anchor.surface = if (anchor.suppressTransformSurface) null else surface
             anchor.surfaceProgress = surfaceProgress
-            anchor.surfaceOpacity = surfaceOpacity
+            anchor.surfaceMaterialAlpha = surfaceMaterialAlpha
             anchor.surfaceFloating = surfaceFloating
         }
     }

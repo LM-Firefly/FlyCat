@@ -15,25 +15,39 @@ import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.noiseDither
 import top.yukonga.miuix.kmp.glass.internal.GLASS_COLOR_BLEND_SHADER_KEY
 import top.yukonga.miuix.kmp.glass.internal.colorBlendEffect
-import top.yukonga.miuix.kmp.glass.internal.drawGlassMask
-import top.yukonga.miuix.kmp.glass.internal.drawGlassRim
-import top.yukonga.miuix.kmp.glass.internal.drawGlassShadow
-import top.yukonga.miuix.kmp.glass.internal.drawGlassStroke
 import top.yukonga.miuix.kmp.glass.internal.glassEffect
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassInner
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassShadow
+import top.yukonga.miuix.kmp.material.GlassShadows
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassStyle
+import top.yukonga.miuix.kmp.material.GlassStyles
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
+import top.yukonga.miuix.kmp.material.drawGlassEdge
+import top.yukonga.miuix.kmp.material.drawGlassMask
+import top.yukonga.miuix.kmp.material.drawGlassRim
+import top.yukonga.miuix.kmp.material.drawGlassShadow
 
 /**
- * 将此修饰符渲染为覆盖在 [backdrop] 之上的玻璃层。
- * @param backdrop 玻璃背后的内容。此修饰符必须位于 backdrop 所记录的子树*之外*——在其内部两者会形成循环引用。
- * @param shape 轮廓形状。驱动裁剪、[stroke] 和着色器，确保三者保持一致。
- * @param style 材质样式。从 [GlassStyles] 中选择一种，或从 [GlassDefaults.Style] 开始。
- * @param alpha 颜色层、着色和描边的不透明度乘数。
- * @param tint 覆盖 [GlassInner.tint]；其 alpha 值将替换样式中的着色强度。 [Color.Unspecified] 保留样式自身的着色。
- * @param material 表面自身的主体：一个模糊半径及其上的颜色层。它会覆盖 [style] 所请求的模糊半径。`null` 表示以模糊后的背景作为整个主体。
- * @param noiseCoefficient 背景模糊的噪声抖动，用于防止在大面积平坦区域出现色带。0 表示禁用。
- * @param stroke 沿边缘的可选泛光描边。`null` 表示跳过。
- * @param contentBlendMode 被修饰内容如何与玻璃进行合成。
- * @param enabled 材质是否激活。为 false 时，内容自行绘制。
- * @param shading 表面是否对其覆盖的内容进行折射和着色。控件设为 `true`，主体仅为 [material] 的条或菜单则设为 `false`。
+ * 在 [backdrop] 之上施加玻璃表面。
+ *
+ * @param backdrop 玻璃背后的内容。此修饰符必须位于 backdrop 所录制子树的外部；
+ *   放在其内部会造成采样循环。
+ * @param shape 表面轮廓，用于裁剪、[stroke] 与渲染几何。
+ * @param style 玻璃外观。使用 [GlassStyles] 或 [GlassDefaults.Style] 中的预定义样式。
+ * @param alpha 颜色层、着色与描边的不透明度乘数。
+ * @param tint 覆盖 [GlassInner.tint]。其 alpha 取代样式的着色强度。
+ *   [Color.Unspecified] 保留样式的着色。
+ * @param material 表面主体：模糊半径与颜色层。其模糊半径覆盖 [style]。
+ *   `null` 表示以模糊后的 backdrop 作为主体。
+ * @param noiseCoefficient backdrop 模糊的噪声抖动系数。0 表示禁用抖动。
+ * @param stroke 沿轮廓的可选泛光描边。`null` 表示禁用。
+ * @param contentBlendMode 绘制在玻璃之上的内容所用的混合模式。
+ * @param enabled 玻璃效果是否激活。为 false 时内容以无效果的方式绘制。
+ * @param shading 是否对 backdrop 进行折射和着色。主体由 [material] 提供的条和菜单请使用 `false`。
  */
 fun Modifier.glass(
     backdrop: Backdrop,
@@ -43,7 +57,7 @@ fun Modifier.glass(
     tint: Color = Color.Unspecified,
     material: GlassMaterial? = null,
     noiseCoefficient: Float = GlassDefaults.NoiseCoefficient,
-    stroke: GlassStroke? = null,
+    stroke: EdgeStroke? = null,
     contentBlendMode: BlendMode = BlendMode.SrcOver,
     enabled: Boolean = true,
     shading: Boolean = true,
@@ -62,7 +76,7 @@ fun Modifier.glass(
     shading = shading,
 )
 
-/** 在操作栏已经模糊并做过颜色处理的表面上叠加一层子材质。*/
+/** 在操作栏经过模糊与色彩处理的表面之上施加子材质。 */
 internal fun Modifier.glassOnActionBar(
     backdrop: Backdrop,
     shape: GlassShape,
@@ -70,7 +84,7 @@ internal fun Modifier.glassOnActionBar(
     alpha: Float,
     material: GlassMaterial?,
     underlayMaterial: GlassMaterial,
-    stroke: GlassStroke?,
+    stroke: EdgeStroke?,
     enabled: Boolean = true,
 ): Modifier = glassImpl(
     backdrop = backdrop,
@@ -96,7 +110,7 @@ private fun Modifier.glassImpl(
     material: GlassMaterial?,
     underlayMaterial: GlassMaterial?,
     noiseCoefficient: Float,
-    stroke: GlassStroke?,
+    stroke: EdgeStroke?,
     contentBlendMode: BlendMode,
     enabled: Boolean,
     shading: Boolean,
@@ -107,25 +121,58 @@ private fun Modifier.glassImpl(
         noiseDither(noiseCoefficient)
         val radius = material?.blurRadius?.value ?: (style.blur.small / GlassDefaults.SourceDensity)
         blur(radius.coerceIn(0f, BlurDefaults.MaxBlurRadius) * density)
-        if (underlayMaterial != null) { colorBlendEffect(underlayMaterial, 1f, "${GLASS_COLOR_BLEND_SHADER_KEY}ActionBar") }
+        if (underlayMaterial != null) {
+            colorBlendEffect(underlayMaterial, 1f, "${GLASS_COLOR_BLEND_SHADER_KEY}ActionBar")
+        }
         if (material != null) colorBlendEffect(material, alpha)
         if (shading) glassEffect(style, shape, alpha, tint)
     },
     onDrawFront = {
-        if (stroke != null) drawGlassStroke(shape, layoutDirection, stroke, alpha)
-        drawGlassMask(shape, layoutDirection)
-        if (shading) { drawGlassRim(shape, layoutDirection, style, if (tint.isSpecified) tint else style.inner.tint, alpha) }
+        // 描边与边缘光是沿同一轮廓的叠加光效：一次通道同时绘制两者，再由遮罩修剪。
+        // 不发光或混合方式不同的描边保留自己的独立通道。
+        val fuse = stroke != null && shading &&
+            stroke.width.value > 0f &&
+            stroke.blendMode == BlendMode.Plus
+        if (fuse) {
+            drawGlassEdge(
+                shape = shape,
+                stroke = stroke,
+                style = style,
+                surface = if (tint.isSpecified) tint else style.inner.tint,
+                alpha = alpha,
+            )
+            drawGlassMask(shape)
+        } else {
+            if (stroke != null) drawEdgeStroke(shape, stroke, alpha)
+            drawGlassMask(shape)
+            if (shading) {
+                drawGlassRim(shape, style, if (tint.isSpecified) tint else style.inner.tint, alpha)
+            }
+        }
     },
     contentBlendMode = contentBlendMode,
     enabled = enabled,
 )
 
 /**
- * 在被修饰内容下方投射 [shadow]，形状为 [shape]。
- * @param shape 投射阴影的轮廓。使用与 [glass] 相同的轮廓。
- * @param shadow 阴影。从 [GlassShadows] 中选择一个。`null` 表示跳过。
- * @param alpha 不透明度倍数，用于使阴影随其所属表面一同淡出。
+ * 使用 [shape] 在此可组合项下方绘制 [shadow]。
+ *
+ * @param shape 阴影轮廓。请与对应的 [glass] 表面使用相同的形状。
+ * @param shadow 阴影配置。使用 [GlassShadows] 中的值，或 `null` 表示禁用。
+ * @param alpha 阴影的不透明度乘数。
  */
-fun Modifier.glassShadow(shape: GlassShape, shadow: GlassShadow? = GlassShadows.Regular, alpha: Float = 1f): Modifier = glassShadow(shape, shadow) { alpha }
+fun Modifier.glassShadow(
+    shape: GlassShape,
+    shadow: GlassShadow? = GlassShadows.Regular,
+    alpha: Float = 1f,
+): Modifier = glassShadow(shape, shadow) { alpha }
 
-internal fun Modifier.glassShadow(shape: GlassShape, shadow: GlassShadow?, alpha: () -> Float): Modifier = if (shadow == null) { this } else { this.drawBehind { drawGlassShadow(shape, layoutDirection, shadow, alpha()) } }
+internal fun Modifier.glassShadow(
+    shape: GlassShape,
+    shadow: GlassShadow?,
+    alpha: () -> Float,
+): Modifier = if (shadow == null) {
+    this
+} else {
+    this.drawBehind { drawGlassShadow(shape, shadow, alpha()) }
+}

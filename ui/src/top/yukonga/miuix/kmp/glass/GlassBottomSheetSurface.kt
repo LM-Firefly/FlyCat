@@ -14,51 +14,64 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.internal.ScrimBackdrop
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassMaterials
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** 启动器附带的底部弹出面板材质的默认值。 */
+/** [GlassBottomSheet] 与 [glassBottomSheetSurface] 的默认值。 */
 object GlassBottomSheetDefaults {
     val ScrimColor: Color = GlassDialogDefaults.ScrimColor
-    /**原生面板和对话框引用相同的60dp模糊和三个颜色层。 */
+
+    /** 当前主题的底部面板材质。 */
     @Composable
     fun material(): GlassMaterial = GlassMaterials.dialogGlass(
         isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
     )
-    /** 初始近似值；原生面板的泛光使用与对话框不同的配置。 */
+
+    /** 当前主题的底部面板泛光描边。 */
     @Composable
-    fun stroke(): GlassStroke = GlassStrokes.forTheme(
+    fun stroke(): EdgeStroke = GlassEdgeStrokes.forTheme(
         isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
-        light = GlassStrokes.MiddleLight,
-        dark = GlassStrokes.MiddleDark,
+        light = GlassEdgeStrokes.MiddleLight,
+        dark = GlassEdgeStrokes.MiddleDark,
     )
-    /** 当没有场景或运行时着色器支持时，使用不透明的回退方案。 */
+
+    /** 没有场景或运行时着色器支持时的不透明回退。 */
     @Composable
     fun containerColor(): Color = MiuixTheme.colorScheme.background
 }
 
 /**
- * 用于 OverlayBottomSheet 的 `surface` 插槽的模糊/混合材质，带有圆角顶部。
+ * 用于 OverlayBottomSheet `surface` 槽位的玻璃表面，顶部两角为圆角。
  *
- * 宿主保留对尺寸、内边距、手柄和手势的所有权。提供的干净 [backdrop] 在模糊之前会局部变暗，采样遵循面板的平移屏幕坐标。
- * 在向上过滚动时，暴露的底部边缘会获得相同材质但不带描边。
- * 不会有折射或额外的投影。原生模糊内核转换、遮罩采样顺序和辉光效果仍需视觉校准。
+ * 背景在模糊之前被调暗，并按面板平移后的屏幕坐标采样。向上过滚动时材质延伸且不带描边。
+ * 内容不产生折射，也不绘制额外投影。
  *
- * @param backdrop 页面记录，包含各系统栏，排除面板宿主及其遮罩。为 null 或运行时着色器不可用时，使用不透明的 [containerColor] 作为回退。
- * @param material 共享的对话框/面板模糊及有序混合层。
- * @param stroke 可选的辉光近似；过滚动扩展部分省略。
- * @param containerColor 不透明回退填充色。
+ * FORK（FlyCat）：miuix 0.9.4 的 OverlayBottomSheet 没有 `surface` 槽位与 BottomSheetSurfaceScope，
+ * 故此函数直接返回 [Modifier]；圆角改由 [cornerRadius] 参数传入，scrim 以静态近似提供
+ * （不随过滚动联动）。
+ *
+ * @param backdrop 页面录制内容，包含栏位但不包含面板宿主及其遮罩。为 `null` 或运行时着色器
+ *   不可用时使用不透明的 [containerColor] 回退。
+ * @param cornerRadius FORK（FlyCat）：表面顶部圆角（上游由 BottomSheetSurfaceScope 提供）。
+ * @param material 对话框/面板共享的模糊输入与有序混合层。
+ * @param stroke 可选的泛光描边，过滚动延伸部分省略。
+ * @param containerColor 不透明回退填充。
  */
 @Composable
 fun glassBottomSheetSurface(
     backdrop: Backdrop?,
     cornerRadius: Dp,
     material: GlassMaterial = GlassBottomSheetDefaults.material(),
-    stroke: GlassStroke? = GlassBottomSheetDefaults.stroke(),
+    stroke: EdgeStroke? = GlassBottomSheetDefaults.stroke(),
     containerColor: Color = GlassBottomSheetDefaults.containerColor(),
 ): Modifier {
-    // 0.9.4 overlay 无 surface 槽/scope：scrim 用默认常量、不随过滚动联动（静态近似）。
+    // FORK（FlyCat）：0.9.4 overlay 无 surface 槽/scope：scrim 用默认常量（静态近似）。
     val scrimColorState = rememberUpdatedState(GlassBottomSheetDefaults.ScrimColor)
     val effectiveBackdrop = if (backdrop != null && isRuntimeShaderSupported()) {
         remember(backdrop, scrimColorState) { ScrimBackdrop(backdrop, scrimColorState) }
@@ -72,6 +85,7 @@ fun glassBottomSheetSurface(
         backdrop = effectiveBackdrop,
         shape = shape,
         material = material,
+        // FORK（FlyCat）：无 BottomSheetSurfaceScope，感知不到 isOverscroll，故不过滚动时也保留描边。
         stroke = stroke,
         shadow = null,
         shading = false,

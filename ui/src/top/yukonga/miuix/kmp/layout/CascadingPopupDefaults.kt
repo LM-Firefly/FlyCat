@@ -1,7 +1,7 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package top.yukonga.miuix.kmp.glass
+package top.yukonga.miuix.kmp.layout
 
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.ui.unit.LayoutDirection

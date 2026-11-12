@@ -94,10 +94,11 @@ import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Glass
+import top.yukonga.miuix.kmp.icon.glass.Search
+import top.yukonga.miuix.kmp.icon.glass.Sort
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -214,7 +215,7 @@ fun ConnectionScreen(navigator: Navigator) {
                     GlassTopActionPill(
                         actions = listOf(
                             GlassTopAction(
-                                icon = MiuixIcons.Sort,
+                                icon = MiuixIcons.Glass.Sort,
                                 contentDescription = FlyTxt.Connection.SortBy.trimEnd(':', '：'),
                                 onClick = { showSortPopup = true },
                                 anchor = sortMenuAnchor,
@@ -224,7 +225,7 @@ fun ConnectionScreen(navigator: Navigator) {
                                         onDismissRequest = { showSortPopup = false },
                                         anchor = sortMenuAnchor,
                                         anchorContent = {
-                                            GlassTopActionAnchorIcon(MiuixIcons.Sort)
+                                            GlassTopActionAnchorIcon(MiuixIcons.Glass.Sort)
                                         },
                                     ) {
                                         SortModes.forEachIndexed { index, mode ->
@@ -241,12 +242,12 @@ fun ConnectionScreen(navigator: Navigator) {
                                 },
                             ),
                             GlassTopAction(
-                                icon = MiuixIcons.Search,
+                                icon = MiuixIcons.Glass.Search,
                                 contentDescription = FlyTxt.Connection.Search,
                                 onClick = { showSearchBar = !showSearchBar },
                             ),
                             GlassTopAction(
-                                icon = MiuixIcons.Delete,
+                                icon = MiuixIcons.Glass.Delete,
                                 contentDescription = FlyTxt.Connection.CloseAll,
                                 onClick = {
                                     scope.launch {

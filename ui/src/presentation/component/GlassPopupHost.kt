@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.theme.glassSurfaceBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.CascadingPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
@@ -57,6 +56,8 @@ import top.yukonga.miuix.kmp.glass.GlassPopupSizing
 import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 import top.yukonga.miuix.kmp.glass.GlassSecondaryPopup
 import top.yukonga.miuix.kmp.glass.GlassTransformPopup
+import top.yukonga.miuix.kmp.glass.rememberSubmenuArrowRotation
+import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 
@@ -263,13 +264,8 @@ fun GlassSubmenuPageHeader(
 /** 级联行箭头的旋转：页面展开时旋转，页面收起时转回，因为页面驱动了 [GlassPopupAnchor.secondaryBackProgress]。 */
 @Composable
 private fun submenuArrow(anchor: GlassPopupAnchor, open: Boolean): () -> Float {
-    // 与库 GlassIconDropdownMenu 同源（CascadingPopupDefaults）：页面展开时箭头旋转，收起时转回。
-    val turn = CascadingPopupDefaults.arrowRotation(LocalLayoutDirection.current)
-    val rotation by animateFloatAsState(
-        targetValue = if (open) turn else 0f,
-        animationSpec = CascadingPopupDefaults.arrowSpring(open),
-        label = "glassSubmenuArrow",
-    )
+    // 与库 GlassIconDropdownMenu 共享 rememberSubmenuArrowRotation（原两侧各一份同构实现）。
+    val rotation by rememberSubmenuArrowRotation(open)
     return { rotation * (1f - anchor.secondaryBackProgress) }
 }
 

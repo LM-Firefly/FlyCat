@@ -51,7 +51,8 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.glass.Glass
+import top.yukonga.miuix.kmp.icon.glass.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
@@ -192,7 +193,7 @@ fun ConnectionCard(
                 ) {
                     val closeShape = RoundedCornerShape(50)
                     Icon(
-                        imageVector = MiuixIcons.Delete,
+                        imageVector = MiuixIcons.Glass.Delete,
                         contentDescription = FlyTxt.Connection.Detail.Action.Interrupt,
                         tint = MiuixTheme.colorScheme.error,
                         modifier = Modifier

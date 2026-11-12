@@ -43,6 +43,7 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppConfirmDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppTextFieldDialog
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.EditorAction
 import com.github.lmfirefly.flycat.presentation.component.layout.EditorEmptyState
 import com.github.lmfirefly.flycat.presentation.component.layout.EditorListItem
@@ -59,11 +60,11 @@ import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Switch
-import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.AddCircle
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Reset
+import top.yukonga.miuix.kmp.icon.glass.AddCircle
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Glass
+import top.yukonga.miuix.kmp.icon.glass.Reset
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import java.util.UUID
 
@@ -199,7 +200,7 @@ fun StringListEditorScreen(navigator: Navigator) {
         navigationIcon = { NavigationBackIcon(onNavigateBack = { navigator.popBackStack() }) },
         actions = remember(isOverrideRuleEditor) {
             listOf(
-                EditorAction(icon = MiuixIcons.Reset, contentDescription = FlyTxt.Component.Action.Reset, onClick = { dialogState = StringListDialogState.Reset }),
+                EditorAction(icon = MiuixIcons.Glass.Reset, contentDescription = FlyTxt.Component.Action.Reset, onClick = { dialogState = StringListDialogState.Reset }),
                 EditorAction(icon = FlyCat.BadgePlus, contentDescription = FlyTxt.Component.Action.Add, onClick = { dialogState = if (isOverrideRuleEditor) { StringListDialogState.AddRule } else { StringListDialogState.Add } }),
             )
         },
@@ -229,7 +230,7 @@ fun StringListEditorScreen(navigator: Navigator) {
                         title = item.value,
                         onClick = { dialogState = StringListDialogState.Edit(item.id) },
                         onDelete = { items.removeAll { it.id == item.id } },
-                        deleteIcon = MiuixIcons.Delete,
+                        deleteIcon = MiuixIcons.Glass.Delete,
                         deleteContentDescription = FlyTxt.Component.Action.Delete,
                     )
                 }
@@ -335,8 +336,8 @@ fun KeyValueEditorScreen(navigator: Navigator) {
         navigationIcon = { NavigationBackIcon(navigator = navigator) },
         actions = remember {
             listOf(
-                EditorAction(icon = MiuixIcons.Reset, contentDescription = FlyTxt.Component.Action.Reset, onClick = { dialogState = KeyValueDialogState.Reset }),
-                EditorAction(icon = MiuixIcons.AddCircle, contentDescription = FlyTxt.Component.Action.Add, onClick = { dialogState = KeyValueDialogState.Add }),
+                EditorAction(icon = MiuixIcons.Glass.Reset, contentDescription = FlyTxt.Component.Action.Reset, onClick = { dialogState = KeyValueDialogState.Reset }),
+                EditorAction(icon = MiuixIcons.Glass.AddCircle, contentDescription = FlyTxt.Component.Action.Add, onClick = { dialogState = KeyValueDialogState.Add }),
             )
         },
         navigationIconPadding = 0.dp,
@@ -367,7 +368,7 @@ fun KeyValueEditorScreen(navigator: Navigator) {
                         summary = item.value,
                         onClick = { dialogState = KeyValueDialogState.Edit(item.id) },
                         onDelete = { items.removeAll { it.id == item.id } },
-                        deleteIcon = MiuixIcons.Delete,
+                        deleteIcon = MiuixIcons.Glass.Delete,
                         deleteContentDescription = FlyTxt.Component.Action.Delete,
                     )
                 }

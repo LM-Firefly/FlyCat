@@ -6,7 +6,9 @@ package top.yukonga.miuix.kmp.glass
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -14,8 +16,14 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
@@ -70,16 +78,28 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassDefaults
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassMaterials
+import top.yukonga.miuix.kmp.material.GlassShadow
+import top.yukonga.miuix.kmp.material.GlassShadows
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.Platform
+import top.yukonga.miuix.kmp.utils.platform
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * [GlassNavigationBar] 中的一个目的地。
+ * [GlassNavigationBar] 中的一个目标。
  *
- * @property icon 为此目的地绘制的图标。
- * @property label 图标下方的可选说明文字。
- * @property contentDescription 屏幕阅读器为其播报的内容。
+ * @property icon 此目标的图标。
+ * @property label 图标下方的可选标题。
+ * @property contentDescription 屏幕阅读器朗读的无障碍描述。
  */
 @Immutable
 data class GlassNavigationItem(
@@ -91,110 +111,121 @@ data class GlassNavigationItem(
 /** [GlassNavigationBar] 的默认值。 */
 object GlassNavigationBarDefaults {
 
-    /** 最小高度；换行的标签文字会使底栏更高。 */
+    /** 最小高度；换行的标题可以让条更高。 */
     val Height: Dp = 54.dp
 
-    /** 玻璃胶囊与可选尾部操作之间的间距。 */
+    /** 玻璃胶囊与可选尾随操作之间的间距。 */
     val ActionSpacing: Dp = 12.dp
 
-    /** 图标的尺寸。 */
-    val IconSize: Dp = 28.dp
+    /** 图标尺寸。 */
+    val IconSize: Dp = 25.dp
 
-    /** 标签文字尺寸（dp）。 */
+    /** 标题字号，单位 dp。 */
     val LabelSize: Dp = 11.dp
 
-    /** 系统字体缩放达到 1.6 时使用的标签文字尺寸。 */
+    /** 系统字体缩放达到 1.6 时使用的标题字号。 */
     val LargeLabelSize: Dp = 16.dp
 
-    /** 每个图标与标签文字组上下的间距。 */
+    /** 每个图标-标题组上下的间距。 */
     val ContentPaddingVertical: Dp = 6.dp
 
-    /** 图标与其标签文字之间的间隙。 */
+    /** 图标与其标题之间的间隙。 */
     val LabelSpacing: Dp = 0.dp
 
-    /** 底栏顶部、底部与指示器之间的内缩。 */
+    /** 条的上下边缘与指示器之间的内距。 */
     val IndicatorPaddingVertical: Dp = 3.dp
 
-    /** 底栏自身的水平内缩：目的地从此处开始布局。 */
+    /** 条自身的水平内距：各目标从此处开始排布。 */
     val ContentPaddingHorizontal: Dp = 8.dp
 
-    /** 胶囊在每一侧超出其目的地所占份额的距离。 */
+    /** 胶囊在每一侧超出其目标所占条宽的距离。 */
     val IndicatorOverhang: Dp = 5.dp
 
-    /** 手指下方目的地的不透明度。 */
+    /** 手指之下目标的不透明度。 */
     val PressedAlpha: Float = 0.6f
 
-    /** 沿底栏描出的边框。 */
+    /** 沿条描出的边缘光。 */
     @Composable
-    fun stroke(): GlassStroke = GlassStrokes.forTheme(
+    fun stroke(): EdgeStroke = GlassEdgeStrokes.forTheme(
         isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
     )
 
-    /** 底栏自身的主体。 */
+    /** 条自身的主体。 */
     @Composable
     fun material(): GlassMaterial = GlassMaterials.puredThinGlass(
         isDark = MiuixTheme.colorScheme.background.luminance() < 0.5f,
     )
 
-    /** 胶囊的静止填充：同一颜色三个透明度中的第一个。 */
+    /** 静止时指示器的填充；仅在动态取色主题中使用主要色。 */
     @Composable
-    fun indicatorColor(): Color = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) {
-        Color.White.copy(alpha = 0.12f)
-    } else {
-        Color.Black.copy(alpha = 0.06f)
-    }
+    fun indicatorColor(): Color = indicatorTint().copy(
+        alpha = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) 0.12f else 0.06f,
+    )
 
-    /** 手指按压下胶囊的填充：同一颜色、约两倍透明度。 */
+    /** 按压时指示器的填充；以更高不透明度使用同一主题色调。 */
     @Composable
-    fun indicatorPressedColor(): Color = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) {
-        Color.White.copy(alpha = 0.26f)
-    } else {
-        Color.Black.copy(alpha = 0.16f)
+    fun indicatorPressedColor(): Color = indicatorTint().copy(
+        alpha = if (MiuixTheme.colorScheme.background.luminance() < 0.5f) 0.26f else 0.16f,
+    )
+
+    @Composable
+    private fun indicatorTint(): Color = when {
+        MiuixTheme.isDynamicColor -> MiuixTheme.colorScheme.primary
+        MiuixTheme.colorScheme.background.luminance() < 0.5f -> Color.White
+        else -> Color.Black
     }
 }
 
 /**
- * 玻璃上的悬浮底栏。
+ * 玻璃上的浮动底部条。
  *
- * 指示器在拖动时跟随指针，在释放时从当前位置和速度平滑落定，不会越过最外侧目的地。
+ * 拖动时指示器跟随手指，释放时从其当前位置与速度归位，且永不过冲到最外侧目标之外。
  *
- * @param items 按顺序排列的目的地列表。
- * @param selectedIndex 当前目的地的索引。
- * @param onSelect 在按下和拖动时，以手指下方的索引被调用。
- * @param backdrop 提供玻璃背后内容的 [Backdrop]。
- * @param modifier 应用于底栏的修饰符。
+ * @param items 各目标，按顺序排列。
+ * @param selectedIndex 当前目标的索引。
+ * @param onSelect 以手指之下的索引回调，在按下与拖动期间触发。
+ * @param backdrop 提供玻璃背后内容的 [Backdrop]。`null` 禁用采样，
+ *   并以主题的 surfaceContainer 颜色填充胶囊。
+ * @param modifier 应用于条的修饰符。
+ * @param defaultWindowInsetsPadding 是否将默认的浮动底部边距与导航栏/标题栏嵌入应用到
+ *   整个组。调用方自行处理时请禁用。
  * @param style 玻璃材质。
- * @param shape 底栏的轮廓。默认为 [height] 的胶囊形状。
- * @param alpha 材质的不透明度倍数。
- * @param visible 底栏是否在屏幕上。关闭它并不会简单地隐藏：底栏会一起收缩、淡出并模糊消失，短暂延迟后再回来。
+ * @param shape 条的轮廓。默认为 [height] 高的胶囊形。
+ * @param alpha 材质的不透明度乘数。
+ * @param visible 条是否在屏幕上。关闭它并非简单隐藏：条会同时收缩、淡出并模糊消失，
+ *   稍作延迟后再回来。
  * @param stroke 沿边缘的可选泛光描边。
- * @param shadow 悬浮胶囊投射的阴影。`null` 移除阴影。
- * @param height 底栏的最小高度。内容可以在两行或大字号标签时增长。
- * @param material 底栏自身的主体 —— 模糊半径及其上的颜色层。`null` 表示不叠加显式材质层，背景采样仍然保留。
- * @param indicatorPressedColor 手指按在胶囊上时的填充色。
- * @param indicatorColor 选中目的地后方胶囊的填充色。
- * @param selectedColor 选中图标和标签的着色。
- * @param unselectedColor 其他项目的着色。它们不会变暗；仅由指示器表明哪个是当前项。
- * @param trailingAction 玻璃胶囊外部的可选独立操作。它拥有自己的尺寸和材质，并共享底栏的显示/隐藏过渡。使用 [GlassIconButton] 实现圆形操作。
+ * @param shadow 浮动胶囊投下的阴影。`null` 表示移除。
+ * @param height 条的最小高度。两行或大字体标题时内容可以变高。
+ * @param material 采样 backdrop 时条自身的主体。`null` 表示省略显式材质层，
+ *   而不是禁用采样。[backdrop] 为 `null` 时忽略。
+ * @param indicatorPressedColor 手指按住时胶囊的填充。
+ * @param indicatorColor 选中目标之后胶囊的填充。
+ * @param selectedColor 选中图标与标签的色调。动态取色主题使用主要色；其他主题使用 onBackground。
+ * @param unselectedColor 未选中图标与标签的色调，不附加压暗。
+ * @param trailingAction 玻璃胶囊之外的可选独立操作。它自行管理尺寸与材质，
+ *   并与条的显示/隐藏过渡同步。添加或移除它会动画其尺寸、不透明度与预留空间。
+ *   圆形操作请使用 [GlassIconButton]。
  */
 @Composable
 fun GlassNavigationBar(
     items: List<GlassNavigationItem>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
+    defaultWindowInsetsPadding: Boolean = true,
     style: GlassStyle = GlassDefaults.Style,
     shape: GlassShape = GlassShape(CornerSize(50), CornerSize(50), CornerSize(50), CornerSize(50)),
     alpha: Float = 1f,
     visible: Boolean = true,
-    stroke: GlassStroke? = GlassNavigationBarDefaults.stroke(),
+    stroke: EdgeStroke? = GlassNavigationBarDefaults.stroke(),
     shadow: GlassShadow? = GlassShadows.Float,
     height: Dp = GlassNavigationBarDefaults.Height,
     material: GlassMaterial? = GlassNavigationBarDefaults.material(),
     indicatorColor: Color = GlassNavigationBarDefaults.indicatorColor(),
     indicatorPressedColor: Color = GlassNavigationBarDefaults.indicatorPressedColor(),
-    selectedColor: Color = MiuixTheme.colorScheme.onBackground,
+    selectedColor: Color = if (MiuixTheme.isDynamicColor) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
     unselectedColor: Color = MiuixTheme.colorScheme.onBackground,
     trailingAction: (@Composable () -> Unit)? = null,
 ) {
@@ -202,24 +233,29 @@ fun GlassNavigationBar(
     val index = selectedIndex.coerceIn(0, items.lastIndex)
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
-    val labelSize = with(density) { if (fontScale >= 1.6f) GlassNavigationBarDefaults.LargeLabelSize.toSp() else GlassNavigationBarDefaults.LabelSize.toSp() }
+    val labelSize = with(density) {
+        if (fontScale >= 1.6f) GlassNavigationBarDefaults.LargeLabelSize.toSp() else GlassNavigationBarDefaults.LabelSize.toSp()
+    }
     val contentInset = with(density) { GlassNavigationBarDefaults.ContentPaddingHorizontal.toPx() }
     val overhang = with(density) { GlassNavigationBarDefaults.IndicatorOverhang.toPx() }
+
     var barWidth by remember { mutableIntStateOf(0) }
     var pressedIndex by remember { mutableIntStateOf(-1) }
     val dragging = remember { mutableStateOf(false) }
+
     val showScale = remember { Animatable(if (visible) 1f else GlassMotion.NAV_HIDE_SCALE) }
     var interactionEnabled by remember { mutableStateOf(visible) }
     LaunchedEffect(visible) {
         if (visible) {
             interactionEnabled = true
-            delay(GlassMotion.NAV_SHOW_DELAY_MS)
+            delay(GlassMotion.NAV_SHOW_DELAY_MS.milliseconds)
             showScale.animateTo(1f, GlassMotion.navShowHide())
         } else {
             showScale.animateTo(GlassMotion.NAV_HIDE_SCALE, GlassMotion.navShowHide())
             interactionEnabled = false
         }
     }
+
     val scope = rememberCoroutineScope()
     val left = remember { Animatable(0f) }
     val right = remember { Animatable(0f) }
@@ -229,16 +265,18 @@ fun GlassNavigationBar(
         leftSpring: SpringSpec<Float> = GlassMotion.edgeSpring(newLeft <= left.value),
         rightSpring: SpringSpec<Float> = GlassMotion.edgeSpring(newLeft > left.value),
     ) {
-        // 所有动画共享同一对 Animatable。通过 animateTo 重新定位，使它们当前的位置和速度在拖动、反向、选择和释放等中断中得以保留。
-        // 这些任务属于组合本身，而非某个会重启的选择副作用。
+        // 所有运动共用这两个 Animatable。通过 animateTo 重新定向，使当前位置与速度在拖动、
+        // 反转、选择和释放等打断中得以保留。这些任务属于组合，而不是一个会重启的选择效果。
         scope.launch { left.animateTo(newLeft, leftSpring) }
         scope.launch { right.animateTo(newRight, rightSpring) }
     }
+
     val slot = if (barWidth <= 0) 0f else (barWidth - contentInset * 2f) / items.size
     val chipWidth = slot + overhang * 2f
     val targetLeft = contentInset - overhang + index * slot
     val targetRight = targetLeft + chipWidth
-    LaunchedEffect(targetLeft, targetRight) {
+
+    LaunchedEffect(targetLeft, targetRight, dragging.value) {
         if (slot <= 0f) return@LaunchedEffect
         if (dragging.value) return@LaunchedEffect
         if (right.value <= left.value) {
@@ -248,6 +286,7 @@ fun GlassNavigationBar(
         }
         animateIndicator(targetLeft, targetRight)
     }
+
     val chipHeldPx = with(density) {
         (height - GlassNavigationBarDefaults.IndicatorPaddingVertical * 2).toPx()
     }
@@ -262,10 +301,33 @@ fun GlassNavigationBar(
         animationSpec = if (chipPressed) GlassMotion.navPressEnter() else GlassMotion.navPressExit(),
         label = "glassNavigationIndicatorFill",
     )
+
     val onSelectState by rememberUpdatedState(onSelect)
+    val bottomPadding = if (defaultWindowInsetsPadding) {
+        val navigationBarBottom = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
+            .asPaddingValues().calculateBottomPadding()
+        val floatingMargin = if (platform() == Platform.IOS) {
+            36.dp
+        } else if (navigationBarBottom == 0.dp) {
+            32.dp
+        } else {
+            16.dp + navigationBarBottom
+        }
+        val captionBarBottom = WindowInsets.captionBar.only(WindowInsetsSides.Bottom)
+            .asPaddingValues().calculateBottomPadding()
+        val animatedCaptionBarHeight by animateDpAsState(
+            targetValue = captionBarBottom.coerceAtLeast(0.dp),
+            animationSpec = tween(durationMillis = 300),
+            label = "glassNavigationCaptionBarHeight",
+        )
+        floatingMargin + animatedCaptionBarHeight
+    } else {
+        0.dp
+    }
     GlassNavigationBarLayout(
         modifier = modifier
             .fillMaxWidth()
+            .padding(bottom = bottomPadding)
             .graphicsLayer {
                 val show = showScale.value
                 scaleX = show
@@ -308,6 +370,7 @@ fun GlassNavigationBar(
                     stroke = stroke,
                     shadow = shadow,
                     shading = false,
+                    fallback = Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer),
                 )
                 .onSizeChanged { barWidth = it.width }
                 .then(
@@ -315,20 +378,23 @@ fun GlassNavigationBar(
                         Modifier.pointerInput(items.size, contentInset, overhang, layoutDirection) {
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
-                                val width = size.width.toFloat()
-                                if (width <= contentInset * 2f) return@awaitEachGesture
-                                fun logicalX(x: Float) = if (layoutDirection == LayoutDirection.Rtl) width - x else x
-                                val span = (width - contentInset * 2f) / items.size
-                                fun indexAt(x: Float) = if (span <= 0f) {
-                                    0
-                                } else {
-                                    ((x - contentInset) / span).toInt().coerceIn(0, items.lastIndex)
+                                val selectionWidth = size.width.toFloat()
+                                if (selectionWidth <= contentInset * 2f) return@awaitEachGesture
+                                // 冻结本次手势的命中区域：切换目标可能改变胶囊尺寸，
+                                // 不应因此选中另一个目标。
+                                fun logicalX(x: Float) = if (layoutDirection == LayoutDirection.Rtl) size.width - x else x
+                                fun indexAt(x: Float): Int {
+                                    val span = (selectionWidth - contentInset * 2f) / items.size
+                                    return if (span <= 0f) {
+                                        0
+                                    } else {
+                                        ((x - contentInset) / span).toInt().coerceIn(0, items.lastIndex)
+                                    }
                                 }
-                                val chipW = span + overhang * 2f
+
                                 val minLeft = contentInset - overhang
-                                val maxLeft = (width - chipW).coerceAtLeast(0f)
                                 val downX = logicalX(down.position.x)
-                                var lastX = downX
+                                var selectionX = downX
                                 var current = indexAt(downX)
                                 pressedIndex = current
                                 onSelectState(current)
@@ -338,36 +404,42 @@ fun GlassNavigationBar(
                                         val event = awaitPointerEvent()
                                         val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                         if (!change.pressed || change.isConsumed) break
+                                        // 手势仍在进行时，目标可能添加或移除尾随操作。
+                                        // 读取其当前几何。
+                                        val width = size.width.toFloat()
+                                        val chipW = (width - contentInset * 2f) / items.size + overhang * 2f
+                                        val maxLeft = (width - chipW).coerceAtLeast(0f)
                                         val x = logicalX(change.position.x)
+                                        // 两个位置都使用当前局部坐标，因此其增量不包含
+                                        // 胶囊自身定位造成的移动。
+                                        val pointerDelta = change.position.x - change.previousPosition.x
+                                        val delta = if (layoutDirection == LayoutDirection.Rtl) -pointerDelta else pointerDelta
+                                        selectionX += delta
                                         if (grabOffset.isNaN()) {
-                                            if (abs(x - downX) < viewConfiguration.touchSlop) {
-                                                pressedIndex = indexAt(x)
+                                            if (abs(selectionX - downX) < viewConfiguration.touchSlop) {
+                                                pressedIndex = indexAt(selectionX)
                                                 continue
                                             }
                                             val bounds = navigationIndicatorBounds(left.value, right.value, width, minLeft)
                                             grabOffset = x - bounds.x
-                                            lastX = x
                                             dragging.value = true
                                         }
                                         val chipLeft = (x - grabOffset).coerceIn(0f, maxLeft)
-                                        val next = indexAt(x)
-                                        val target = navigationDragTarget(chipLeft, chipW, width, x - lastX, next != current)
+                                        val next = indexAt(selectionX)
+                                        val target = navigationDragTarget(chipLeft, chipW, width, delta, next != current)
                                         animateIndicator(target.left, target.right, target.leftSpring, target.rightSpring)
                                         if (next != current) {
                                             current = next
                                             onSelectState(next)
                                         }
                                         pressedIndex = next
-                                        lastX = x
                                         change.consume()
                                     }
                                 } finally {
                                     pressedIndex = -1
                                     dragging.value = false
-                                    if (!grabOffset.isNaN()) {
-                                        val homeLeft = minLeft + current * span
-                                        animateIndicator(homeLeft, homeLeft + chipW)
-                                    }
+                                    // 释放时用最新尺寸重启选择效果。不要依据按下时
+                                    // 捕获的几何进行归位。
                                 }
                             }
                         }
@@ -382,7 +454,8 @@ fun GlassNavigationBar(
                     .matchParentSize()
                     .padding(vertical = GlassNavigationBarDefaults.IndicatorPaddingVertical)
                     .layout { measurable, constraints ->
-                        // 两条边在每一帧都会被钳制，而不仅在目标处。保持弹簧处于活动状态，使另一条边仍能回弹。
+                        // 每帧都会对两条边作钳制，而不只是在目标处。保持弹簧存活，
+                        // 使另一条边仍能回弹。
                         val bounds = navigationIndicatorBounds(
                             left.value,
                             right.value,
@@ -405,6 +478,7 @@ fun GlassNavigationBar(
                     .clip(RoundedCornerShape(percent = 50))
                     .drawBehind { drawRect(chipFill.value) },
             )
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

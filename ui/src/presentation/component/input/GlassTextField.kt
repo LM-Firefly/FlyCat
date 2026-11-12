@@ -30,13 +30,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
-import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
-import com.github.lmfirefly.flycat.presentation.component.edgeLight
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val GlassTextFieldShape: RoundedCornerShape = RoundedCornerShape(UiDp.dp18)
@@ -117,15 +117,11 @@ fun GlassTextField(
 
 @Composable
 private fun Modifier.glassTextFieldSurface(): Modifier {
-    val isLightTheme = !isDarkTheme()
-    // 边缘光沿形状内侧一圈光晕发丝，标识可点击输入区（与玻璃圆钮同配方）。
+    // 边缘光沿形状内侧一圈光晕发丝，标识可点击输入区（与玻璃圆钮同配方，miuix EdgeStroke）。
     return clip(GlassTextFieldShape)
         .glassCardSurface(GlassTextFieldShape, fallbackColor = MiuixTheme.colorScheme.secondaryContainer)
-        .edgeLight(
+        .edgeStroke(
             shape = GlassTextFieldShape,
-            color = EdgeLightDefaults.tint(MiuixTheme.colorScheme.secondaryContainer, isLightTheme),
-            width = EdgeLightDefaults.width(isLightTheme),
-            blurRadius = EdgeLightDefaults.BlurRadius,
-            blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+            stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
         )
 }

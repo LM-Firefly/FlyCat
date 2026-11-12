@@ -11,6 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.material.GlassShape
 
 /**
  * 一片玻璃，以库自身组件索取表面时所用的形式呈现。
@@ -24,10 +25,11 @@ import top.yukonga.miuix.kmp.blur.Backdrop
  * ) { Icon(…) }
  * ```
  *
- * @param backdrop 提供玻璃背后内容的 [Backdrop]。`null` 时回退到 [visuals] 中的平涂填充色，这正是没有运行时着色器的设备所得到的效果。
+ * @param backdrop 提供玻璃背后内容的 [Backdrop]。`null` 时回退到 [visuals] 中的平涂填充色，
+ *   这正是没有运行时着色器的设备所得到的效果。
  * @param visuals 表面的构成。
  * @param cornerRadius 当宿主提供的 [Shape] 无法安全转换为 [GlassShape] 时使用的圆角半径。
- * 圆角矩形会原样保留其提供的四个角。
+ *   圆角矩形会原样保留其提供的四个角。
  */
 fun glassSurface(
     backdrop: Backdrop?,

@@ -51,11 +51,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.RuntimeRule
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.RulesViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
-import com.github.lmfirefly.flycat.presentation.component.edgeLight
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -80,6 +78,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -253,12 +253,9 @@ private fun RulesSearchBar(
                 }
             }
         },
-        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).edgeLight(
+        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).edgeStroke(
             shape = CircleShape,
-            color = EdgeLightDefaults.tint(surfaceColor, isLightTheme),
-            width = EdgeLightDefaults.width(isLightTheme),
-            blurRadius = EdgeLightDefaults.BlurRadius,
-            blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+            stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
         ),
     )
 }

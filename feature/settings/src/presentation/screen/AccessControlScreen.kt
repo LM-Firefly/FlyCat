@@ -59,7 +59,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.model.AccessControlImportStrategy
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AccessControlViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.EdgeLightDefaults
 import com.github.lmfirefly.flycat.presentation.component.GlassMenuDivider
 import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
 import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
@@ -71,7 +70,6 @@ import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIc
 import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
-import com.github.lmfirefly.flycat.presentation.component.edgeLight
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -105,7 +103,9 @@ import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
-import top.yukonga.miuix.kmp.icon.extended.Sort
+import top.yukonga.miuix.kmp.icon.glass.Sort
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -341,12 +341,9 @@ private fun AccessControlSearchBar(
                 }
             }
         },
-        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).edgeLight(
+        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).edgeStroke(
             shape = CircleShape,
-            color = EdgeLightDefaults.tint(surfaceColor, isLightTheme),
-            width = EdgeLightDefaults.width(isLightTheme),
-            blurRadius = EdgeLightDefaults.BlurRadius,
-            blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+            stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
         ),
     )
 }

@@ -30,6 +30,8 @@ import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -73,15 +75,11 @@ private const val GlassButtonTintAlpha = 0.55f
 @Composable
 private fun Modifier.glassButtonSurface(fallbackColor: Color, glassTint: Color): Modifier {
     val shape = RoundedCornerShape(ButtonDefaults.CornerRadius)
-    val isLightTheme = !isDarkTheme()
-    // 边缘光沿胶囊内侧一圈光晕发丝，标识可点击按钮区（与玻璃圆钮同配方）。
+    // 边缘光沿胶囊内侧一圈光晕发丝，标识可点击按钮区（与玻璃圆钮同配方，miuix EdgeStroke）。
     return clip(shape)
         .glassCardSurface(shape, fallbackColor = fallbackColor, glassTint = glassTint)
-        .edgeLight(
+        .edgeStroke(
             shape = shape,
-            color = EdgeLightDefaults.tint(fallbackColor, isLightTheme),
-            width = EdgeLightDefaults.width(isLightTheme),
-            blurRadius = EdgeLightDefaults.BlurRadius,
-            blendMode = EdgeLightDefaults.blendMode(isLightTheme),
+            stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
         )
 }
