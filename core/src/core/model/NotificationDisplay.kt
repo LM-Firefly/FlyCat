@@ -21,7 +21,7 @@
 
 package com.github.lmfirefly.flycat.core.model
 
-/** 通知两行内容的可选来源。设置界面与服务端渲染共用同一解析器 [resolve]，保证预览与真实通知一致。 */
+/** 通知各行内容的可选来源。设置界面与服务端渲染共用同一解析器 [resolve]，保证预览与真实通知一致。 */
 enum class NotificationLineContent {
     ProfileName,
     Status,
@@ -51,12 +51,16 @@ data class NotificationLineValues(
     val status: String,
 )
 
-/** 通知内容的展示配置（两行来源 + 各自的自定义文本）。 */
+/** 通知内容的展示配置（四行来源 + 各自的自定义文本）。第一行渲染为通知标题，第二~四行渲染为通知正文；解析为空白的行整行跳过。 */
 data class NotificationDisplaySettings(
     val firstLine: NotificationLineContent = NotificationLineContent.ProfileName,
     val secondLine: NotificationLineContent = NotificationLineContent.LiveTraffic,
+    val thirdLine: NotificationLineContent = NotificationLineContent.CurrentNode,
+    val fourthLine: NotificationLineContent = NotificationLineContent.SessionTraffic,
     val firstLineText: String = "",
     val secondLineText: String = "",
+    val thirdLineText: String = "",
+    val fourthLineText: String = "",
 )
 
 /** 把一行内容解析为最终文本；自定义文本只在选中 [NotificationLineContent.CustomText] 时生效。 */

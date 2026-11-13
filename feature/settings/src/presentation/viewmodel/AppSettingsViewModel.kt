@@ -78,8 +78,12 @@ class AppSettingsViewModel(
     val liveNotificationEnabled: Preference<Boolean> = settings.liveNotificationEnabled
     val notificationFirstLine: Preference<NotificationLineContent> = settings.notificationFirstLine
     val notificationSecondLine: Preference<NotificationLineContent> = settings.notificationSecondLine
+    val notificationThirdLine: Preference<NotificationLineContent> = settings.notificationThirdLine
+    val notificationFourthLine: Preference<NotificationLineContent> = settings.notificationFourthLine
     val notificationFirstLineText: Preference<String> = settings.notificationFirstLineText
     val notificationSecondLineText: Preference<String> = settings.notificationSecondLineText
+    val notificationThirdLineText: Preference<String> = settings.notificationThirdLineText
+    val notificationFourthLineText: Preference<String> = settings.notificationFourthLineText
     val bottomBarAutoHide: Preference<Boolean> = settings.bottomBarAutoHide
     val classicHomeEnabled: Preference<Boolean> = settings.classicHomeEnabled
     val homeHitokotoEnabled: Preference<Boolean> = settings.homeHitokotoEnabled
@@ -307,6 +311,14 @@ class AppSettingsViewModel(
     fun onNotificationFirstLineTextChange(text: String) = notificationFirstLineText.set(text)
 
     fun onNotificationSecondLineTextChange(text: String) = notificationSecondLineText.set(text)
+
+    fun onNotificationThirdLineChange(content: NotificationLineContent) = notificationThirdLine.set(content)
+
+    fun onNotificationFourthLineChange(content: NotificationLineContent) = notificationFourthLine.set(content)
+
+    fun onNotificationThirdLineTextChange(text: String) = notificationThirdLineText.set(text)
+
+    fun onNotificationFourthLineTextChange(text: String) = notificationFourthLineText.set(text)
 
     fun onSuperIslandEnabledChange(enabled: Boolean) = superIslandEnabled.set(enabled)
 

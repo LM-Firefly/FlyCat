@@ -68,7 +68,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 通知内容设置二级页：预览卡片 + 两行内容来源选择。
+ * 通知内容设置二级页：预览卡片 + 四行内容来源选择。
  * 预览与真实通知共用 core 的 [com.github.lmfirefly.flycat.core.model.resolve] 解析器，保证所见即所得。
  */
 @Composable
@@ -77,8 +77,12 @@ fun NotificationSettingsScreen(navigator: Navigator) {
     val viewModel = koinViewModel<AppSettingsViewModel>()
     val firstLine by viewModel.notificationFirstLine.state.collectAsStateWithLifecycle()
     val secondLine by viewModel.notificationSecondLine.state.collectAsStateWithLifecycle()
+    val thirdLine by viewModel.notificationThirdLine.state.collectAsStateWithLifecycle()
+    val fourthLine by viewModel.notificationFourthLine.state.collectAsStateWithLifecycle()
     val firstLineText by viewModel.notificationFirstLineText.state.collectAsStateWithLifecycle()
     val secondLineText by viewModel.notificationSecondLineText.state.collectAsStateWithLifecycle()
+    val thirdLineText by viewModel.notificationThirdLineText.state.collectAsStateWithLifecycle()
+    val fourthLineText by viewModel.notificationFourthLineText.state.collectAsStateWithLifecycle()
 
     GlassScaffold(
         topBar = {
@@ -101,8 +105,12 @@ fun NotificationSettingsScreen(navigator: Navigator) {
                     NotificationPreviewCard(
                         firstLine = firstLine,
                         secondLine = secondLine,
+                        thirdLine = thirdLine,
+                        fourthLine = fourthLine,
                         firstLineText = firstLineText,
                         secondLineText = secondLineText,
+                        thirdLineText = thirdLineText,
+                        fourthLineText = fourthLineText,
                     )
                 }
             }
@@ -135,38 +143,72 @@ fun NotificationSettingsScreen(navigator: Navigator) {
                             onTextChange = viewModel::onNotificationSecondLineTextChange,
                         )
                     }
+                    PreferenceEnumItem(
+                        title = FlyTxt.AppSettings.Notification.ThirdLineTitle,
+                        currentValue = thirdLine,
+                        items = NotificationLineContent.entries.map { notificationLineLabel(it) },
+                        values = NotificationLineContent.entries,
+                        onValueChange = viewModel::onNotificationThirdLineChange,
+                    )
+                    if (thirdLine == NotificationLineContent.CustomText) {
+                        NotificationCustomTextRow(
+                            text = thirdLineText,
+                            onTextChange = viewModel::onNotificationThirdLineTextChange,
+                        )
+                    }
+                    PreferenceEnumItem(
+                        title = FlyTxt.AppSettings.Notification.FourthLineTitle,
+                        currentValue = fourthLine,
+                        items = NotificationLineContent.entries.map { notificationLineLabel(it) },
+                        values = NotificationLineContent.entries,
+                        onValueChange = viewModel::onNotificationFourthLineChange,
+                    )
+                    if (fourthLine == NotificationLineContent.CustomText) {
+                        NotificationCustomTextRow(
+                            text = fourthLineText,
+                            onTextChange = viewModel::onNotificationFourthLineTextChange,
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-/** 预览样本取值（仅示意；真正的一致性由共用 resolve() 保证，见 [NotificationPreviewCard]）。 */
+/** 预览样本取值（与服务端通知工厂同格式，仅示意；真正的一致性由共用 resolve() 保证，见 [NotificationPreviewCard]）。 */
 private val PreviewValues = NotificationLineValues(
     profileName = "FlyCat",
-    currentNode = "香港-Media",
+    currentNode = FlyTxt.Service.Notification.CurrentNode.format("香港-Media"),
     liveTraffic = "↓ 1.2 MB/s ↑ 120 KB/s",
     usedTraffic = "12.7 GB",
-    sessionTraffic = "2.6 GB",
+    sessionTraffic = FlyTxt.Service.Notification.TotalTraffic.format("2.6 GB"),
     totalTraffic = "193.2 GB",
     remainingTraffic = "180.5 GB",
-    subscriptionUsage = "6.6%",
+    subscriptionUsage = "12.7 GB / 193.2 GB | 2027-01-01",
     expiryDate = "2027-01-01",
-    status = FlyTxt.AppSettings.Notification.LineStatus,
+    status = FlyTxt.Service.Notification.Running,
 )
 
-/** 仿真实通知布局的预览卡片：图标 + 标题行（内容+时间戳）+ 第二行内容。 */
+/** 仿真实通知布局的预览卡片：图标 + 标题行（内容+时间戳）+ 第二~四行内容（空白行跳过）。 */
 @Composable
 private fun NotificationPreviewCard(
     firstLine: NotificationLineContent,
     secondLine: NotificationLineContent,
+    thirdLine: NotificationLineContent,
+    fourthLine: NotificationLineContent,
     firstLineText: String,
     secondLineText: String,
+    thirdLineText: String,
+    fourthLineText: String,
 ) {
     val context = LocalContext.current
     val appIcon = rememberAppIconBitmap(context.packageName, 96)
     val title = firstLine.resolve(PreviewValues, firstLineText).ifBlank { PreviewValues.profileName }
-    val content = secondLine.resolve(PreviewValues, secondLineText)
+    val contentLines = listOf(
+        secondLine.resolve(PreviewValues, secondLineText),
+        thirdLine.resolve(PreviewValues, thirdLineText),
+        fourthLine.resolve(PreviewValues, fourthLineText),
+    ).filter { it.isNotBlank() }
     val timeText = remember(context) { android.text.format.DateFormat.getTimeFormat(context).format(java.util.Date()) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = UiDp.dp16, vertical = UiDp.dp12),
@@ -196,9 +238,9 @@ private fun NotificationPreviewCard(
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
-            if (content.isNotBlank()) {
+            contentLines.forEach { line ->
                 Text(
-                    text = content,
+                    text = line,
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,

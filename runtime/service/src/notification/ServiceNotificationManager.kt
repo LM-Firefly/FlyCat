@@ -241,9 +241,7 @@ class ServiceNotificationManager(
         return NotificationCompat.Builder(service, config.channelId)
             .setContentTitle(presentation.title)
             .setContentText(presentation.content)
-            .setSubText(presentation.subText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(presentation.expandedText).setSummaryText(presentation.subText))
-            // smallIcon 同样按 alpha 着色绘制，挖空图标可让爪印在着色后仍完整可见。
+            .setStyle(NotificationCompat.BigTextStyle().bigText(presentation.expandedText))
             .setSmallIcon(R.drawable.ic_logo_service_cutout)
             .setColor(service.getColor(R.color.color_flycat))
             .setContentIntent(contentIntent)
@@ -291,7 +289,7 @@ class ServiceNotificationManager(
         return serviceStore.showTrafficNotification
     }
 
-    /** 通知两行内容配置；键名与 [AppSettingsStore] 的 MMKVPreference 属性名一致。 */
+    /** 通知四行内容配置；键名与 [AppSettingsStore] 的 MMKVPreference 属性名一致。 */
     private fun loadDisplaySettings(): NotificationDisplaySettings {
         val settings = settingsStore
         fun line(key: String, default: NotificationLineContent): NotificationLineContent = settings.decodeString(key, null)?.let { name ->
@@ -300,8 +298,12 @@ class ServiceNotificationManager(
         return NotificationDisplaySettings(
             firstLine = line("notificationFirstLine", NotificationLineContent.ProfileName),
             secondLine = line("notificationSecondLine", NotificationLineContent.LiveTraffic),
+            thirdLine = line("notificationThirdLine", NotificationLineContent.CurrentNode),
+            fourthLine = line("notificationFourthLine", NotificationLineContent.SessionTraffic),
             firstLineText = settings.decodeString("notificationFirstLineText", "").orEmpty(),
             secondLineText = settings.decodeString("notificationSecondLineText", "").orEmpty(),
+            thirdLineText = settings.decodeString("notificationThirdLineText", "").orEmpty(),
+            fourthLineText = settings.decodeString("notificationFourthLineText", "").orEmpty(),
         )
     }
 

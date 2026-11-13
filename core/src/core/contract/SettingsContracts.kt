@@ -90,8 +90,12 @@ interface AppSettingsReader {
     val liveNotificationEnabled: Preference<Boolean>
     val notificationFirstLine: Preference<NotificationLineContent>
     val notificationSecondLine: Preference<NotificationLineContent>
+    val notificationThirdLine: Preference<NotificationLineContent>
+    val notificationFourthLine: Preference<NotificationLineContent>
     val notificationFirstLineText: Preference<String>
     val notificationSecondLineText: Preference<String>
+    val notificationThirdLineText: Preference<String>
+    val notificationFourthLineText: Preference<String>
     val bottomBarAutoHide: Preference<Boolean>
     val classicHomeEnabled: Preference<Boolean>
     val homeHitokotoEnabled: Preference<Boolean>

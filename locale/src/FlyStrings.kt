@@ -193,6 +193,8 @@ public data class FlyStrings_AppSettings_Notification(
     public val ContentSummary: String,
     public val FirstLineTitle: String,
     public val SecondLineTitle: String,
+    public val ThirdLineTitle: String,
+    public val FourthLineTitle: String,
     public val CustomTextTitle: String,
     public val CustomTextEmpty: String,
     public val PreviewSection: String,

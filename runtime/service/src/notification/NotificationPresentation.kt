@@ -77,7 +77,7 @@ internal object NotificationPresentationFactory {
         val node = currentNode ?: FlyTxt.Service.Notification.NoNode
         val values = NotificationLineValues(
             profileName = profileName,
-            currentNode = node,
+            currentNode = FlyTxt.Service.Notification.CurrentNode.format(node),
             liveTraffic = speedLine,
             usedTraffic = formatBytes(used),
             sessionTraffic = totalLine,
@@ -88,11 +88,15 @@ internal object NotificationPresentationFactory {
             status = FlyTxt.Service.Notification.Running,
         )
         val title = displaySettings.firstLine.resolve(values, displaySettings.firstLineText).ifBlank { profileName }
-        val content = displaySettings.secondLine.resolve(values, displaySettings.secondLineText)
+        val content = listOf(
+            displaySettings.secondLine.resolve(values, displaySettings.secondLineText),
+            displaySettings.thirdLine.resolve(values, displaySettings.thirdLineText),
+            displaySettings.fourthLine.resolve(values, displaySettings.fourthLineText),
+        ).filter { it.isNotBlank() }.joinToString("\n")
         return NotificationPresentation.Running(
             title = title,
             content = content,
-            expandedText = listOf(content, FlyTxt.Service.Notification.CurrentNode.format(node), totalLine).filter { it.isNotBlank() }.distinct().joinToString("\n"),
+            expandedText = content,
             subText = totalLine,
             usageLine = buildUsageLine(profile),
             compactTraffic = buildCompactTrafficLine(trafficNow),

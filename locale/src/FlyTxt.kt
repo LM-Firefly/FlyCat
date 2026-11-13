@@ -222,6 +222,12 @@ public object FlyTxt {
             public val SecondLineTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Notification.SecondLineTitle
             @androidx.compose.runtime.Composable
             public fun SecondLineTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.Notification.SecondLineTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.Notification.SecondLineTitle, *args)
+            public val ThirdLineTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Notification.ThirdLineTitle
+            @androidx.compose.runtime.Composable
+            public fun ThirdLineTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.Notification.ThirdLineTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.Notification.ThirdLineTitle, *args)
+            public val FourthLineTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Notification.FourthLineTitle
+            @androidx.compose.runtime.Composable
+            public fun FourthLineTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.Notification.FourthLineTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.Notification.FourthLineTitle, *args)
             public val CustomTextTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Notification.CustomTextTitle
             @androidx.compose.runtime.Composable
             public fun CustomTextTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.Notification.CustomTextTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.Notification.CustomTextTitle, *args)

@@ -162,8 +162,12 @@ class BackupRepository(
             liveNotificationEnabled = appSettings.liveNotificationEnabled.value,
             notificationFirstLine = appSettings.notificationFirstLine.value,
             notificationSecondLine = appSettings.notificationSecondLine.value,
+            notificationThirdLine = appSettings.notificationThirdLine.value,
+            notificationFourthLine = appSettings.notificationFourthLine.value,
             notificationFirstLineText = appSettings.notificationFirstLineText.value,
             notificationSecondLineText = appSettings.notificationSecondLineText.value,
+            notificationThirdLineText = appSettings.notificationThirdLineText.value,
+            notificationFourthLineText = appSettings.notificationFourthLineText.value,
             bottomBarAutoHide = appSettings.bottomBarAutoHide.value,
             classicHomeEnabled = appSettings.classicHomeEnabled.value,
             homeHitokotoEnabled = appSettings.homeHitokotoEnabled.value,
@@ -359,8 +363,12 @@ class BackupRepository(
             appSettings.liveNotificationEnabled,
             appSettings.notificationFirstLine,
             appSettings.notificationSecondLine,
+            appSettings.notificationThirdLine,
+            appSettings.notificationFourthLine,
             appSettings.notificationFirstLineText,
             appSettings.notificationSecondLineText,
+            appSettings.notificationThirdLineText,
+            appSettings.notificationFourthLineText,
             appSettings.predictiveBackEnabled,
             appSettings.predictiveBackMaxProgress,
             appSettings.pageScale,
@@ -438,8 +446,12 @@ class BackupRepository(
         appSettings.liveNotificationEnabled.set(value.liveNotificationEnabled)
         appSettings.notificationFirstLine.set(value.notificationFirstLine)
         appSettings.notificationSecondLine.set(value.notificationSecondLine)
+        appSettings.notificationThirdLine.set(value.notificationThirdLine)
+        appSettings.notificationFourthLine.set(value.notificationFourthLine)
         appSettings.notificationFirstLineText.set(value.notificationFirstLineText)
         appSettings.notificationSecondLineText.set(value.notificationSecondLineText)
+        appSettings.notificationThirdLineText.set(value.notificationThirdLineText)
+        appSettings.notificationFourthLineText.set(value.notificationFourthLineText)
         appSettings.bottomBarAutoHide.set(value.bottomBarAutoHide)
         appSettings.classicHomeEnabled.set(value.classicHomeEnabled)
         appSettings.homeHitokotoEnabled.set(value.homeHitokotoEnabled)
