@@ -24,6 +24,7 @@
 package com.github.lmfirefly.flycat.presentation.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -84,7 +85,8 @@ fun BoxScope.FloatingSheetHeader(title: String, sheetColor: Color, startAction: 
         Box(modifier = Modifier.fillMaxWidth().height(FloatingSheetHeaderDefaults.Height).offset(y = -FloatingSheetHeaderDefaults.ChromeAboveContent).zIndex(2f)) {
             Text(
                 text = title,
-                modifier = Modifier.align(Alignment.Center).padding(horizontal = UiDp.dp56),
+                // 超长标题（如连接终点 host:port）跑马灯滚动显示全文；短标题不受影响——basicMarquee 仅在内容超宽时动画，节点宽度=文本宽，仍由 align(Center) 居中。
+                modifier = Modifier.align(Alignment.Center).padding(horizontal = UiDp.dp56).basicMarquee(iterations = Int.MAX_VALUE),
                 fontSize = MiuixTheme.textStyles.title4.fontSize,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
@@ -101,19 +103,16 @@ fun BoxScope.FloatingSheetHeader(title: String, sheetColor: Color, startAction: 
 /** 弹层侧边动作：与页面顶栏完全同款的 42dp 玻璃圆钮（边缘光 + 22dp 图标），通过 [LocalSheetHeaderBackdrop] 采样 sheet 表面，使 sheet 动作与页面顶栏读起来是同一种控件。 */
 @Composable
 fun SheetHeaderIconButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit, enabled: Boolean = true, tint: Color = Color.Unspecified, iconModifier: Modifier = Modifier) {
-    // 禁用态保留外观，仅去掉点击与图标对比度。
-    val performClick: () -> Unit = if (enabled) onClick else NoOpClick
+    // 禁用态语义（去点击 + 图标降对比度）由 GlassTopAction.enabled 统一处理。
     GlassTopIconButton(
         action = GlassTopAction(
             icon = icon,
             contentDescription = contentDescription,
-            onClick = performClick,
-            iconModifier = if (enabled) { iconModifier } else { iconModifier.alpha(AppTheme.opacity.disabled) },
+            onClick = onClick,
+            enabled = enabled,
+            iconModifier = iconModifier,
             tint = tint,
         ),
         backdrop = LocalSheetHeaderBackdrop.current ?: glassSurfaceBackdrop(),
     )
 }
-
-/** 禁用态的点击空槽，跨重组保持零分配。 */
-private val NoOpClick: () -> Unit = {}

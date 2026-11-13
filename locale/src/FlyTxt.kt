@@ -1069,6 +1069,12 @@ public object FlyTxt {
                 public val SaveFailed: String get() = FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.SaveFailed
                 @androidx.compose.runtime.Composable
                 public fun SaveFailed(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.SaveFailed else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.SaveFailed, *args)
+                public val Undo: String get() = FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.Undo
+                @androidx.compose.runtime.Composable
+                public fun Undo(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.Undo else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.Undo, *args)
+                public val Redo: String get() = FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.Redo
+                @androidx.compose.runtime.Composable
+                public fun Redo(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.Redo else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Component.Editor.ConfigPreview.Redo, *args)
             }
         }
     }

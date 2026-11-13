@@ -76,6 +76,7 @@ import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
 import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -86,10 +87,11 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.CircleFadingArrowUp
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
-import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.navigation.Route
 import com.github.lmfirefly.flycat.presentation.state.ProviderFilePreviewStore
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import com.github.lmfirefly.flycat.presentation.util.toast
 import java.io.File
 import java.util.Date
@@ -113,6 +115,8 @@ import top.yukonga.miuix.kmp.icon.glass.Edit
 import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
+import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
+import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowListPopup
 
@@ -319,12 +323,20 @@ private fun ProviderCard(
                     val actionsAnchor = rememberGlassPopupAnchor()
                     Box {
                         IconButton(
-                            backgroundColor = updateBg,
+                            // 玻璃效果适配：实色底换 glassCardSurface（无 shader 时回退原实色）+ 边缘光。
+                            backgroundColor = Color.Transparent,
                             minHeight = UiDp.dp35,
                             minWidth = UiDp.dp35,
                             enabled = !isUpdating,
                             onClick = { showPopup.value = true },
-                            modifier = Modifier.glassPopupAnchor(anchor = actionsAnchor, cornerRadius = UiDp.dp18, floating = true),
+                            modifier = Modifier.clip(RoundedCornerShape(UiDp.dp18)).glassCardSurface(
+                                shape = RoundedCornerShape(UiDp.dp18),
+                                fallbackColor = updateBg,
+                                glassTint = updateBg,
+                            ).edgeStroke(
+                                shape = RoundedCornerShape(UiDp.dp18),
+                                stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
+                            ).glassPopupAnchor(anchor = actionsAnchor, cornerRadius = UiDp.dp18, floating = true),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = UiDp.dp10),
@@ -528,11 +540,14 @@ private fun ProvidersInfoCard(basePath: String) {
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
-                    .clickable { openFlyCatDocumentsEntry(context) }
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.clip(RoundedCornerShape(50)).glassCardSurface(
+                    shape = RoundedCornerShape(50),
+                    fallbackColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    glassTint = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
+                ).edgeStroke(
+                    shape = RoundedCornerShape(50),
+                    stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
+                ).clickable { openFlyCatDocumentsEntry(context) }.padding(horizontal = 10.dp, vertical = 4.dp),
                 text = FlyTxt.Providers.Action.OpenInFiles,
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.primary,

@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.misc.CenteredText
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
@@ -60,7 +61,7 @@ fun EditorScaffold(
     navigationIcon: @Composable () -> Unit = {},
     content: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit,
 ) {
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = title,

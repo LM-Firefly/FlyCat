@@ -48,6 +48,7 @@ object EditorThemeManager {
         try {
             val themeRegistry = ThemeRegistry.getInstance()
             editor.colorScheme = TextMateColorScheme.create(themeRegistry)
+            EditorColorSynchronizer.makeBackgroundTransparent(editor.colorScheme)
         } catch (_: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions, fall back
             editor.colorScheme = EditorColorSynchronizer.createColorScheme(false)
         }
@@ -59,6 +60,7 @@ object EditorThemeManager {
             TextMateInitializer.setTheme(isDark)
 
             editor.colorScheme = TextMateColorScheme.create(ThemeRegistry.getInstance())
+            EditorColorSynchronizer.makeBackgroundTransparent(editor.colorScheme)
         } catch (_: Exception) { // fault barrier: TextMate/tm4e throws unspecified exceptions, fall back
             editor.colorScheme = EditorColorSynchronizer.createColorScheme(isDark)
         }

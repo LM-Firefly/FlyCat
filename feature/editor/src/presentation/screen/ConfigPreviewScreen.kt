@@ -38,6 +38,9 @@ import com.github.lmfirefly.flycat.feature.editor.presentation.editor.CodeEditor
 import com.github.lmfirefly.flycat.feature.editor.presentation.editor.rememberConfiguredCodeEditorState
 import com.github.lmfirefly.flycat.feature.editor.presentation.format.CodeFormatter
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.component.navigation.SmallTopBar
 import com.github.lmfirefly.flycat.presentation.editor.LanguageScope
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -46,13 +49,11 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowRight
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ListCollapse
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Save
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.util.toast
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 
 @Composable
 fun ConfigPreviewScreen(
@@ -82,51 +83,65 @@ fun ConfigPreviewScreen(
     )
     val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(
+    GlassScaffold(
         topBar = {
             SmallTopBar(
                 title = title,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = if (!readOnly) {{
                     Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-                        IconButton(
-                            onClick = { editorState.undo() },
-                            enabled = editorState.canUndo(),
-                        ) {
-                            Icon(FlyCat.ArrowLeft, null)
-                        }
-                        IconButton(
-                            onClick = { editorState.redo() },
-                            enabled = editorState.canRedo(),
-                        ) {
-                            Icon(FlyCat.ArrowRight, null)
-                        }
+                        GlassTopIconButton(
+                            action = GlassTopAction(
+                                icon = FlyCat.ArrowLeft,
+                                contentDescription = FlyTxt.Component.Editor.ConfigPreview.Undo,
+                                onClick = { editorState.undo() },
+                                enabled = editorState.canUndo(),
+                            ),
+                            backdrop = LocalTopBarBackdrop.current,
+                        )
+                        GlassTopIconButton(
+                            action = GlassTopAction(
+                                icon = FlyCat.ArrowRight,
+                                contentDescription = FlyTxt.Component.Editor.ConfigPreview.Redo,
+                                onClick = { editorState.redo() },
+                                enabled = editorState.canRedo(),
+                            ),
+                            backdrop = LocalTopBarBackdrop.current,
+                        )
                     }
                 }} else {{}},
                 actions = if (!readOnly) {{
-                    IconButton(
-                        modifier = Modifier.padding(end = UiDp.dp12),
-                        onClick = { editorState.format() },
-                    ) {
-                        Icon(FlyCat.ListCollapse, contentDescription = FlyTxt.Component.Editor.ConfigPreview.Format)
-                    }
-                    IconButton(
-                        onClick = {
-                            if (isSaving || onSave == null) return@IconButton
-                            coroutineScope.launch {
-                                isSaving = true
-                                runCatching { onSave(editorState.content) }
-                                    .onSuccess {
-                                        editorState.resetModified()
-                                        navigator.navigateUp()
+                    Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
+                        GlassTopIconButton(
+                            action = GlassTopAction(
+                                icon = FlyCat.ListCollapse,
+                                contentDescription = FlyTxt.Component.Editor.ConfigPreview.Format,
+                                onClick = { editorState.format() },
+                            ),
+                            backdrop = LocalTopBarBackdrop.current,
+                        )
+                        GlassTopIconButton(
+                            action = GlassTopAction(
+                                icon = FlyCat.Save,
+                                contentDescription = FlyTxt.Component.Editor.ConfigPreview.Save,
+                                onClick = {
+                                    if (!isSaving && onSave != null) {
+                                        coroutineScope.launch {
+                                            isSaving = true
+                                            runCatching { onSave(editorState.content) }
+                                                .onSuccess {
+                                                    editorState.resetModified()
+                                                    navigator.navigateUp()
+                                                }
+                                                .onFailure { context.toast(it.message ?: FlyTxt.Component.Editor.ConfigPreview.SaveFailed) }
+                                            isSaving = false
+                                        }
                                     }
-                                    .onFailure { context.toast(it.message ?: FlyTxt.Component.Editor.ConfigPreview.SaveFailed) }
-                                isSaving = false
-                            }
-                        },
-                        enabled = onSave != null && editorState.isModified && !isSaving,
-                    ) {
-                        Icon(FlyCat.Save, contentDescription = FlyTxt.Component.Editor.ConfigPreview.Save)
+                                },
+                                enabled = onSave != null && editorState.isModified && !isSaving,
+                            ),
+                            backdrop = LocalTopBarBackdrop.current,
+                        )
                     }
                 }} else {{}},
             )

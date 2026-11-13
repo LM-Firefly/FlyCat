@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.NetworkSettingsViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
@@ -53,8 +54,7 @@ fun EbpfServiceOptionsScreen(navigator: Navigator) {
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
     val tunServiceOptionsUiState by viewModel.tunServiceOptionsUiState.collectAsStateWithLifecycle()
     val ebpfOptions by viewModel.ebpfServiceOptionsUiState.collectAsStateWithLifecycle()
-
-    Scaffold(
+    GlassScaffold(
         topBar = {
             TopBar(
                 title = FlyTxt.NetworkSettings.RunMode.EbpfTitle,

@@ -495,6 +495,8 @@ public data class FlyStrings_Component_Editor_ConfigPreview(
     public val Format: String,
     public val Save: String,
     public val SaveFailed: String,
+    public val Undo: String,
+    public val Redo: String,
 )
 
 public data class FlyStrings_Component_Editor(

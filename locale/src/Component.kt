@@ -143,6 +143,8 @@ internal val ZhHansFlyStrings_Component: FlyStrings_Component = FlyStrings_Compo
             Format = "格式化",
             Save = "保存",
             SaveFailed = "保存失败",
+            Undo = "撤销",
+            Redo = "重做",
         ),
     ),
 )
@@ -288,6 +290,8 @@ internal val ZhFlyStrings_Component: FlyStrings_Component = FlyStrings_Component
             Format = "格式化",
             Save = "儲存",
             SaveFailed = "儲存失敗",
+            Undo = "復原",
+            Redo = "重做",
         ),
     ),
 )
@@ -433,6 +437,8 @@ internal val EnFlyStrings_Component: FlyStrings_Component = FlyStrings_Component
             Format = "Format",
             Save = "Save",
             SaveFailed = "Save failed",
+            Undo = "Undo",
+            Redo = "Redo",
         ),
     ),
 )
@@ -578,6 +584,8 @@ internal val JaFlyStrings_Component: FlyStrings_Component = FlyStrings_Component
             Format = "フォーマット",
             Save = "保存",
             SaveFailed = "保存に失敗しました",
+            Undo = "元に戻す",
+            Redo = "やり直す",
         ),
     ),
 )
@@ -723,6 +731,8 @@ internal val RuFlyStrings_Component: FlyStrings_Component = FlyStrings_Component
             Format = "Формат",
             Save = "Сохранить",
             SaveFailed = "Не удалось сохранить",
+            Undo = "Отменить",
+            Redo = "Повторить",
         ),
     ),
 )

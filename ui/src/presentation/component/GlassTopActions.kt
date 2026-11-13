@@ -43,6 +43,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
@@ -92,6 +93,8 @@ data class GlassTopAction(
     val popup: (@Composable () -> Unit)? = null,
     /** [popup] 锚定的位置。按钮会自动绑定到该锚点，因此调用方无需再手动在 [modifier] 上设置 `glassPopupAnchor` 和在 [iconModifier] 上设置 `glassPopupAnchorContent`。 */
     val anchor: GlassPopupAnchor? = null,
+    /** 是否可用。禁用态保留外观，仅去掉点击与图标对比度（与 [SheetHeaderIconButton] 同约定）。 */
+    val enabled: Boolean = true,
 )
 
 /**
@@ -201,7 +204,8 @@ fun GlassTopIconButton(action: GlassTopAction, backdrop: LayerBackdrop?, modifie
             Modifier.glassPopupAnchor(anchor = it, cornerRadius = GlassTopActionDefaults.ContainerSize / 2, floating = true)
         } ?: Modifier
         GlassIconButton(
-            onClick = action.onClick,
+            // 禁用态保留外观，仅去掉点击与图标对比度。
+            onClick = { if (action.enabled) action.onClick() },
             // [GlassTopAction.modifier] 属于该 action，必须保留（anchor/inset 覆盖）。
             modifier = action.modifier.then(modifier).then(anchorModifier),
             backdrop = backdrop,
@@ -210,7 +214,7 @@ fun GlassTopIconButton(action: GlassTopAction, backdrop: LayerBackdrop?, modifie
             Icon(
                 imageVector = action.icon,
                 contentDescription = action.contentDescription,
-                modifier = Modifier.size(GlassTopActionDefaults.IconSize).then(action.iconModifier).then(action.anchorIconModifier),
+                modifier = Modifier.size(GlassTopActionDefaults.IconSize).then(action.iconModifier).then(action.anchorIconModifier).let { if (action.enabled) it else it.alpha(AppTheme.opacity.disabled) },
                 tint = action.tint.takeOr(MiuixTheme.colorScheme.onSurface),
             )
         }
@@ -234,14 +238,14 @@ private fun PillActionIcon(action: GlassTopAction, glass: GlassTopActionStyle) {
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = action.onClick,
+                onClick = { if (action.enabled) action.onClick() },
             ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = action.icon,
             contentDescription = action.contentDescription,
-            modifier = Modifier.size(GlassTopActionDefaults.IconSize).then(action.iconModifier).then(action.anchorIconModifier).graphicsLayer {
+            modifier = Modifier.size(GlassTopActionDefaults.IconSize).then(action.iconModifier).then(action.anchorIconModifier).let { if (action.enabled) it else it.alpha(AppTheme.opacity.disabled) }.graphicsLayer {
                 scaleX = pressScale
                 scaleY = pressScale
             },

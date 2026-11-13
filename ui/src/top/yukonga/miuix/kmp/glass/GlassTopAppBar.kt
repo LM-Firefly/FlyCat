@@ -190,7 +190,7 @@ internal val LocalGlassTopAppBarContext = staticCompositionLocalOf<GlassTopAppBa
  * @param largeTitleBlurRadius 大标题折叠时施加的模糊。
  * @param scrollBehavior 驱动折叠的行为。不传时顶栏保持完全显形。
  * @param bandBrush 压暗顶栏下方内容的渐变。
-     * @param bandOverhang 渐变超出顶栏底部的距离。
+ * @param bandOverhang 渐变超出顶栏底部的距离。
  * @param style 传递给渲染器的玻璃样式。
  * @param alpha 按钮颜色层与描边的不透明度乘数。
  * @param buttonShape 按钮胶囊轮廓。
@@ -200,8 +200,7 @@ internal val LocalGlassTopAppBarContext = staticCompositionLocalOf<GlassTopAppBa
  * @param stroke 按钮胶囊上可选的泛光描边。
  * @param defaultWindowInsetsPadding 是否应用横向挖孔屏与导航栏窗口衬垫。
  * @param contentModifier 前景栏的修饰符；背景色带保持不动。
- * @param progressiveBlur 绘制渐进背景并让按钮采样该渲染场景。
- *   需要受支持且非空的 [backdrop]。背景不包含按钮及其他栏内内容。
+ * @param progressiveBlur 绘制渐进背景并让按钮采样该渲染场景。需要受支持且非空的 [backdrop]。背景不包含按钮及其他栏内内容。
  * @param material 按钮材质；启用渐进背景时叠加在渲染的色带之上。
  * @param backgroundAlpha 背景色带的绘制阶段不透明度乘数。
  * @param titleAlpha 标题容器的绘制阶段不透明度。
@@ -247,7 +246,7 @@ fun GlassTopAppBar(
     pinned: Boolean = false,
 ) {
     val isContentScrolled by remember(scrollBehavior) {
-        derivedStateOf { scrollBehavior?.state?.let { it.contentOffset < 0f } ?: true }
+        derivedStateOf { scrollBehavior?.state?.let { it.contentOffset < 0f || it.collapsedFraction > 0f } ?: true }
     }
     GlassTopAppBar(
         title = title,
