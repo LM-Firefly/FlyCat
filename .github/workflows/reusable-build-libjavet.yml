@@ -35,7 +35,7 @@ jobs:
           java-version: "26"
 
       - name: Setup Kotlin
-        uses: fwilhe2/setup-kotlin@cf68a5189070d61ee3117555d55736bc73a67b3b # main
+        uses: fwilhe2/setup-kotlin@4c38cebee9e90d4be3629c048b2dd2c3a18c694b # main
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
