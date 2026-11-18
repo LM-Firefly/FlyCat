@@ -120,7 +120,10 @@ fun ScreenLazyColumn(
 
     LazyColumn(
         state = lazyListState,
-        modifier = modifier.fillMaxSize().scrollEndHaptic().overScrollVertical().nestedScroll(fabScrollObserver).nestedScroll(scrollBehavior.nestedScrollConnection).let { mod ->
+        // overscrollOffset 参与 TopAppBarState.visualContentOffset（色带/阴影随弹性位移渐显），按库文档接线。
+        modifier = modifier.fillMaxSize().scrollEndHaptic()
+            .overScrollVertical(onOffsetChanged = { scrollBehavior.state.overscrollOffset = it })
+            .nestedScroll(fabScrollObserver).nestedScroll(scrollBehavior.nestedScrollConnection).let { mod ->
             if (enableGlobalScroll && bottomBarScrollBehavior != null) {
                 mod.nestedScroll(bottomBarScrollBehavior.nestedScrollConnection)
             } else {

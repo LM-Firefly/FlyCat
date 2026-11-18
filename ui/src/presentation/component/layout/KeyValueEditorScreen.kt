@@ -63,7 +63,6 @@ import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.AddCircle
 import top.yukonga.miuix.kmp.icon.glass.Delete
-import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.icon.glass.Reset
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import java.util.UUID

@@ -70,7 +70,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.icon.glass.Delete
 import top.yukonga.miuix.kmp.icon.glass.Sort
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -180,7 +179,7 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                                     AppSortMode.TOTAL to FlyTxt.TrafficStatistics.Sort.ByTotal,
                                 )
                             }
-                            val sortMenuAnchor = rememberGlassPopupAnchor(suppressTransformSurface = true)
+                            val sortMenuAnchor = rememberGlassPopupAnchor()
                             // 列表头按钮位于 GlassScaffold 录制子树内，不得采样 LocalTopBarBackdrop（层自引用会让 hwui prepareTree 无限递归崩溃，见特权服务页记录）；
                             // 以兄弟纯色录制层供按钮采样——真实玻璃质感且无自引用循环（同关于页卡片采样壁纸层的安全模式）。
                             val buttonBackdrop = rememberSurfaceBackdrop(MiuixTheme.colorScheme.background)
@@ -191,8 +190,10 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                                         icon = MiuixIcons.Glass.Sort,
                                         contentDescription = FlyTxt.Proxy.Action.Sort,
                                         onClick = { sortExpanded = true },
-                                        // 自动接线锚点：按钮上报边界并隐藏自身，弹窗折叠端点直接复用按钮玻璃材质，关闭动画落点即玻璃圆钮本体。
+                                        /** 自动接线锚点：按钮上报边界并隐藏自身，弹窗折叠端点直接复用按钮玻璃材质，关闭动画落点即玻璃圆钮本体。 */
                                         anchor = sortMenuAnchor,
+                                        /** 本按钮采样的是按钮大小的兄弟纯色层：若把该表面发布为折叠端点，小背景会铺满生长中的面板并在按钮原位留下不透明方块（fork 特化修复，见 GlassTopAction 字段说明）。 */
+                                        suppressTransformSurface = true,
                                         popup = {
                                             GlassPopupHost(
                                                 show = sortExpanded,

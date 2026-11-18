@@ -86,7 +86,6 @@ import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Back
-import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
@@ -236,7 +235,6 @@ private fun ProxySheetContentInner(onDismiss: () -> Unit, proxyViewModel: ProxyV
                             onSortSelected = proxyViewModel::setSortMode,
                             tabsMode = groupTabsMode,
                             onTabsModeChange = { enabled -> proxyViewModel.setGroupTabsMode(enabled) },
-                            alignToPageEnd = false,
                         )
                     }
                 }

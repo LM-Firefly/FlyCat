@@ -79,8 +79,6 @@ internal fun NodeSortPopup(
     /** 非空时在布局页展示「标签页模式」开关行；不支持该模式的宿主传 null 隐藏。 */
     tabsMode: Boolean? = null,
     onTabsModeChange: ((Boolean) -> Unit)? = null,
-    /** 弹层标题行内的锚点场景传 false（面板放置贴锚点）；页面顶栏场景用默认 true（贴页右缘）。 */
-    alignToPageEnd: Boolean = true,
 ) {
     val submenu = rememberGlassSubmenuState(show)
     var submenuPage by remember { mutableStateOf(NodeMenuPage.None) }
@@ -93,7 +91,6 @@ internal fun NodeSortPopup(
         show = show,
         onDismissRequest = onDismiss,
         anchor = anchor,
-        alignToPageEnd = alignToPageEnd,
         anchorContent = { GlassTopActionAnchorIcon(FlyCat.ListChevronsUpDown) },
         submenu = submenu,
         submenuContent = {

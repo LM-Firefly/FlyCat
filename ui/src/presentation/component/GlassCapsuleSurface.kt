@@ -31,18 +31,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.kyant.shapes.Capsule
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
-import top.yukonga.miuix.kmp.glass.PublishGlassAnchorSurface
 import top.yukonga.miuix.kmp.glass.glassPanel
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
-import top.yukonga.miuix.kmp.glass.rememberGlassAnchorSurface
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.edgeStroke
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -73,14 +71,6 @@ fun GlassCapsuleSurface(
     val glassBackdrop = if (anchor == null) LocalGlassBackdrop.current else null
     val surfaceBackdrop = rememberSurfaceBackdrop(MiuixTheme.colorScheme.background)
     val sampleBackdrop = glassBackdrop ?: surfaceBackdrop
-    if (anchor != null) {
-        // 与 GlassTopIconButton 同款 surface 发布：弹窗变换的折叠端点=本胶囊的玻璃材质，
-        // 关闭动画落点即胶囊本体（缺发布则端点只剩内容拷贝，会闪一次"无玻璃"样式）。
-        val containerMaterial = GlassTopAppBarDefaults.buttonMaterial()
-        val containerStroke = GlassTopAppBarDefaults.buttonStroke()
-        val anchorSurface = rememberGlassAnchorSurface(surfaceBackdrop, containerMaterial, containerStroke, fallbackColor)
-        PublishGlassAnchorSurface(anchor, anchorSurface)
-    }
     Box(
         modifier = modifier.then(
             if (anchor != null) {

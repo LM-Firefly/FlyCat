@@ -23,26 +23,32 @@ package com.github.lmfirefly.flycat.presentation.component.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import kotlin.math.abs
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.abs
 
 /**
  * 路由顶栏：委托库 [GlassTopAppBar]（对齐 miuix 液态玻璃——渐变色带 + 材质上下文 + 折叠大标题）。
@@ -67,7 +73,6 @@ fun TopBar(
     title: String,
     scrollBehavior: ScrollBehavior,
     modifier: Modifier = Modifier,
-    titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     navigationIconPadding: Dp = UiDp.dp24,
     actionIconPadding: Dp = UiDp.dp24,
     navigationIcon: @Composable () -> Unit = {},
@@ -82,7 +87,6 @@ fun TopBar(
             title = " ",
             scrollBehavior = scrollBehavior,
             modifier = modifier,
-            titlePadding = titlePadding,
             navigationIconPadding = navigationIconPadding,
             actionIconPadding = actionIconPadding,
             navigationIcon = navigationIcon,
@@ -124,19 +128,19 @@ fun TopBar(
         )
         return
     }
+    val scrollState = rememberTopBarScrollState(scrollBehavior)
     GlassTopAppBar(
         title = title,
-        modifier = modifier,
+        isContentScrolled = scrollState.isContentScrolled,
+        modifier = modifier.clipToBounds(),
         progressiveBlur = !transparent,
         scrollBehavior = scrollBehavior,
+        visualContentOffset = scrollState.visualContentOffset,
         backdrop = backdrop,
         bandBrush = GlassTopAppBarDefaults.bandBrush(barBandColor(transparent)),
-        titlePadding = titlePadding,
-        navigationIconPadding = navigationIconPadding,
-        actionIconPadding = actionIconPadding,
         backgroundAlpha = { if (transparent) 0f else 1f },
-        navigationIcon = navigationIcon,
-        actions = actions,
+        navigationIcon = { Box(Modifier.offset(x = navigationIconPadding - GlassTopAppBarDefaults.HorizontalPadding)) { navigationIcon() } },
+        actions = { Row(Modifier.offset(x = GlassTopAppBarDefaults.HorizontalPadding - actionIconPadding)) { actions() } },
         bottomContent = bottomContent,
     )
 }
@@ -150,7 +154,6 @@ fun SmallTopBar(
     title: String,
     scrollBehavior: ScrollBehavior,
     modifier: Modifier = Modifier,
-    titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     navigationIconPadding: Dp = UiDp.dp24,
     actionIconPadding: Dp = UiDp.dp24,
     navigationIcon: @Composable () -> Unit = {},
@@ -159,20 +162,20 @@ fun SmallTopBar(
     backdrop: LayerBackdrop? = LocalGlassBackdrop.current,
     transparent: Boolean = false,
 ) {
+    val scrollState = rememberTopBarScrollState(scrollBehavior)
     GlassTopAppBar(
         title = title,
-        modifier = modifier,
-        pinned = true,
+        isContentScrolled = scrollState.isContentScrolled,
+        modifier = modifier.clipToBounds(),
+        expandable = false,
         progressiveBlur = !transparent,
         scrollBehavior = scrollBehavior,
+        visualContentOffset = scrollState.visualContentOffset,
         backdrop = backdrop,
         bandBrush = GlassTopAppBarDefaults.bandBrush(barBandColor(transparent)),
-        titlePadding = titlePadding,
-        navigationIconPadding = navigationIconPadding,
-        actionIconPadding = actionIconPadding,
         backgroundAlpha = { if (transparent) 0f else 1f },
-        navigationIcon = navigationIcon,
-        actions = actions,
+        navigationIcon = { Box(Modifier.offset(x = navigationIconPadding - GlassTopAppBarDefaults.HorizontalPadding)) { navigationIcon() } },
+        actions = { Row(Modifier.offset(x = GlassTopAppBarDefaults.HorizontalPadding - actionIconPadding)) { actions() } },
         bottomContent = bottomContent,
     )
 }
@@ -184,3 +187,29 @@ private fun barBandColor(transparent: Boolean): Color = if (transparent) {
 } else {
     MiuixTheme.colorScheme.surface
 }
+
+/**
+ * 顶栏折叠的显式状态（fork 补偿，随迁移从 vendored 版回收）：
+ * 1. isContentScrolled 取 contentOffset < 0 || collapsedFraction > 0——列表不满一整页时，弹性 overscroll 会把顶栏推入折叠却不产生 contentOffset，官方仅按 contentOffset 判定会漏判。
+ * 2. visualContentOffset 在折叠度上合成负向偏移再与真实偏移取更小值，等价 fork 色带渐显的 maxOf(scrollRamp, collapsedFraction)——避免「折叠小标题但色带全透、与正文重叠」。
+ */
+@Composable
+private fun rememberTopBarScrollState(scrollBehavior: ScrollBehavior?): TopBarScrollState {
+    val density = LocalDensity.current
+    val isContentScrolled by remember(scrollBehavior) { derivedStateOf { scrollBehavior?.state?.let { it.contentOffset < 0f || it.collapsedFraction > 0f } ?: true } }
+    val visualContentOffset = remember(scrollBehavior, density) {
+        {
+            val state = scrollBehavior?.state
+            if (state == null) { 0f } else {
+                val collapseBias = -state.collapsedFraction * with(density) { GlassTopAppBarDefaults.ProgressiveBlurRampDistance.toPx() }
+                minOf(state.visualContentOffset, collapseBias)
+            }
+        }
+    }
+    return remember(isContentScrolled, visualContentOffset) { TopBarScrollState(isContentScrolled, visualContentOffset) }
+}
+
+private class TopBarScrollState(
+    val isContentScrolled: Boolean,
+    val visualContentOffset: () -> Float,
+)

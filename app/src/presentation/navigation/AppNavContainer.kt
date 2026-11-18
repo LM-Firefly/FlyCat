@@ -90,9 +90,9 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.java.KoinJavaComponent.getKoin
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 
 @Composable
 fun RouteContent(route: Route, navigator: Navigator, mainPage: Int = 0) {

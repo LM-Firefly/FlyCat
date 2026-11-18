@@ -195,7 +195,6 @@ private fun ProfileModeBadge(profileName: String?, tunnelMode: TunnelState.Mode?
             onDismissRequest = { showProfilePopup = false },
             anchor = profileMenuAnchor,
             anchorContent = profileChipContent,
-            alignToPageEnd = false,
             sizing = GlassPopupSizing(minWidth = 188.dp, maxWidth = 280.dp),
         ) {
             enabledProfiles.forEach { profile ->
@@ -203,7 +202,6 @@ private fun ProfileModeBadge(profileName: String?, tunnelMode: TunnelState.Mode?
                     text = profile.name,
                     selected = currentProfileId == profile.uuid.toString(),
                     onClick = { showProfilePopup = false; onProfileSelected(profile.uuid.toString()) },
-                    textMaxLines = Int.MAX_VALUE,
                 )
             }
         }
@@ -220,7 +218,6 @@ private fun ProfileModeBadge(profileName: String?, tunnelMode: TunnelState.Mode?
             onDismissRequest = { showModePopup = false },
             anchor = modeMenuAnchor,
             anchorContent = modeChipContent,
-            alignToPageEnd = false,
         ) {
             modeOptions.forEach { mode ->
                 GlassMenuItem(text = mode.toDisplayName(), selected = mode == tunnelMode, onClick = { showModePopup = false; onTunnelModeSelected(mode) })
@@ -334,7 +331,6 @@ private fun ProxyTypeCapsule(runMode: RunMode, isEnabled: Boolean, onRunModeClic
         onDismissRequest = { showPopup = false },
         anchor = runModeMenuAnchor,
         anchorContent = runModeChipContent,
-        alignToPageEnd = false,
     ) {
         runModeOptions.forEach { mode ->
             GlassMenuItem(

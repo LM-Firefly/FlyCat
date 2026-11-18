@@ -81,13 +81,13 @@ fun AppDialog(
     val pageWallpaperBackdrop = LocalGlassBackdrop.current
     OverlayDialog(
         show = show,
-        modifier = modifier.then(
-            glassDialogSurface(
-                backdrop = pageWallpaperBackdrop,
-                cornerRadius = cornerRadius,
-                stroke = null,
-                containerColor = backgroundColor,
-            )
+        modifier = modifier,
+        // 面板级玻璃表面：委托库 glassDialogSurface（材质单源 GlassDialogDefaults.material()，stroke=null 保持现观感；
+        // 库默认带 ScrimBackdrop 压暗）。圆角由 OverlayDialog 的 cornerRadius 经 DialogSurfaceScope 提供。
+        surface = glassDialogSurface(
+            backdrop = pageWallpaperBackdrop,
+            stroke = null,
+            containerColor = backgroundColor,
         ),
         title = title,
         titleColor = titleColor,

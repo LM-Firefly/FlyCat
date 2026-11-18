@@ -33,22 +33,14 @@ pluginManagement {
         mavenCentral()
         google()
         gradlePluginPortal()
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+        maven("https://redirector.kotlinlang.org/maven/bootstrap")
+        maven("https://redirector.kotlinlang.org/maven/dev")
         maven("https://jitpack.io")
         maven("https://maven.aliyun.com/nexus/content/repositories/releases/") {
             content {
                 excludeGroupAndSubgroups("ren.shiror")
                 excludeGroupAndSubgroups("work.niggergo")
                 excludeGroupAndSubgroups("dev.oom-wg")
-            }
-        }
-        maven("https://maven.oom-wg.dev")
-        maven("https://oom-maven.sawahara.host") {
-            content {
-                includeGroupAndSubgroups("ren.shiror")
-                includeGroupAndSubgroups("work.niggergo")
-                includeGroupAndSubgroups("dev.oom-wg")
             }
         }
     }
@@ -73,7 +65,7 @@ dependencyResolutionManagement {
         mavenCentral()
         google()
         gradlePluginPortal()
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+        maven("https://redirector.kotlinlang.org/maven/dev")
         maven("https://jitpack.io")
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
         maven("https://maven.aliyun.com/nexus/content/repositories/releases/") {
@@ -81,14 +73,6 @@ dependencyResolutionManagement {
                 excludeGroupAndSubgroups("ren.shiror")
                 excludeGroupAndSubgroups("work.niggergo")
                 excludeGroupAndSubgroups("dev.oom-wg")
-            }
-        }
-        maven("https://maven.oom-wg.dev")
-        maven("https://oom-maven.sawahara.host") {
-            content {
-                includeGroupAndSubgroups("ren.shiror")
-                includeGroupAndSubgroups("work.niggergo")
-                includeGroupAndSubgroups("dev.oom-wg")
             }
         }
         maven("https://maven.kr328.app/releases")

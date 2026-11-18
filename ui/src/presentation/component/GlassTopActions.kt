@@ -26,13 +26,14 @@ package com.github.lmfirefly.flycat.presentation.component
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,7 +45,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -53,21 +53,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
-import com.kyant.shapes.Capsule
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.glass.GlassFloatingToolbar
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
-import top.yukonga.miuix.kmp.glass.GlassPopupAnchorElement
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
-import top.yukonga.miuix.kmp.glass.PublishGlassAnchorSurfaces
-import top.yukonga.miuix.kmp.glass.glassPanel
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
-import top.yukonga.miuix.kmp.glass.rememberGlassAnchorSurface
-import top.yukonga.miuix.kmp.material.GlassDefaults
-import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** NexioSchedule 顶栏 chrome 尺寸：42dp 容器承载 22dp 图标。 */
@@ -93,6 +88,12 @@ data class GlassTopAction(
     val popup: (@Composable () -> Unit)? = null,
     /** [popup] 锚定的位置。按钮会自动绑定到该锚点，因此调用方无需再手动在 [modifier] 上设置 `glassPopupAnchor` 和在 [iconModifier] 上设置 `glassPopupAnchorContent`。 */
     val anchor: GlassPopupAnchor? = null,
+    /**
+     * 抑制弹窗变换端点复用按钮表面（fork 特化修复的移植）。
+     * 当按钮采样的是受限的兄弟纯色录制层而非全页背景（如嵌在 GlassScaffold 录制子树内、为规避自采样崩溃而改用按钮大小纯色层的列表头按钮）时，
+     * 库 GlassButtonSurface 发布的表面会把这块小背景铺满生长中的面板，在按钮原位留下一块不透明方块；置位后按钮不发布表面，面板改以纯玻璃形态生长。
+     */
+    val suppressTransformSurface: Boolean = false,
     /** 是否可用。禁用态保留外观，仅去掉点击与图标对比度（与 [SheetHeaderIconButton] 同约定）。 */
     val enabled: Boolean = true,
 )
@@ -113,9 +114,7 @@ fun GlassTopActionAnchorIcon(imageVector: ImageVector) {
 
 /** 此操作通过自身修饰符公开的弹出锚点（如有）。 */
 private val GlassTopAction.popupAnchor: GlassPopupAnchor?
-    get() = anchor ?: modifier.foldIn<GlassPopupAnchor?>(null) { found, element ->
-        if (element is GlassPopupAnchorElement) element.anchor else found
-    }
+    get() = anchor
 
 /** 将此按钮的边界绑定到其自身的 [GlassTopAction.anchor]，如果它声明了的话。 */
 private val GlassTopAction.anchorModifier: Modifier
@@ -149,28 +148,22 @@ fun GlassTopActionPill(actions: List<GlassTopAction>, backdrop: LayerBackdrop?, 
     }
     val glass = rememberGlassTopActionStyle()
     /** 每次重组时操作列表都会被重新构建（其修饰符和 Lambda 都是新的实例），因此锚点列表不能作为可用的效果键。 */
-    val resolvedPopupAnchors = actions.mapNotNull { it.popupAnchor }.distinct()
     val containerMaterial = GlassTopAppBarDefaults.buttonMaterial()
     val containerStroke = GlassTopAppBarDefaults.buttonStroke()
-    val popupSurface = rememberGlassAnchorSurface(backdrop, containerMaterial, containerStroke, glass.fallbackColor)
-    val collapsedSurfaceProgress = remember { mutableFloatStateOf(0f) }
-    PublishGlassAnchorSurfaces(resolvedPopupAnchors, popupSurface, surfaceProgress = collapsedSurfaceProgress, surfaceFloating = false)
-    val pillShape = remember { Capsule() }
-    Box(
-        modifier = modifier.height(GlassTopActionDefaults.ContainerSize).glassPanel(
-            backdrop = backdrop,
-            shape = GlassShape(GlassTopActionDefaults.ContainerSize / 2),
-            style = GlassDefaults.Style,
-            material = containerMaterial,
-            stroke = containerStroke,
-            shadow = null,
-            shading = false,
-            fallback = Modifier.clip(pillShape).background(glass.fallbackColor),
-        ),
-        contentAlignment = Alignment.CenterStart,
+    /** 与官方 GlassIconButton 在顶栏内的采样语义一致（按钮继承的 buttonBackdrop 是壁纸层）： body 录制层带不透明底色，空页面上会把胶囊染成纯白，壁纸层才是液态玻璃观感。 */
+    val resolvedBackdrop = LocalGlassBackdrop.current ?: backdrop
+    GlassFloatingToolbar(
+        modifier = modifier.height(GlassTopActionDefaults.ContainerSize),
+        backdrop = resolvedBackdrop,
+        cornerRadius = GlassTopActionDefaults.ContainerSize / 2,
+        outSidePadding = PaddingValues(0.dp),
+        material = containerMaterial,
+        stroke = containerStroke,
+        shadow = null,
+        fill = glass.fallbackColor,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = GlassTopActionDefaults.PillHorizontalPadding),
+            modifier = Modifier.fillMaxHeight().padding(horizontal = GlassTopActionDefaults.PillHorizontalPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(GlassTopActionDefaults.PillIconGap),
         ) {
@@ -197,25 +190,38 @@ private fun PillActionSlot(action: GlassTopAction, icon: @Composable () -> Unit)
  */
 @Composable
 fun GlassTopIconButton(action: GlassTopAction, backdrop: LayerBackdrop?, modifier: Modifier = Modifier) {
-    // 弹窗与按钮同槽渲染（同 PillActionSlot 语义）：独立圆钮路径此前漏渲染 action.popup，导致挂在单钮上的弹窗（代理排序/日志过滤）永不组合、点击无反应。
+    /** 弹窗与按钮同槽渲染（同 PillActionSlot 语义）：独立圆钮路径此前漏渲染 action.popup，导致挂在单钮上的弹窗（代理排序/日志过滤）永不组合、点击无反应。 */
     PillActionSlot(action) {
-        // 圆钮的锚点起始圆角须等于 42dp 圆形半径，否则弹窗折叠端点渲染成圆角方形而非圆；库 GlassButtonSurface 识别该修饰符并发布折叠端点材质。
-        val anchorModifier = action.popupAnchor?.let {
-            Modifier.glassPopupAnchor(anchor = it, cornerRadius = GlassTopActionDefaults.ContainerSize / 2, floating = true)
-        } ?: Modifier
-        GlassIconButton(
-            // 禁用态保留外观，仅去掉点击与图标对比度。
-            onClick = { if (action.enabled) action.onClick() },
-            // [GlassTopAction.modifier] 属于该 action，必须保留（anchor/inset 覆盖）。
-            modifier = action.modifier.then(modifier).then(anchorModifier),
-            backdrop = backdrop,
-            size = GlassTopActionDefaults.ContainerSize,
-        ) {
+        /** 圆钮的锚点起始圆角须等于 42dp 圆形半径，否则弹窗折叠端点渲染成圆角方形而非圆；库 GlassButtonSurface 识别该修饰符并发布折叠端点材质。 */
+        val anchorModifier = action.popupAnchor?.let { Modifier.glassPopupAnchor(anchor = it, cornerRadius = GlassTopActionDefaults.ContainerSize / 2, floating = true) } ?: Modifier
+        val iconContent: @Composable () -> Unit = {
             Icon(
                 imageVector = action.icon,
                 contentDescription = action.contentDescription,
                 modifier = Modifier.size(GlassTopActionDefaults.IconSize).then(action.iconModifier).then(action.anchorIconModifier).let { if (action.enabled) it else it.alpha(AppTheme.opacity.disabled) },
                 tint = action.tint.takeOr(MiuixTheme.colorScheme.onSurface),
+            )
+        }
+        if (action.suppressTransformSurface && action.popupAnchor != null) {
+            /** 锚点挂在外层 Box：库 GlassButtonSurface 只扫描按钮自身修饰符链，找不到锚点元素即不发布折叠端点表面（等价 fork 的 suppressTransformSurface，见字段 KDoc）。 */
+            Box(modifier = anchorModifier) {
+                GlassIconButton(
+                    onClick = { if (action.enabled) action.onClick() },
+                    modifier = action.modifier.then(modifier),
+                    backdrop = backdrop,
+                    size = GlassTopActionDefaults.ContainerSize,
+                    content = iconContent,
+                )
+            }
+        } else {
+            GlassIconButton(
+                /** 禁用态保留外观，仅去掉点击与图标对比度。 */
+                onClick = { if (action.enabled) action.onClick() },
+                /** [GlassTopAction.modifier] 属于该 action，必须保留（anchor/inset 覆盖）。 */
+                modifier = action.modifier.then(modifier).then(anchorModifier),
+                backdrop = backdrop,
+                size = GlassTopActionDefaults.ContainerSize,
+                content = iconContent,
             )
         }
     }
@@ -227,10 +233,7 @@ private fun PillActionIcon(action: GlassTopAction, glass: GlassTopActionStyle) {
     val pressed by interactionSource.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
         targetValue = if (pressed) 0.86f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium,
-        ),
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
         label = "glass_top_pill_icon_press_scale",
     )
     Box(

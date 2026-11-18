@@ -2,7 +2,7 @@
 aboutLibraries = "15.3.0"
 activityCompose = "1.13.0"
 # Plugin & build-only versions
-androidGradlePlugin = "9.6.0-alpha03"
+androidGradlePlugin = "9.6.0-alpha04"
 androidxTestCore = "1.7.0"
 annotationJvm = "1.11.0"
 bcprov = "1.87"
@@ -33,13 +33,13 @@ jetbrainsCompose = "1.12.2"
 jose4j = "0.9.6"
 junit4 = "4.13.2"
 koin = "4.2.2"
-kotlin = "2.4.21-439"
-ksp = "2.3.13"
+kotlin = "2.4.21"
+ksp = "2.3.14"
 ktor = "3.6.1"
 libsu = "6.0.0"
 lifecycle = "2.11.0"
 lyricist = "1.9.0"
-miuix = "0.9.4"
+miuix = "0.9.5-beta01"
 mlkitBarcodeScanning = "17.3.0"
 # @keep 按 ABI 选择的 32 位 MMKV，仅被 build 脚本 resolutionStrategy 程序化引用
 mmkv32 = "1.3.14"
@@ -47,13 +47,13 @@ mmkv64 = "2.4.3"
 navigationEvent = "1.2.0"
 # @keep 安全版本下限，仅被 build 脚本 resolutionStrategy 程序化引用
 netty = "4.2.17.Final"
-privKit = "0.20.0"
+privKit = "0.23.0"
 # @keep 安全版本下限，仅被 build 脚本 resolutionStrategy 程序化引用
 protobuf = "3.25.9"
 reorderable = "3.1.0"
-robolectric = "4.17"
+robolectric = "4.18.1"
 room3 = "3.0.3"
-serializationJson = "1.12.0"
+serializationJson = "1.13.0"
 shapes = "1.2.1"
 shizuku = "13.1.5"
 sketch4 = "4.7.0"
@@ -121,8 +121,10 @@ libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "
 lyricist = { module = "cafe.adriel.lyricist:lyricist", version.ref = "lyricist" }
 lyricist-processor = { module = "cafe.adriel.lyricist:lyricist-processor", version.ref = "lyricist" }
 miuix-blur-android = { module = "top.yukonga.miuix.kmp:miuix-blur-android", version.ref = "miuix" }
+miuix-glass = { module = "top.yukonga.miuix.kmp:miuix-glass", version.ref = "miuix" }
+miuix-glass-icons = { module = "top.yukonga.miuix.kmp:miuix-glass-icons", version.ref = "miuix" }
+miuix-material = { module = "top.yukonga.miuix.kmp:miuix-material", version.ref = "miuix" }
 miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference", version.ref = "miuix" }
-miuix-shader-android = { module = "top.yukonga.miuix.kmp:miuix-shader-android", version.ref = "miuix" }
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuix" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcodeScanning" }
 mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv64" }

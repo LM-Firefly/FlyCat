@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.theme.glassSurfaceBackdrop
+import kotlinx.coroutines.delay
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
@@ -56,7 +59,6 @@ import top.yukonga.miuix.kmp.glass.GlassPopupSizing
 import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 import top.yukonga.miuix.kmp.glass.GlassSecondaryPopup
 import top.yukonga.miuix.kmp.glass.GlassTransformPopup
-import top.yukonga.miuix.kmp.glass.rememberSubmenuArrowRotation
 import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
@@ -67,11 +69,8 @@ val GlassPopupMenuSizing: GlassPopupSizing = GlassPopupSizing(
     maxWidth = 188.dp,
 )
 
-object GlassPopupMenuDefaults {
-    val ItemIconSize: Dp = 18.dp
-    /** 故意偏离 [UiDp] 刻度：以 MIUI 菜单为参照测量，而非间距步长。 */
-    val ItemIconGap: Dp = 15.dp
-}
+/** GlassTransformPopup 收起动画的近似时长（transformSpring 最慢响应 0.4s），超时后视作收起完成。*/
+private const val TransformDismissDelayMs: Long = 500L
 
 /**
  * 托管一个锚定的玻璃弹出层，并在其折叠动画完成前保持挂载。
@@ -89,7 +88,6 @@ fun GlassPopupHost(
     backdrop: Backdrop? = glassSurfaceBackdrop(),
     sizing: GlassPopupSizing = GlassPopupMenuSizing,
     visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
-    alignToPageEnd: Boolean = true,
     dismissOnBack: Boolean = false,
     onDismissFinished: () -> Unit = {},
     submenu: GlassSubmenuState? = null,
@@ -113,6 +111,16 @@ fun GlassPopupHost(
             // 先以面板关闭状态进行布局，这样开场的变换动画才能真正生效。
             var expanded by remember { mutableStateOf(false) }
             LaunchedEffect(show) { expanded = show }
+            // 官方 GlassTransformPopup 无 onDismissFinished；收起动画（transformSpring 最长约 0.4s 响应）后再卸载弹出层并回调，近似 fork 版的「收起完成」语义。
+            LaunchedEffect(expanded) {
+                if (!expanded) {
+                    delay(TransformDismissDelayMs)
+                    if (!currentShow) {
+                        popupVisible.value = false
+                        currentOnDismissFinished()
+                    }
+                }
+            }
             GlassTransformPopup(
                 show = expanded,
                 onDismissRequest = {
@@ -126,15 +134,8 @@ fun GlassPopupHost(
                 sizing = sizing,
                 visuals = visuals,
                 stacked = submenu?.open == true,
-                alignToPageEnd = alignToPageEnd,
                 onMeasured = { size ->
                     menuWidth = with(density) { size.width.toDp() }
-                },
-                onDismissFinished = {
-                    if (!currentShow) {
-                        popupVisible.value = false
-                        currentOnDismissFinished()
-                    }
                 },
             ) {
                 content()
@@ -186,7 +187,7 @@ fun rememberGlassSubmenuState(show: Boolean): GlassSubmenuState {
 
 /**
  * 应用中某个锚定玻璃菜单里的一行。
- * 每个菜单都共享 [GlassPopupMenuDefaults] 的紧凑字形度量，因此本行提供这些度量，调用处只需声明不同之处。使用 [GlassPopupSubmenuItem] 表示会打开级联页面的行，使用 [GlassSubmenuPageHeader] 表示标识页面名称的行。
+ * 每个菜单都共享 紧凑的字形度量，调用处只需声明不同之处。使用 [GlassPopupSubmenuItem] 表示会打开级联页面的行，使用 [GlassSubmenuPageHeader] 表示标识页面名称的行。
  */
 @Composable
 fun GlassMenuItem(
@@ -199,21 +200,17 @@ fun GlassMenuItem(
     contentColor: Color = MiuixTheme.colorScheme.onSurfaceContainer,
     showArrow: Boolean = false,
     arrowRotation: () -> Float = { 0f },
-    textMaxLines: Int = 1,
 ) {
     GlassPopupItem(
         text = text,
         onClick = onClick,
         modifier = modifier,
         icon = icon,
-        iconSize = GlassPopupMenuDefaults.ItemIconSize,
-        iconGap = GlassPopupMenuDefaults.ItemIconGap,
         enabled = enabled,
         selected = selected,
         contentColor = contentColor,
         showArrow = showArrow,
         arrowRotation = arrowRotation,
-        textMaxLines = textMaxLines,
     )
 }
 
@@ -264,15 +261,28 @@ fun GlassSubmenuPageHeader(
 /** 级联行箭头的旋转：页面展开时旋转，页面收起时转回，因为页面驱动了 [GlassPopupAnchor.secondaryBackProgress]。 */
 @Composable
 private fun submenuArrow(anchor: GlassPopupAnchor, open: Boolean): () -> Float {
-    // 与库 GlassIconDropdownMenu 共享 rememberSubmenuArrowRotation（原两侧各一份同构实现）。
     val rotation by rememberSubmenuArrowRotation(open)
     return { rotation * (1f - anchor.secondaryBackProgress) }
 }
 
+/** 级联行箭头的旋转动画：页面展开时旋转，页面收起时转回。（库实现为 private，此处等价重实现。）*/
+@Composable
+private fun rememberSubmenuArrowRotation(open: Boolean): State<Float> = animateFloatAsState(
+    targetValue = if (open) CascadingPopupDefaults.arrowRotation(LocalLayoutDirection.current) else 0f,
+    animationSpec = CascadingPopupDefaults.arrowSpring(open),
+    label = "glassSubmenuArrow",
+)
+
 /** 一个菜单中两个部分之间的分隔符。 */
 @Composable
 fun GlassMenuDivider() {
-    top.yukonga.miuix.kmp.glass.GlassMenuDivider()
+    HorizontalDivider(
+        modifier = Modifier.padding(
+            horizontal = GlassPopupDefaults.DividerPaddingHorizontal,
+            vertical = GlassPopupDefaults.DividerPaddingVertical,
+        ),
+        thickness = GlassPopupDefaults.DividerThickness,
+    )
 }
 
 /** 一组 [GlassMenuItem] 行上方的静默标题，与 MIUI 菜单内边距保持一致。 */

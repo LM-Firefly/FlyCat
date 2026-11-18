@@ -54,9 +54,9 @@ import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import kotlin.math.roundToInt
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 
 class ProxySheetActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) { super.attachBaseContext(AppLanguageManager.wrap(newBase)) }

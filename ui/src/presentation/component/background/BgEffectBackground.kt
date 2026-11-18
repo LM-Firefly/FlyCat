@@ -14,13 +14,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import androidx.compose.ui.platform.LocalConfiguration
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.floor
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 是否平板宽度。 */
 @Composable

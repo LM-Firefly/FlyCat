@@ -70,6 +70,7 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
 import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
 import com.github.lmfirefly.flycat.presentation.component.SheetHeaderIconButton
+import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
@@ -90,7 +91,6 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -400,7 +400,7 @@ internal fun ProfileSettingsDialog(
                     }
                     ProfileSettingsSection.Override -> {
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.space16)) {
-                            Card {
+                            Card(applyHorizontalPadding = false) {
                                 Column {
                                     SwitchPreference(
                                         title = FlyTxt.ProfilesPage.SettingsDialog.CustomRouting,
@@ -417,7 +417,7 @@ internal fun ProfileSettingsDialog(
                                 }
                             }
                             if (overrideRowIds.isNotEmpty()) {
-                                Card {
+                                Card(applyHorizontalPadding = false) {
                                     LazyColumn(state = selectedOverrideListState, modifier = Modifier.fillMaxWidth().heightIn(max = componentSizes.profileSettingsListMaxHeight)) {
                                         items(overrideRowIds, key = { id -> "override-$id" }) { id ->
                                             val config = selectableById[id] ?: return@items

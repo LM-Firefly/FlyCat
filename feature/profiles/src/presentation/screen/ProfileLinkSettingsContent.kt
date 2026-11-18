@@ -47,7 +47,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Delete
-import top.yukonga.miuix.kmp.icon.glass.Glass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable

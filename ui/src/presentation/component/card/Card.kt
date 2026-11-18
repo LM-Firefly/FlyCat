@@ -38,15 +38,15 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.glass.glassPanel
-import top.yukonga.miuix.kmp.glass.resolveGlassSurfaceShape
 import top.yukonga.miuix.kmp.material.GlassColorBlendMode
 import top.yukonga.miuix.kmp.material.GlassColorLayer
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.edgeStroke
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 
 /**
  * 全局列表卡片外壳。
@@ -97,6 +97,18 @@ fun Card(
 
 /** 玻璃卡片的采样模糊半径。 */
 private const val GlassCardBlurRadius = 60f
+
+/** 在着色器、描边和阴影通道中保留宿主的圆角轮廓（库 resolveGlassSurfaceShape 为 internal，此处等价重实现）。*/
+private fun resolveGlassSurfaceShape(providedShape: Shape, fallbackCornerRadius: Dp): GlassShape = when (providedShape) {
+    is GlassShape -> providedShape
+    is RoundedCornerShape -> GlassShape(
+        topStart = providedShape.topStart,
+        topEnd = providedShape.topEnd,
+        bottomEnd = providedShape.bottomEnd,
+        bottomStart = providedShape.bottomStart,
+    )
+    else -> GlassShape(fallbackCornerRadius)
+}
 
 /**
  * 可复用玻璃卡面：委托库 [glassPanel]（材质单源 [glassCardMaterial]），否则回退 [fallbackColor] 实色。

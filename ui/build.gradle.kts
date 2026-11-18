@@ -52,8 +52,10 @@ dependencies {
     implementation(libs.shapes)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.preference)
-    // 玻璃组件公开 API 暴露 LayerBackdrop/Backdrop 类型，需 api 传递给消费方。
+    // 玻璃组件公开 API 暴露 LayerBackdrop/Backdrop/GlassMaterial 等类型，需 api 传递给消费方。
     api(libs.miuix.blur.android)
-    implementation(libs.miuix.shader.android)
+    api(libs.miuix.material)
+    api(libs.miuix.glass)
+    api(libs.miuix.glass.icons)
     implementation(libs.androidx.navigationevent.compose)
 }
