@@ -26,6 +26,7 @@ package com.github.lmfirefly.flycat.presentation.theme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.luminance
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -42,12 +43,13 @@ fun isDarkTheme(): Boolean = MiuixTheme.colorScheme.background.luminance() < 0.5
 val LocalGlassBackdrop = compositionLocalOf<LayerBackdrop?> { null }
 
 /**
- * 每个路由的背景由 `GlassScaffold` 在 scaffold 主体上方捕获；顶栏槽位按钮与玻璃菜单回退采样该背景（顶栏渐进色带自身采样全局壁纸层，勿把本捕获传给色带）。
+ * 每个路由的背景由 `GlassScaffold` 提供：顶栏渐进模糊与槽位按钮、玻璃菜单采样该背景。
+ * 有壁纸时它是 [com.github.lmfirefly.flycat.presentation.component.CompositeBackdrop]（壁纸层实时叠合正文内容层），无壁纸时是表面底的内容录制层。
  * 顶部栏放置在 Scaffold 的 topBar 插槽中，位于被捕获的主体子树**之外**，因此符合 HyperOS 的同子树约束。
  * `null`（即屏幕未托管在 GlassScaffold 中，例如 Moe 主页 chrome）将仅保留纯遮罩顶部栏。
  */
-val LocalTopBarBackdrop = compositionLocalOf<LayerBackdrop?> { null }
+val LocalTopBarBackdrop = compositionLocalOf<Backdrop?> { null }
 
 /** 锚定玻璃表面应采样的背景：当宿主提供了共享背景时，使用页面的共享背景，否则使用顶栏的背景。浮动菜单向此查询，而不是自行编写回退逻辑，因此“页面背景优先，栏背景其次”这一规则只维护一处。 */
 @Composable
-fun glassSurfaceBackdrop(): LayerBackdrop? = LocalGlassBackdrop.current ?: LocalTopBarBackdrop.current
+fun glassSurfaceBackdrop(): Backdrop? = LocalGlassBackdrop.current ?: LocalTopBarBackdrop.current

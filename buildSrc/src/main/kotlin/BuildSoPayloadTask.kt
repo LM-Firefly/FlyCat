@@ -14,8 +14,7 @@ import org.tukaani.xz.XZOutputStream
 /**
  * 将非引导原生库原地替换为 XZ 压缩内容（文件名不变），显著缩小 APK（XZ/LZMA2 压缩比远高于 APK 的 deflate）。
  * 保留文件名是关键：strip/package 的输入清单会被 Gradle 缓存固化，改名/删除会让下游任务 No such file。
- * split APK 按 ABI 过滤 lib/（每个分包只携带本 ABI）；运行时由 core 的 NativeLibraryLoader 按 XZ 魔数探测
- * 解载到私有目录并注入 classloader 的 native library 搜索路径。
+ * split APK 按 ABI 过滤 lib/（每个分包只携带本 ABI）；运行时由 core 的 NativeLibraryLoader 按 XZ 魔数探测解载到私有目录并注入 classloader 的 native library 搜索路径。
  * 引导库保留原 ELF：libprivkitstarter.so 必须可被 priv-kit 以 linker 直载或安装解压路径启动。
  */
 @DisableCachingByDefault(because = "The output depends on the input library set")
@@ -28,15 +27,16 @@ abstract class BuildSoPayloadTask : DefaultTask() {
         inputLibs.files.filter { it.isDirectory }.forEach { inputRoot ->
             inputRoot.walkTopDown().filter { it.isFile }.toList().forEach { file ->
                 val relative = file.relativeTo(inputRoot).invariantSeparatorsPath
-                // 兼容 inputRoot 位于任务根（relative=out/lib/...）或 out 层级（relative=lib/...）两种形态：
-                // Gradle outputs.files.singleFile 的层级不固定，按路径含 lib/ 段判定而非前缀。
-                if ((!relative.startsWith("lib/") && !relative.contains("/lib/")) || BOOTSTRAP_LIBRARIES.contains(file.name)) {
-                    return@forEach
-                }
+                // 兼容 inputRoot 位于任务根（relative=out/lib/...）或 out 层级（relative=lib/...）两种形态： Gradle outputs.files.singleFile 的层级不固定，按路径含 lib/ 段判定而非前缀。
+                if ((!relative.startsWith("lib/") && !relative.contains("/lib/")) || BOOTSTRAP_LIBRARIES.contains(file.name)) { return@forEach }
                 val original = file.readBytes()
-                file.outputStream().use { out ->
-                    XZOutputStream(out, LZMA2Options(6)).use { it.write(original) }
-                }
+                // 幂等保护：增量构建时 strip 目录里的 .so 可能已被上一轮原地压缩为 XZ；再压一层会让运行时只解一层后 dlopen 失败（bad ELF magic）。
+                if (original.size >= 6 &&
+                    original[0] == 0xFD.toByte() && original[1] == 0x37.toByte() &&
+                    original[2] == 0x7A.toByte() && original[3] == 0x58.toByte() &&
+                    original[4] == 0x5A.toByte() && original[5] == 0x00.toByte()
+                ) { return@forEach }
+                file.outputStream().use { out -> XZOutputStream(out, LZMA2Options(6)).use { it.write(original) } }
             }
         }
     }

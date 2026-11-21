@@ -1,8 +1,6 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("FunctionName")
-
 package com.github.lmfirefly.flycat.presentation.component.background
 
 import androidx.compose.ui.graphics.Brush
@@ -11,53 +9,71 @@ import top.yukonga.miuix.kmp.material.asBrush
 import kotlin.math.cos
 import kotlin.math.sin
 
-internal class BgEffectPainter {
+internal class BgEffectPainter(
+    private val isOs3: Boolean = true,
+) {
+
     val runtimeShader by lazy {
-        RuntimeShader(OS3_BG_FRAG).also {
+        val shaderCode = if (isOs3) OS3_BG_FRAG else OS2_BG_FRAG
+        RuntimeShader(shaderCode).also {
             initStaticUniforms(it)
         }
     }
+
     val brush: Brush get() = runtimeShader.asBrush()
+
     private val resolution = FloatArray(2)
     private val bound = FloatArray(4)
     private val colorsBuffer = FloatArray(16)
     private val pointsAnimBuffer = FloatArray(8)
+
     private var animTime = Float.NaN
     private var isDarkCached: Boolean? = null
     private var deviceTypeCached: DeviceType? = null
+
     private var presetApplied = false
+
     private var cachedLogoHeight = Float.NaN
     private var cachedTotalHeight = Float.NaN
     private var cachedTotalWidth = Float.NaN
+
     private var cachedColorStage = Float.NaN
     private var cachedColorsPreset: BgEffectConfig.Config? = null
+
     private var cachedPointsAnimTime = Float.NaN
     private var cachedPointsAnimPreset: BgEffectConfig.Config? = null
+
     companion object {
+
         private const val U_TRANSLATE_Y = 0f
         private const val U_ALPHA_MULTI = 1f
         private const val U_NOISE_SCALE = 1.5f
         private const val U_POINT_RADIUS_MULTI = 1f
     }
+
     private fun initStaticUniforms(shader: RuntimeShader) {
         shader.setFloatUniform("uTranslateY", U_TRANSLATE_Y)
         shader.setFloatUniform("uNoiseScale", U_NOISE_SCALE)
         shader.setFloatUniform("uPointRadiusMulti", U_POINT_RADIUS_MULTI)
         shader.setFloatUniform("uAlphaMulti", U_ALPHA_MULTI)
     }
+
     fun updateResolution(width: Float, height: Float) {
         if (resolution[0] == width && resolution[1] == height) return
         resolution[0] = width
         resolution[1] = height
         runtimeShader.setFloatUniform("uResolution", resolution)
     }
+
     fun updateAnimTime(time: Float) {
         if (animTime == time) return
         animTime = time
         runtimeShader.setFloatUniform("uAnimTime", animTime)
     }
+
     fun updatePointsAnim(time: Float, preset: BgEffectConfig.Config) {
         if (cachedPointsAnimTime == time && cachedPointsAnimPreset === preset) return
+
         val offset = preset.pointOffset
         var i = 0
         while (i < 4) {
@@ -70,11 +86,14 @@ internal class BgEffectPainter {
             i++
         }
         runtimeShader.setFloatUniform("uPointsAnim", pointsAnimBuffer)
+
         cachedPointsAnimTime = time
         cachedPointsAnimPreset = preset
     }
+
     fun updateColors(preset: BgEffectConfig.Config, stage: Float) {
         if (cachedColorsPreset === preset && cachedColorStage == stage) return
+
         val base = stage.toInt()
         val fraction = stage - base
         val start = colorsForCycleIndex(preset, base)
@@ -83,14 +102,17 @@ internal class BgEffectPainter {
             colorsBuffer[i] = start[i] + (end[i] - start[i]) * fraction
         }
         runtimeShader.setFloatUniform("uColors", colorsBuffer)
+
         cachedColorsPreset = preset
         cachedColorStage = stage
     }
+
     private fun colorsForCycleIndex(preset: BgEffectConfig.Config, index: Int): FloatArray = when (index.mod(4)) {
         1 -> preset.colors1
         3 -> preset.colors3
         else -> preset.colors2
     }
+
     fun updateBoundIfNeeded(
         logoHeight: Float,
         totalHeight: Float,
@@ -102,25 +124,33 @@ internal class BgEffectPainter {
         ) {
             return
         }
+
         updateBound(logoHeight, totalHeight, totalWidth)
         runtimeShader.setFloatUniform("uBound", bound)
+
         cachedLogoHeight = logoHeight
         cachedTotalHeight = totalHeight
         cachedTotalWidth = totalWidth
     }
+
     fun updatePresetIfNeeded(deviceType: DeviceType, isDark: Boolean) {
         if (presetApplied && isDarkCached == isDark && deviceTypeCached == deviceType) return
+
         applyPreset(deviceType, isDark)
+
         isDarkCached = isDark
         deviceTypeCached = deviceType
         presetApplied = true
     }
+
     private fun applyPreset(deviceType: DeviceType, isDark: Boolean) {
-        val preset = BgEffectConfig.get(deviceType, isDark)
+        val preset = BgEffectConfig.get(deviceType, isDark, isOs3)
+
         runtimeShader.setFloatUniform("uPoints", preset.points)
         runtimeShader.setFloatUniform("uLightOffset", preset.lightOffset)
         runtimeShader.setFloatUniform("uSaturateOffset", preset.saturateOffset)
     }
+
     private fun updateBound(
         logoHeight: Float,
         totalHeight: Float,

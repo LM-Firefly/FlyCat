@@ -91,8 +91,14 @@ fun OpenSourceLicensesScreen(navigator: Navigator, librariesResId: Int) {
     val libraryItems = remember(libraries) { libraries?.libraries.orEmpty().groupBy { it.name }.map { (name, group) -> LibraryGroup(name = name, entries = group.sortedBy { it.uniqueId }) } }
 
     GlassScaffold(
-        // 顶栏色带采样默认的全局壁纸录制层（勿传 LocalTopBarBackdrop——正文录制层会被涂抹进色带，绿色许可证徽章渗入顶栏）。
-        topBar = { TopBar(title = FlyTxt.OpenSourceLicenses.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
+        topBar = {
+            TopBar(
+                title = FlyTxt.OpenSourceLicenses.Title,
+                scrollBehavior = scrollBehavior,
+                navigationIconPadding = 0.dp,
+                navigationIcon = { NavigationBackIcon(navigator = navigator) },
+            )
+        }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(

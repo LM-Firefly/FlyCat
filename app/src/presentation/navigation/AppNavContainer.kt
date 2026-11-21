@@ -247,22 +247,23 @@ fun AppNavContainer(component: AppNavigationComponent) {
     val wallpaperBackdrop = rememberLayerBackdrop { drawContent() }
     val glassBackdrop = if (appBackground.enabled && shaderSupported) wallpaperBackdrop else null
     CompositionLocalProvider(LocalAppBackground provides appBackground, LocalGlassBackdrop provides glassBackdrop) {
-        Box(Modifier.fillMaxSize()) {
-            if (appBackground.enabled) {
-                appBackground.render(if (shaderSupported) Modifier.fillMaxSize().layerBackdrop(wallpaperBackdrop) else Modifier.fillMaxSize())
+        // 全局 toast 对话框宿主：miuix 弹出层注册进 Scaffold 持有的 dialogStates 渲染。
+        // 宿主 Scaffold 作为父容器包住壁纸与导航内容——根 Surface 的 TopAppBarInputTracker 指针节点默认不与兄弟共享命中测试，全屏兄弟覆盖会截胡整棵子树的触控。
+        // 置于壁纸提供域内使玻璃面板/按钮生效。
+        Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) {
+            Box(Modifier.fillMaxSize()) {
+                if (appBackground.enabled) {
+                    appBackground.render(if (shaderSupported) Modifier.fillMaxSize().layerBackdrop(wallpaperBackdrop) else Modifier.fillMaxSize())
+                }
+                Children(
+                    stack = stack,
+                    modifier = Modifier.fillMaxSize(),
+                    animation = animation,
+                ) { child ->
+                    child.instance.Content()
+                }
             }
-            Children(
-                stack = stack,
-                modifier = Modifier.fillMaxSize(),
-                animation = animation,
-            ) { child ->
-                child.instance.Content()
-            }
-            // 全局 toast 对话框宿主：miuix 弹出层注册进 Scaffold 持有的 dialogStates 渲染；
-            // 透明 Scaffold 提供渲染位且不影响触控；置于壁纸提供域内使玻璃面板/按钮生效。
-            Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) {
-                ToastDialogHost()
-            }
+            ToastDialogHost()
         }
     }
 }

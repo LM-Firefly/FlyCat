@@ -29,44 +29,40 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
+import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import kotlin.math.abs
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 路由顶栏：委托库 [GlassTopAppBar]（对齐 miuix 液态玻璃——渐变色带 + 材质上下文 + 折叠大标题）。
- * 材质可见性跟随滚动（静止时无内容位于顶栏之下，色带透明；内容滚入即渐显），
- * 顶栏槽位按钮委托库 GlassIconButton（材质与描边随滚动渐显，弹窗锚点由其发布）。
+ * 路由顶栏：委托库 [GlassTopAppBar]，对齐 miuix 示例 app 的渐进模糊（AdaptiveTopAppBar 的玻璃路径）。
+ * 内容滚入顶栏下方时，顶栏背景对正文录制层做渐进模糊，色带随折叠渐显，槽位按钮采样同一渲染场景。
+ * 滚动状态走库的 scrollBehavior 通道（isContentScrolled = contentOffset/overscrollOffset 判定，与示例同一公式），
+ * 渐进模糊由库内 maskProgress/collapseFraction 驱动；不再做 fork 期的 visualContentOffset/collapsedFraction 补偿。
  *
  * @param title 标题，顶栏折叠时居中显示。
- * @param scrollBehavior 驱动折叠的滚动行为。
+ * @param scrollBehavior 驱动折叠与材质渐显的滚动行为。
  * @param modifier 应用于顶栏的修饰符。
- * @param titlePadding 标题与大标题的水平内缩。
  * @param navigationIconPadding 首端控件的起始内缩。
  * @param actionIconPadding 末端控件的末端内缩。
  * @param navigationIcon 首端控件槽位。
  * @param actions 末端控件槽位。
  * @param titleContent 非空时改用钉住模式（[SmallTopBar]），标题块随滚动缩放，位于 [bottomContent] 之上。
  * @param bottomContent 钉在顶栏内标题下方的内容。
- * @param backdrop 顶栏材质上下文采样的背景；默认为全局壁纸录制层。
- * @param transparent 完全透明顶栏（无色带/材质背景），用于背景自身即装饰的页面（如关于页渐变壁纸）；优先级高于 [backdrop]。
+ * @param backdrop 渐进模糊与按钮采样的背景；默认为 GlassScaffold 正文录制层，无则回退全局壁纸录制层。
+ * @param transparent 完全透明顶栏（无色带/渐进模糊/材质背景），用于背景自身即装饰的页面（如关于页渐变壁纸）；优先级高于 [backdrop]。
  */
 @Composable
 fun TopBar(
@@ -79,7 +75,7 @@ fun TopBar(
     actions: @Composable RowScope.() -> Unit = {},
     titleContent: (@Composable () -> Unit)? = null,
     bottomContent: @Composable () -> Unit = {},
-    backdrop: LayerBackdrop? = LocalGlassBackdrop.current,
+    backdrop: Backdrop? = LocalTopBarBackdrop.current ?: LocalGlassBackdrop.current,
     transparent: Boolean = false,
 ) {
     if (titleContent != null) {
@@ -128,14 +124,11 @@ fun TopBar(
         )
         return
     }
-    val scrollState = rememberTopBarScrollState(scrollBehavior)
     GlassTopAppBar(
         title = title,
-        isContentScrolled = scrollState.isContentScrolled,
-        modifier = modifier.clipToBounds(),
+        modifier = modifier,
         progressiveBlur = !transparent,
         scrollBehavior = scrollBehavior,
-        visualContentOffset = scrollState.visualContentOffset,
         backdrop = backdrop,
         bandBrush = GlassTopAppBarDefaults.bandBrush(barBandColor(transparent)),
         backgroundAlpha = { if (transparent) 0f else 1f },
@@ -159,18 +152,15 @@ fun SmallTopBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     bottomContent: @Composable () -> Unit = {},
-    backdrop: LayerBackdrop? = LocalGlassBackdrop.current,
+    backdrop: Backdrop? = LocalTopBarBackdrop.current ?: LocalGlassBackdrop.current,
     transparent: Boolean = false,
 ) {
-    val scrollState = rememberTopBarScrollState(scrollBehavior)
     GlassTopAppBar(
         title = title,
-        isContentScrolled = scrollState.isContentScrolled,
-        modifier = modifier.clipToBounds(),
+        modifier = modifier,
         expandable = false,
         progressiveBlur = !transparent,
         scrollBehavior = scrollBehavior,
-        visualContentOffset = scrollState.visualContentOffset,
         backdrop = backdrop,
         bandBrush = GlassTopAppBarDefaults.bandBrush(barBandColor(transparent)),
         backgroundAlpha = { if (transparent) 0f else 1f },
@@ -187,29 +177,3 @@ private fun barBandColor(transparent: Boolean): Color = if (transparent) {
 } else {
     MiuixTheme.colorScheme.surface
 }
-
-/**
- * 顶栏折叠的显式状态（fork 补偿，随迁移从 vendored 版回收）：
- * 1. isContentScrolled 取 contentOffset < 0 || collapsedFraction > 0——列表不满一整页时，弹性 overscroll 会把顶栏推入折叠却不产生 contentOffset，官方仅按 contentOffset 判定会漏判。
- * 2. visualContentOffset 在折叠度上合成负向偏移再与真实偏移取更小值，等价 fork 色带渐显的 maxOf(scrollRamp, collapsedFraction)——避免「折叠小标题但色带全透、与正文重叠」。
- */
-@Composable
-private fun rememberTopBarScrollState(scrollBehavior: ScrollBehavior?): TopBarScrollState {
-    val density = LocalDensity.current
-    val isContentScrolled by remember(scrollBehavior) { derivedStateOf { scrollBehavior?.state?.let { it.contentOffset < 0f || it.collapsedFraction > 0f } ?: true } }
-    val visualContentOffset = remember(scrollBehavior, density) {
-        {
-            val state = scrollBehavior?.state
-            if (state == null) { 0f } else {
-                val collapseBias = -state.collapsedFraction * with(density) { GlassTopAppBarDefaults.ProgressiveBlurRampDistance.toPx() }
-                minOf(state.visualContentOffset, collapseBias)
-            }
-        }
-    }
-    return remember(isContentScrolled, visualContentOffset) { TopBarScrollState(isContentScrolled, visualContentOffset) }
-}
-
-private class TopBarScrollState(
-    val isContentScrolled: Boolean,
-    val visualContentOffset: () -> Float,
-)

@@ -56,7 +56,7 @@ import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassFloatingToolbar
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
@@ -136,7 +136,7 @@ private val GlassTopAction.anchorIconModifier: Modifier
  * 按压反馈为玻璃质感的轻微缩小，无水波纹效果。
  */
 @Composable
-fun GlassTopActionPill(actions: List<GlassTopAction>, backdrop: LayerBackdrop?, modifier: Modifier = Modifier) {
+fun GlassTopActionPill(actions: List<GlassTopAction>, backdrop: Backdrop?, modifier: Modifier = Modifier) {
     if (actions.size < 2) {
         Row(modifier) {
             actions.forEach { action ->
@@ -189,7 +189,7 @@ private fun PillActionSlot(action: GlassTopAction, icon: @Composable () -> Unit)
  * 在顶栏之外（如底部弹层标题）则回退到自身材质并常显。弹窗锚点经 [GlassTopAction.anchor] 透传，由库按钮发布折叠端点材质。
  */
 @Composable
-fun GlassTopIconButton(action: GlassTopAction, backdrop: LayerBackdrop?, modifier: Modifier = Modifier) {
+fun GlassTopIconButton(action: GlassTopAction, backdrop: Backdrop?, modifier: Modifier = Modifier) {
     /** 弹窗与按钮同槽渲染（同 PillActionSlot 语义）：独立圆钮路径此前漏渲染 action.popup，导致挂在单钮上的弹窗（代理排序/日志过滤）永不组合、点击无反应。 */
     PillActionSlot(action) {
         /** 圆钮的锚点起始圆角须等于 42dp 圆形半径，否则弹窗折叠端点渲染成圆角方形而非圆；库 GlassButtonSurface 识别该修饰符并发布折叠端点材质。 */

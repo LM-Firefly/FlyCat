@@ -147,6 +147,20 @@ fun AboutScreen(navigator: Navigator) {
                 navigationIcon = { NavigationBackIcon(navigator = navigator) },
             )
         },
+        // 更新弹窗（AppDialog→OverlayDialog）登记进本 Scaffold 的 dialogStates 渲染，须组合在 GlassScaffold 之内（contentOverlay 为录制子树的兄弟层，不会被捕获）。
+        // 独立的全屏兄弟 Scaffold 宿主会与根 Surface 的 TopAppBarInputTracker 指针节点（默认不与兄弟共享命中测试）叠加成触控截胡，故不采用。
+        contentOverlay = {
+            UpdateCandidateDialog(
+                candidate = dialogCandidate,
+                downloadProgressFlow = updateViewModel.downloadProgress,
+                onDismiss = {
+                    dialogCandidate = null
+                    updateViewModel.dismissCandidate()
+                },
+                onDownload = updateViewModel::downloadAndInstall,
+                onCancelDownload = updateViewModel::cancelDownload,
+            )
+        },
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
         ScreenLazyColumn(
@@ -219,20 +233,6 @@ fun AboutScreen(navigator: Navigator) {
                 Spacer(modifier = Modifier.height(UiDp.dp32))
             }
         }
-    }
-    // miuix 弹出层（OverlayDialog→DialogLayout）须注册进 Scaffold 持有的 dialogStates 才能渲染；
-    // 更新弹窗组合在 GlassScaffold 之外，故此处以透明 Scaffold 作为对话框宿主（与 MainActivity 的 HomePreviewGuideDialog 同款）。
-    Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) {
-        UpdateCandidateDialog(
-            candidate = dialogCandidate,
-            downloadProgressFlow = updateViewModel.downloadProgress,
-            onDismiss = {
-                dialogCandidate = null
-                updateViewModel.dismissCandidate()
-            },
-            onDownload = updateViewModel::downloadAndInstall,
-            onCancelDownload = updateViewModel::cancelDownload,
-        )
     }
 }
 

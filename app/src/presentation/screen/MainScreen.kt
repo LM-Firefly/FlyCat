@@ -274,62 +274,62 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0, pendingDetailRoute: R
                 }
             }
         }
-        if (usesSplitShell) {
-            DualPaneLayout(
-                left = {
-                    Scaffold(containerColor = mainScaffoldContainerColor) { leftPadding ->
-                        // 仅对顶部施加内边距（左右显式置 0）；底部内边距交给 mainPagerContent 处理，使其 Box 延伸到手势条区域后面实现沉浸效果。
-                        val splitPadding = PaddingValues(
-                            top = leftPadding.calculateTopPadding(),
-                            start = UiDp.dp0,
-                            end = UiDp.dp0,
-                        )
-                        val bottomPadding = PaddingValues(bottom = leftPadding.calculateBottomPadding())
-                        // 消费全部 systemBars 和 displayCutout，防止内部子 Scaffold 和 TopAppBar 在已由 splitPadding 处理的各侧重复叠加内边距。
-                        Box(Modifier.fillMaxSize().padding(splitPadding).consumeWindowInsets(WindowInsets.systemBars).consumeWindowInsets(WindowInsets.displayCutout)) {
-                            mainPagerContent(bottomPadding, reserveBottomBar = true)
-                        }
-                    }
-                },
-                right = {
-                    Scaffold(containerColor = mainScaffoldContainerColor) { rightPadding ->
-                        // 顶部和右侧施加内边距；底部交给内部内容处理，保持手势条区域沉浸。
-                        val splitPadding = PaddingValues(
-                            top = rightPadding.calculateTopPadding(),
-                            start = UiDp.dp0, // 分隔线在左侧，不是屏幕边缘
-                            end = rightPadding.calculateEndPadding(layoutDirection),
-                        )
-                        // 消费全部 systemBars 和 displayCutout，防止内部子 Scaffold 和 TopAppBar 在已由 splitPadding 处理的各侧重复叠加内边距。
-                        Box(Modifier.fillMaxSize().padding(splitPadding).consumeWindowInsets(WindowInsets.systemBars).consumeWindowInsets(WindowInsets.displayCutout)) {
-                            SecondaryDetailHost(
-                                navigator = detailNavigator,
-                                placeholderContent = if (settledMainPage == 1) {
-                                    {
-                                        ProxyShellNodeDetail(
-                                            mainInnerPadding = PaddingValues(),
-                                            onNavigateToProviders = { detailNavigator.push(Route.Providers) },
-                                            onOpenPanel = openNetworkPanel,
-                                        )
-                                    }
-                                } else {
-                                    null
-                                },
-                            )
-                        }
-                    }
-                },
-                initialLeftFraction = 0.42f,
-                minLeftWidth = 280.dp,
-                maxLeftWidth = 420.dp,
-                minRightWidth = 320.dp,
-                showDivider = true,
-                dividerDraggable = true,
-            )
-        } else { Scaffold(containerColor = mainScaffoldContainerColor) { innerPadding -> mainPagerContent(innerPadding, reserveBottomBar = true) } }
         // 全局「发现新版本」提示：自动检查命中后弹出更新弹窗。
-        // miuix 弹出层（OverlayDialog→DialogLayout）须注册进 Scaffold 持有的 dialogStates 才能渲染；
-        // 此处以透明 Scaffold 作为对话框宿主（与 MainActivity/AppNavContainer 同款，不影响触控）。
+        // miuix 弹出层（OverlayDialog→DialogLayout）须注册进 Scaffold 持有的 dialogStates 才能渲染。
+        // 宿主 Scaffold 作为父容器包住主布局——根 Surface 的 TopAppBarInputTracker 指针节点默认不与兄弟共享命中测试，全屏兄弟覆盖会截胡整棵子树的触控。
         Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) {
+            if (usesSplitShell) {
+                DualPaneLayout(
+                    left = {
+                        Scaffold(containerColor = mainScaffoldContainerColor) { leftPadding ->
+                            // 仅对顶部施加内边距（左右显式置 0）；底部内边距交给 mainPagerContent 处理，使其 Box 延伸到手势条区域后面实现沉浸效果。
+                            val splitPadding = PaddingValues(
+                                top = leftPadding.calculateTopPadding(),
+                                start = UiDp.dp0,
+                                end = UiDp.dp0,
+                            )
+                            val bottomPadding = PaddingValues(bottom = leftPadding.calculateBottomPadding())
+                            // 消费全部 systemBars 和 displayCutout，防止内部子 Scaffold 和 TopAppBar 在已由 splitPadding 处理的各侧重复叠加内边距。
+                            Box(Modifier.fillMaxSize().padding(splitPadding).consumeWindowInsets(WindowInsets.systemBars).consumeWindowInsets(WindowInsets.displayCutout)) {
+                                mainPagerContent(bottomPadding, reserveBottomBar = true)
+                            }
+                        }
+                    },
+                    right = {
+                        Scaffold(containerColor = mainScaffoldContainerColor) { rightPadding ->
+                            // 顶部和右侧施加内边距；底部交给内部内容处理，保持手势条区域沉浸。
+                            val splitPadding = PaddingValues(
+                                top = rightPadding.calculateTopPadding(),
+                                start = UiDp.dp0, // 分隔线在左侧，不是屏幕边缘
+                                end = rightPadding.calculateEndPadding(layoutDirection),
+                            )
+                            // 消费全部 systemBars 和 displayCutout，防止内部子 Scaffold 和 TopAppBar 在已由 splitPadding 处理的各侧重复叠加内边距。
+                            Box(Modifier.fillMaxSize().padding(splitPadding).consumeWindowInsets(WindowInsets.systemBars).consumeWindowInsets(WindowInsets.displayCutout)) {
+                                SecondaryDetailHost(
+                                    navigator = detailNavigator,
+                                    placeholderContent = if (settledMainPage == 1) {
+                                        {
+                                            ProxyShellNodeDetail(
+                                                mainInnerPadding = PaddingValues(),
+                                                onNavigateToProviders = { detailNavigator.push(Route.Providers) },
+                                                onOpenPanel = openNetworkPanel,
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                )
+                            }
+                        }
+                    },
+                    initialLeftFraction = 0.42f,
+                    minLeftWidth = 280.dp,
+                    maxLeftWidth = 420.dp,
+                    minRightWidth = 320.dp,
+                    showDivider = true,
+                    dividerDraggable = true,
+                )
+            } else { Scaffold(containerColor = mainScaffoldContainerColor) { innerPadding -> mainPagerContent(innerPadding, reserveBottomBar = true) } }
             AppUpdatePrompt()
         }
     }

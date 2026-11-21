@@ -1,8 +1,6 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("FunctionName")
-
 package com.github.lmfirefly.flycat.presentation.component.background
 
 import androidx.compose.runtime.withFrameNanos
@@ -52,6 +50,7 @@ private data class BgEffectElement(
     val colorStage: () -> Float,
     val alpha: () -> Float,
 ) : ModifierNodeElement<BgEffectNode>() {
+
     override fun create(): BgEffectNode = BgEffectNode(
         painter = painter,
         preset = preset,
@@ -64,6 +63,7 @@ private data class BgEffectElement(
         colorStage = colorStage,
         alpha = alpha,
     )
+
     override fun update(node: BgEffectNode) {
         node.update(
             painter = painter,
@@ -93,16 +93,20 @@ private class BgEffectNode(
     private var alpha: () -> Float,
 ) : Modifier.Node(),
     DrawModifierNode {
+
     private var animationJob: Job? = null
     private var animTime: Float = 0f
     private var startOffset: Float = 0f
+
     override fun onAttach() {
         if (playing) startAnimation()
     }
+
     override fun onDetach() {
         animationJob?.cancel()
         animationJob = null
     }
+
     fun update(
         painter: BgEffectPainter,
         preset: BgEffectConfig.Config,
@@ -124,6 +128,7 @@ private class BgEffectNode(
         this.isFullSize = isFullSize
         this.colorStage = colorStage
         this.alpha = alpha
+
         if (this.playing != playing) {
             this.playing = playing
             if (playing) {
@@ -135,6 +140,7 @@ private class BgEffectNode(
         }
         invalidateDraw()
     }
+
     private fun startAnimation() {
         animationJob?.cancel()
         startOffset = animTime
@@ -146,12 +152,12 @@ private class BgEffectNode(
                 val now = withFrameNanos { it }
                 if (now - lastEmit < minDeltaNanos) continue
                 lastEmit = now
-                // 整体放慢背景流动速度（原为 1.0/s）。
-                animTime = startOffset + (now - origin) / 1_000_000_000f * 0.45f
+                animTime = startOffset + (now - origin) / 1_000_000_000f
                 invalidateDraw()
             }
         }
     }
+
     override fun ContentDrawScope.draw() {
         drawRect(surface)
         if (effectBackground) {
@@ -164,12 +170,14 @@ private class BgEffectNode(
             }
             if (alphaValue > 0f) {
                 val drawHeight = if (isFullSize) size.height * 0.8f else size.height * 0.5f
+
                 painter.updateResolution(size.width, size.height)
                 painter.updateBoundIfNeeded(drawHeight, size.height, size.width)
                 painter.updatePresetIfNeeded(deviceType, isDarkTheme)
                 painter.updateColors(preset, colorStage())
                 painter.updateAnimTime(animTime)
                 painter.updatePointsAnim(animTime, preset)
+
                 drawRect(painter.brush, alpha = alphaValue)
             }
         }

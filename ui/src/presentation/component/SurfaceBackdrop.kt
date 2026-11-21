@@ -22,8 +22,14 @@
 package com.github.lmfirefly.flycat.presentation.component
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.key
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.unit.Density
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
@@ -38,5 +44,23 @@ fun rememberSurfaceBackdrop(containerColor: Color): LayerBackdrop = key(containe
     rememberLayerBackdrop {
         drawRect(containerColor)
         drawContent()
+    }
+}
+
+/**
+ * 消费时实时合成两层录制内容的 [Backdrop]：先 [base]（如全局壁纸层）后 [overlay]（如正文内容层）。
+ * 壁纸是动态渐变着色器，换色时自己的录制层会更新；若把它烘进正文录制层，页面静止时正文层不再重录，色带会停在旧色（色带残留）。在采样瞬间合成可让底图永远取到最新帧。
+ */
+@Stable
+class CompositeBackdrop(private val base: Backdrop, private val overlay: Backdrop) : Backdrop {
+    override val isCoordinatesDependent: Boolean get() = base.isCoordinatesDependent || overlay.isCoordinatesDependent
+    override fun DrawScope.drawBackdrop(
+        density: Density,
+        coordinates: LayoutCoordinates?,
+        layerBlock: (GraphicsLayerScope.() -> Unit)?,
+        downscaleFactor: Float,
+    ) {
+        with(base) { drawBackdrop(density, coordinates, layerBlock, downscaleFactor) }
+        with(overlay) { drawBackdrop(density, coordinates, layerBlock, downscaleFactor) }
     }
 }

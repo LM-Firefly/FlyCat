@@ -1,13 +1,12 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("FunctionName")
-
 package com.github.lmfirefly.flycat.presentation.component.background
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -22,9 +21,14 @@ import kotlinx.coroutines.isActive
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** 是否平板宽度。 */
+/** 与 miuix 示例 `shouldShowSplitPane` 同公式：大横屏/平板宽度取 PAD 预设。 */
 @Composable
-private fun isTabletWidth(): Boolean = LocalConfiguration.current.screenWidthDp >= 600
+private fun isPadLayout(): Boolean {
+    val config = LocalConfiguration.current
+    val widthDp = config.screenWidthDp
+    val heightDp = config.screenHeightDp
+    return widthDp >= 840 || (widthDp >= 600 && heightDp.toFloat() / widthDp < 1.2f)
+}
 
 @Composable
 fun BgEffectBackground(
@@ -33,42 +37,62 @@ fun BgEffectBackground(
     bgModifier: Modifier = Modifier,
     isFullSize: Boolean = false,
     effectBackground: Boolean = true,
+    isOs3Effect: Boolean = true,
     alpha: () -> Float = { 1f },
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
-    if (!remember { isRuntimeShaderSupported() }) return
-    Box(modifier = modifier) {
+    val shaderSupported = remember { isRuntimeShaderSupported() }
+    if (!shaderSupported) {
+        Box(modifier = modifier, content = content)
+        return
+    }
+    Box(
+        modifier = modifier,
+    ) {
         val surface = MiuixTheme.colorScheme.surface
-        val deviceType = if (isTabletWidth()) DeviceType.PAD else DeviceType.PHONE
-        val darkTheme = isDarkTheme()
-        val painter = remember { BgEffectPainter() }
-        val preset = remember(deviceType, darkTheme) { BgEffectConfig.get(deviceType, darkTheme) }
+        val deviceType = if (isPadLayout()) DeviceType.PAD else DeviceType.PHONE
+        val isDark = isDarkTheme()
+        val painter = remember(isOs3Effect) { BgEffectPainter(isOs3Effect) }
+
+        val preset = remember(deviceType, isDark, isOs3Effect) {
+            BgEffectConfig.get(deviceType, isDark, isOs3Effect)
+        }
+
         val colorStage = remember { Animatable(0f) }
+
         LaunchedEffect(dynamicBackground, preset) {
             if (!dynamicBackground) return@LaunchedEffect
+            val animatesColors = preset.colors1 !== preset.colors2 || preset.colors2 !== preset.colors3
+            if (!animatesColors) return@LaunchedEffect
+
             var targetStage = floor(colorStage.value) + 1f
             while (isActive) {
-                // 拉长配色过渡周期并软化弹簧，让渐变更缓慢地流动。
-                delay((preset.colorInterpPeriod * 800).toLong())
+                delay((preset.colorInterpPeriod * 500).toLong())
                 colorStage.animateTo(
                     targetValue = targetStage,
-                    animationSpec = spring(dampingRatio = 0.9f, stiffness = 30f),
+                    animationSpec = spring(dampingRatio = 0.9f, stiffness = 35f),
                 )
                 targetStage += 1f
             }
         }
+
         Spacer(
-            modifier = Modifier.fillMaxSize().then(bgModifier).bgEffectDraw(
-                painter = painter,
-                preset = preset,
-                deviceType = deviceType,
-                isDarkTheme = darkTheme,
-                surface = surface,
-                effectBackground = effectBackground,
-                isFullSize = isFullSize,
-                playing = dynamicBackground,
-                colorStage = { colorStage.value },
-                alpha = alpha,
-            ),
+            modifier = Modifier
+                .fillMaxSize()
+                .then(bgModifier)
+                .bgEffectDraw(
+                    painter = painter,
+                    preset = preset,
+                    deviceType = deviceType,
+                    isDarkTheme = isDark,
+                    surface = surface,
+                    effectBackground = effectBackground,
+                    isFullSize = isFullSize,
+                    playing = dynamicBackground,
+                    colorStage = { colorStage.value },
+                    alpha = alpha,
+                ),
         )
+        content()
     }
 }

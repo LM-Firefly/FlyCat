@@ -139,11 +139,11 @@ class MainActivity : FragmentActivity() {
                             modifier = Modifier.fillMaxSize(),
                             color = MiuixTheme.colorScheme.surface,
                         ) {
-                            AppNavContainer(navigationComponent)
-                            var showHomeGuide by remember { mutableStateOf(showHomeGuideInitially) }
-                            // miuix 弹出层（OverlayDialog→DialogLayout）注册进 Scaffold 持有的 dialogStates 渲染；
-                            // 此处以透明 Scaffold 作为对话框宿主，不影响触控。
+                            // miuix 弹出层（OverlayDialog→DialogLayout）注册进 Scaffold 持有的 dialogStates 渲染。
+                            // 宿主 Scaffold 必须作为父容器包住导航内容：根 Surface 的 TopAppBarInputTracker 指针节点默认不与兄弟共享命中测试，全屏兄弟覆盖会截胡整棵子树的触控（点击/滑动全灭）。
                             Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent) {
+                                AppNavContainer(navigationComponent)
+                                var showHomeGuide by remember { mutableStateOf(showHomeGuideInitially) }
                                 HomePreviewGuideDialog(
                                     show = showHomeGuide,
                                     onDismissRequest = { showHomeGuide = false },

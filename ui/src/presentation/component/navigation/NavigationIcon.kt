@@ -46,7 +46,7 @@ import com.github.lmfirefly.flycat.presentation.theme.AppTheme.spacing
 import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -57,7 +57,7 @@ fun NavigationBackIcon(
     modifier: Modifier = Modifier,
     contentDescription: String = "Back",
     extraStartPadding: Dp = UiDp.dp24,
-    backdrop: LayerBackdrop? = LocalTopBarBackdrop.current,
+    backdrop: Backdrop? = LocalTopBarBackdrop.current,
 ) {
     NavigationBackIcon(
         onNavigateBack = { navigator.popBackStack() },
@@ -74,7 +74,7 @@ fun NavigationBackIcon(
     modifier: Modifier = Modifier,
     contentDescription: String = "Back",
     extraStartPadding: Dp = UiDp.dp24,
-    backdrop: LayerBackdrop? = LocalTopBarBackdrop.current,
+    backdrop: Backdrop? = LocalTopBarBackdrop.current,
 ) {
     // 与顶栏右侧动作同款的 42dp 玻璃圆钮；无 backdrop 时自动退化实色 + 边缘光。
     Box(modifier = Modifier.padding(start = extraStartPadding)) {
