@@ -43,6 +43,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.decompose)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.sketch.compose)
     implementation(libs.sketch.http)
     implementation(libs.sketch.svg)

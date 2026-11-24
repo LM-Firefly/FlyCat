@@ -26,6 +26,7 @@
 - **Moe Home**: Custom home page with wallpaper, proxy chain topology visualization, speed chart, and traffic display
 - **Connection management**: Detailed connection view with speed display and one-tap close all
 - **Traffic statistics**: Time-based stacked bar charts with per-app traffic ranking
+- **Super Island & live notifications**: HyperOS Super Island displays the current node, live traffic, and subscription usage; Android 16 Live Updates pin the service notification and show live speed in the status bar. Super Island takes precedence when active
 - **Web dashboard**: Built-in MetaCubeXD / Zashboard / Yacd panel support
 - **SubStore**: Optional SubStore integration for subscription management
 - **Backup & restore**: WebDAV backup with Age encryption support
@@ -42,6 +43,8 @@ FlyCat currently only supports **Android 13 (API 33) and above**.
 - Download the installation package for your architecture from the [Release](https://github.com/LM-Firefly/FlyCat/releases) page
 - For more information, visit the official documentation: [lm-firefly.github.io/FlyCat](https://lm-firefly.github.io/FlyCat/)
 - Override configuration syntax reference: [Override document](https://lm-firefly.github.io/FlyCat/override/override)
+
+> **HyperOS Super Island notice**: Enabling Super Island blocks network access for Xiaomi Services Framework (`com.xiaomi.xmsf`). Apps that rely on Xiaomi Push may not receive notifications. FlyCat attempts to restore network access when Super Island is disabled. Turn off Super Island if you need those notifications; consider **Android 16 Live Notifications** for a similar experience.
 
 If this project is helpful to you, please give it a Star — it is the motivation for continuous updates.
 

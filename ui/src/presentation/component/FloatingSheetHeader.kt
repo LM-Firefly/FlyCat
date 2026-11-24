@@ -23,7 +23,6 @@
 
 package com.github.lmfirefly.flycat.presentation.component
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -46,17 +45,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.glassSurfaceBackdrop
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** 标题带自身的录制层（sheet 配色基底），供 [SheetHeaderIconButton] 的玻璃圆钮采样。 */
-private val LocalSheetHeaderBackdrop = compositionLocalOf<LayerBackdrop?> { null }
+private val LocalSheetHeaderBackdrop = compositionLocalOf<Backdrop?> { null }
 
 object FloatingSheetHeaderDefaults {
     /** 固定标题带高度：有无侧边按钮时标题都垂直居中。 */
@@ -70,18 +70,19 @@ object FloatingSheetHeaderDefaults {
 }
 
 /**
- * 固定高度的弹层标题带，覆盖在弹层内容之上：顶部渐隐色带 + 76dp 标题行（居中标题、两端动作按钮、整体垂直居中）。
+ * 固定高度的弹层标题带，覆盖在弹层内容之上：76dp 标题行（居中标题、两端动作按钮、整体垂直居中），背景透明。
  * 作为弹层内容 Box 的最后一个子节点挂载；滚动内容顶部留出 [FloatingSheetHeaderDefaults.ContentTopInset]。
  * 标题带从卡片顶边开始画（`offset(-ChromeAboveContent)`），拖拽条浮在带上部。
+ * 背景刻意留透明：此前的渐进模糊/色带会与下层 Sheet 玻璃各糊一层，交界出硬边；留空则直接透出 Sheet 自身玻璃，标题行与内容无缝。玻璃圆钮仍需独立采样层（见下方 bandBackdrop 注释）。
+ * @param pageBackdrop 页面壁纸录制层（弹窗玻璃同款采样源）：圆钮玻璃采样它才有真玻璃观感。弹窗内容运行在 Dialog 宿主作用域，取不到页面的 LocalGlassBackdrop，必须由调用方显式传入；为 null 时回退自录层（纯色基底，玻璃糊出来是平涂盘）。
  */
 @Composable
-fun BoxScope.FloatingSheetHeader(title: String, sheetColor: Color, startAction: (@Composable () -> Unit)? = null, endAction: (@Composable () -> Unit)? = null) {
-    // 标题带把自身（覆盖整条 76dp 带，含上移到卡顶的部分）录进独立背景层供玻璃圆钮采样。
-    // 不复用 sheet 内容录制层：后者从 chrome（42dp 拖拽条+空标题行）下方才起录，而圆钮上移跨入 chrome 区，
-    // 采到的上半截落在录制层之外会渲染成空白平边——即按钮“截顶”。自录整条带则按钮全高都有材质可采。
+fun BoxScope.FloatingSheetHeader(title: String, sheetColor: Color, startAction: (@Composable () -> Unit)? = null, endAction: (@Composable () -> Unit)? = null, pageBackdrop: Backdrop? = null) {
+    // 标题带把整条 76dp 区域（含上移到卡顶的部分）以 sheetColor 纯色底录进独立背景层供玻璃圆钮采样。
+    // 不复用 sheet 内容录制层：后者从 chrome（42dp 拖拽条+空标题行）下方才起录，而圆钮上移跨入 chrome 区，采到的上半截落在录制层之外会渲染成空白平边——即按钮“截顶”。自录整条带则按钮全高都有材质可采。
     val bandBackdrop = key(sheetColor) { rememberLayerBackdrop { drawRect(sheetColor) } }
-    CompositionLocalProvider(LocalSheetHeaderBackdrop provides bandBackdrop) {
-        Box(modifier = Modifier.fillMaxWidth().height(FloatingSheetHeaderDefaults.Height).offset(y = -FloatingSheetHeaderDefaults.ChromeAboveContent).zIndex(1f).layerBackdrop(bandBackdrop).background(GlassTopAppBarDefaults.bandBrush(sheetColor)))
+    CompositionLocalProvider(LocalSheetHeaderBackdrop provides (pageBackdrop ?: bandBackdrop)) {
+        Box(modifier = Modifier.fillMaxWidth().height(FloatingSheetHeaderDefaults.Height).offset(y = -FloatingSheetHeaderDefaults.ChromeAboveContent).zIndex(1f).layerBackdrop(bandBackdrop))
         Box(modifier = Modifier.fillMaxWidth().height(FloatingSheetHeaderDefaults.Height).offset(y = -FloatingSheetHeaderDefaults.ChromeAboveContent).zIndex(2f)) {
             Text(
                 text = title,
@@ -100,7 +101,8 @@ fun BoxScope.FloatingSheetHeader(title: String, sheetColor: Color, startAction: 
     }
 }
 
-/** 弹层侧边动作：与页面顶栏完全同款的 42dp 玻璃圆钮（边缘光 + 22dp 图标），通过 [LocalSheetHeaderBackdrop] 采样 sheet 表面，使 sheet 动作与页面顶栏读起来是同一种控件。 */
+/** 弹层侧边动作：与页面顶栏完全同款的 42dp 玻璃圆钮（边缘光 + 22dp 图标）。采样优先级：页面壁纸层（真实场景，玻璃感来源）→ 标题带自录层 → 玻璃表面。
+ *  旧实现只采样自录层（纯 sheetColor 矩形），玻璃糊出来是一块平涂白盘；页面壁纸层覆盖整条标题带（含上移的 chrome 区），不存在 sheet 内容录制层的"截顶"缺口。 */
 @Composable
 fun SheetHeaderIconButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit, enabled: Boolean = true, tint: Color = Color.Unspecified, iconModifier: Modifier = Modifier) {
     // 禁用态语义（去点击 + 图标降对比度）由 GlassTopAction.enabled 统一处理。
@@ -113,6 +115,6 @@ fun SheetHeaderIconButton(icon: ImageVector, contentDescription: String, onClick
             iconModifier = iconModifier,
             tint = tint,
         ),
-        backdrop = LocalSheetHeaderBackdrop.current ?: glassSurfaceBackdrop(),
+        backdrop = LocalGlassBackdrop.current ?: LocalSheetHeaderBackdrop.current ?: glassSurfaceBackdrop(),
     )
 }

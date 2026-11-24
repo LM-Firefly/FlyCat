@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -116,6 +117,20 @@ fun ScreenLazyColumn(
         val scrollDirectionCallback = onScrollDirectionChanged ?: return@LaunchedEffect
         scrollDirectionCallback(false)
         lastHiddenState = false
+    }
+
+    LaunchedEffect(lazyListState, scrollBehavior) {
+        snapshotFlow {
+            lazyListState.firstVisibleItemIndex == 0 &&
+                lazyListState.firstVisibleItemScrollOffset == 0 &&
+                !lazyListState.isScrollInProgress
+        }.collect { settledAtTop ->
+            if (settledAtTop) {
+                // 库只在向下 fling 时清零 contentOffset；缓慢拖回顶部或被其他 nestedScroll 消费后会残留负值。
+                scrollBehavior.state.contentOffset = 0f
+                scrollBehavior.state.overscrollOffset = 0f
+            }
+        }
     }
 
     LazyColumn(

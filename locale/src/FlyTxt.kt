@@ -438,14 +438,28 @@ public object FlyTxt {
             public val WallpaperScrimTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.WallpaperScrimTitle
             @androidx.compose.runtime.Composable
             public fun WallpaperScrimTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.Interface.WallpaperScrimTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.Interface.WallpaperScrimTitle, *args)
-            public val WallpaperBlurTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.WallpaperBlurTitle
-            @androidx.compose.runtime.Composable
-            public fun WallpaperBlurTitle(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.AppSettings.Interface.WallpaperBlurTitle else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.AppSettings.Interface.WallpaperBlurTitle, *args)
             public val AppBackgroundTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.AppBackgroundTitle
             public val AppBackgroundSummary: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.AppBackgroundSummary
             public val AppBackgroundOff: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.AppBackgroundOff
             public val AppBackgroundDynamic: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.AppBackgroundDynamic
             public val AppBackgroundWallpaper: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.AppBackgroundWallpaper
+        }
+        public object BlurEffects {
+            public val CardEffectsTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.CardEffectsTitle
+            public val CardEffectsSummary: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.CardEffectsSummary
+            public val LogoEffectsTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.LogoEffectsTitle
+            public val BlendMode: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.BlendMode
+            public val EdgeStroke: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.EdgeStroke
+            public val CardCornerRadius: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.CardCornerRadius
+            public val BlurRadius: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.BlurRadius
+            public val Noise: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.Noise
+            public val Brightness: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.Brightness
+            public val Contrast: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.Contrast
+            public val Saturation: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.Saturation
+            public val Direction: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.Direction
+            public val Start: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.Start
+            public val End: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.End
+            public val Curve: String get() = FlyLocaleManager.activeStrings.AppSettings.Interface.BlurEffects.Curve
         }
         public object Privacy {
             public val HideIconTitle: String get() = FlyLocaleManager.activeStrings.AppSettings.Privacy.HideIconTitle
@@ -3116,6 +3130,9 @@ public object FlyTxt {
             public val UpdateFailed: String get() = FlyLocaleManager.activeStrings.Providers.Message.UpdateFailed
             @androidx.compose.runtime.Composable
             public fun UpdateFailed(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Providers.Message.UpdateFailed else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Providers.Message.UpdateFailed, *args)
+            public val UpdateTimeout: String get() = FlyLocaleManager.activeStrings.Providers.Message.UpdateTimeout
+            @androidx.compose.runtime.Composable
+            public fun UpdateTimeout(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Providers.Message.UpdateTimeout else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Providers.Message.UpdateTimeout, *args)
             public val AllUpdated: String get() = FlyLocaleManager.activeStrings.Providers.Message.AllUpdated
             @androidx.compose.runtime.Composable
             public fun AllUpdated(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Providers.Message.AllUpdated else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Providers.Message.AllUpdated, *args)

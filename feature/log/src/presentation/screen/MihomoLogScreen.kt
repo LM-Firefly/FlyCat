@@ -84,7 +84,6 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Search
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
-import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.util.toast
@@ -319,7 +318,7 @@ private fun MihomoLogEntryRow(entry: LiveLogEntry, onClick: () -> Unit, modifier
             -> MiuixTheme.colorScheme.onSurfaceVariantSummary
     }
     val interactionSource = remember { MutableInteractionSource() }
-    Card(cornerRadius = AppTheme.radii.radius18, modifier = modifier.padding(vertical = 3.dp).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
+    Card(modifier = modifier.padding(vertical = 3.dp).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(

@@ -58,6 +58,7 @@ import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppConfirmDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
+import com.github.lmfirefly.flycat.presentation.component.input.GlassCheckbox
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
@@ -76,7 +77,6 @@ import org.koin.compose.koinInject
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -405,7 +405,7 @@ private fun GeoXDownloadDialog(
                 BasicComponent(
                     title = item.title,
                     endActions = {
-                        Checkbox(
+                        GlassCheckbox(
                             state = ToggleableState(selectedItems[item.type] ?: false),
                             onClick = { selectedItems[item.type] = !(selectedItems[item.type] ?: false) },
                         )

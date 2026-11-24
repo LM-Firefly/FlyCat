@@ -43,6 +43,8 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppConfirmDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppTextFieldDialog
+import com.github.lmfirefly.flycat.presentation.component.input.GlassCheckbox
+import com.github.lmfirefly.flycat.presentation.component.input.GlassSwitch
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.EditorAction
 import com.github.lmfirefly.flycat.presentation.component.layout.EditorEmptyState
@@ -57,9 +59,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationB
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgePlus
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.AddCircle
 import top.yukonga.miuix.kmp.icon.glass.Delete
@@ -86,32 +86,6 @@ object EditorDataHolder {
         private set
     var mapEditorCallback by mutableStateOf<((Map<String, String>?) -> Unit)?>(null)
         private set
-
-    fun setupListEditor(
-        title: String,
-        placeholder: String,
-        items: List<String>?,
-        callback: (List<String>?) -> Unit,
-    ) {
-        listEditorTitle = title
-        listEditorPlaceholder = placeholder
-        listEditorItems = items?.toList() ?: emptyList()
-        listEditorCallback = callback
-    }
-
-    fun setupMapEditor(
-        title: String,
-        keyPlaceholder: String,
-        valuePlaceholder: String,
-        items: Map<String, String>?,
-        callback: (Map<String, String>?) -> Unit,
-    ) {
-        mapEditorTitle = title
-        mapEditorKeyPlaceholder = keyPlaceholder
-        mapEditorValuePlaceholder = valuePlaceholder
-        mapEditorItems = items?.toMap() ?: emptyMap()
-        mapEditorCallback = callback
-    }
 
     fun clearListEditor() {
         listEditorTitle = ""
@@ -655,7 +629,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
                 summary = null,
                 onClick = { useSrc = !useSrc },
                 endActions = {
-                    Checkbox(
+                    GlassCheckbox(
                         state = if (useSrc) ToggleableState.On else ToggleableState.Off,
                         onClick = { useSrc = !useSrc },
                     )
@@ -666,7 +640,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
                 summary = null,
                 onClick = { useNoResolve = !useNoResolve },
                 endActions = {
-                    Switch(
+                    GlassSwitch(
                         checked = useNoResolve,
                         onCheckedChange = { checked -> useNoResolve = checked },
                     )

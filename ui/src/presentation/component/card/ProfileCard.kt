@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.GlassCapsuleSurface
+import com.github.lmfirefly.flycat.presentation.component.input.GlassSwitch
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.CircleFadingArrowUp
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Delete
@@ -61,7 +62,6 @@ import com.github.lmfirefly.flycat.presentation.util.shouldShowUpdateButton
 import java.io.File
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
@@ -77,7 +77,6 @@ fun ProfileCard(
     onDelete: (Profile) -> Unit,
     onEdit: (Profile) -> Unit,
     onToggleEnabled: (Profile) -> Unit,
-    onOverrideSettings: ((Profile) -> Unit)? = null,
     @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
 ) {
     val spacing = AppTheme.spacing
@@ -129,7 +128,7 @@ fun ProfileCard(
                 )
             }
 
-            Switch(
+            GlassSwitch(
                 checked = profile.enabled,
                 enabled = !isDownloading,
                 onCheckedChange = { onToggleEnabled(profile) },

@@ -62,7 +62,6 @@ fun ToastDialogHost() {
             titleColor = DialogDefaults.titleColor(),
             summary = snapshot.message,
             summaryColor = DialogDefaults.summaryColor(),
-            backgroundColor = DialogDefaults.backgroundColor(),
             enableWindowDim = true,
             onDismissRequest = { showDialog.value = false },
             onDismissFinished = {

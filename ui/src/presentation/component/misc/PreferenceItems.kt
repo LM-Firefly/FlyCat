@@ -23,10 +23,11 @@ package com.github.lmfirefly.flycat.presentation.component.misc
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.Role
 import com.github.lmfirefly.flycat.presentation.component.input.EnumSelector
+import com.github.lmfirefly.flycat.presentation.component.input.GlassSwitch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 @Composable
 fun PreferenceSwitchItem(
@@ -36,11 +37,18 @@ fun PreferenceSwitchItem(
     summary: String? = null,
     enabled: Boolean = true,
 ) {
-    SwitchPreference(
+    BasicComponent(
         title = title,
         summary = summary,
-        checked = checked,
-        onCheckedChange = onCheckedChange,
+        endActions = {
+            GlassSwitch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled,
+            )
+        },
+        onClick = { onCheckedChange(!checked) },
+        role = Role.Switch,
         enabled = enabled,
     )
 }

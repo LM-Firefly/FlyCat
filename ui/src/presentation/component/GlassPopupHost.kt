@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.theme.glassSurfaceBackdrop
+import com.github.lmfirefly.flycat.presentation.theme.themePopupVisuals
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
@@ -87,7 +88,7 @@ fun GlassPopupHost(
     anchorContent: @Composable () -> Unit,
     backdrop: Backdrop? = glassSurfaceBackdrop(),
     sizing: GlassPopupSizing = GlassPopupMenuSizing,
-    visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
+    visuals: GlassPopupVisuals = themePopupVisuals(),
     dismissOnBack: Boolean = false,
     onDismissFinished: () -> Unit = {},
     submenu: GlassSubmenuState? = null,
@@ -282,22 +283,6 @@ fun GlassMenuDivider() {
             vertical = GlassPopupDefaults.DividerPaddingVertical,
         ),
         thickness = GlassPopupDefaults.DividerThickness,
-    )
-}
-
-/** 一组 [GlassMenuItem] 行上方的静默标题，与 MIUI 菜单内边距保持一致。 */
-@Composable
-fun GlassMenuSectionLabel(text: String) {
-    Text(
-        text = text,
-        modifier = Modifier.padding(
-            start = GlassPopupDefaults.ItemPaddingHorizontal,
-            end = GlassPopupDefaults.ItemPaddingHorizontal,
-            top = 6.dp,
-            bottom = 2.dp,
-        ),
-        style = MiuixTheme.textStyles.footnote1,
-        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
     )
 }
 

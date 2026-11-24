@@ -41,6 +41,7 @@ import com.github.lmfirefly.flycat.core.model.ConnectionInfo
 import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
 import kotlin.math.log10
 import kotlin.math.max
 import kotlin.math.min
@@ -85,10 +86,7 @@ fun TopologyChart(connections: List<ConnectionInfo>, onClick: () -> Unit, modifi
                 Modifier.matchParentSize()
                     .glassCardSurface(shape = TopologyChartShape, fallbackColor = colorScheme.surface)
                     .graphicsLayer { alpha = TOPOLOGY_GLASS_ALPHA }
-                    .edgeStroke(
-                        shape = TopologyChartShape,
-                        stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
-                    ),
+                    .themeEdgeStroke(shape = TopologyChartShape),
             )
             Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = FlyTxt.Connection.Topology.EmptyMessage, style = TextStyle(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f)))
@@ -114,10 +112,7 @@ fun TopologyChart(connections: List<ConnectionInfo>, onClick: () -> Unit, modifi
         val layoutResult = remember(sankeyData, widthPx, contentHeightPx, textHeights, nodeTextLayoutMap, density) { calculateSankeyLayout(sankeyData = sankeyData, size = Size(widthPx, contentHeightPx), textHeights = textHeights, nodeTextLayoutMap = nodeTextLayoutMap, density = density) }
         Box(modifier = Modifier.fillMaxWidth().height(viewportHeightDp).clip(TopologyChartShape)) {
             // 玻璃作为固定降透明度底层，图表内容在其上滚动，避免整卡发白。
-            Box(Modifier.matchParentSize().glassCardSurface(shape = TopologyChartShape, fallbackColor = colorScheme.surface).graphicsLayer { alpha = TOPOLOGY_GLASS_ALPHA }.edgeStroke(
-                    shape = TopologyChartShape,
-                    stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
-                ),
+            Box(Modifier.matchParentSize().glassCardSurface(shape = TopologyChartShape, fallbackColor = colorScheme.surface).graphicsLayer { alpha = TOPOLOGY_GLASS_ALPHA }.themeEdgeStroke(shape = TopologyChartShape),
             )
             Box(modifier = Modifier.fillMaxWidth().height(viewportHeightDp).clipToBounds().then(if (isScrollable) Modifier.verticalScroll(scrollState) else Modifier)) {
                 Box(modifier = Modifier.fillMaxWidth().height(contentHeightDp)) {

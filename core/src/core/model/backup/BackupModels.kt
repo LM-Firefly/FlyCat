@@ -111,7 +111,7 @@ data class AppSettingsBackup(
     val moeHomeQuoteAuthor: String = "",
     val moeSidebarExpanded: Boolean = true,
     val moeWallpaperScrimEnabled: Boolean = true,
-    val appBackgroundStyle: AppBackgroundStyle = AppBackgroundStyle.DynamicGradient,
+    val appBackgroundStyle: AppBackgroundStyle = AppBackgroundStyle.DynamicGradientOs3,
     val appBackgroundWallpaperBlur: Float = 0f,
     val pageScale: Float = 1.0f,
     val predictiveBackEnabled: Boolean = false,

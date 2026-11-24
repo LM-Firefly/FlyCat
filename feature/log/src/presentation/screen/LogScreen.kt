@@ -80,7 +80,6 @@ import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
-import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.util.toast
 import java.util.Date
 import java.util.Locale
@@ -429,7 +428,7 @@ private fun LogEntryCard(entry: LogEntry, index: Int = 0, isNewEntry: Boolean = 
         }
     }
     AnimatedVisibility(visible = visible, enter = fadeIn(animationSpec = tween(AnimationSpecs.DURATION_INSTANT)) + slideInVertically(animationSpec = tween(AnimationSpecs.DURATION_INSTANT), initialOffsetY = { -it / 2 })) {
-        Card(cornerRadius = AppTheme.radii.radius18, modifier = Modifier.padding(vertical = 4.dp)) {
+        Card(modifier = Modifier.padding(vertical = 4.dp)) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(text = entry.time, style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp, fontFamily = FontFamily.Monospace), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
@@ -452,7 +451,7 @@ private fun LogFileItem(fileInfo: LogFileInfo, index: Int, onClick: () -> Unit) 
     val sizeText = formatFileSize(if (fileInfo.isRecording) animatedSize.toLong() else fileInfo.size)
     val summary = "${java.time.Instant.ofEpochMilli(fileInfo.createdAt).atZone(java.time.ZoneId.systemDefault()).format(dateFormat)}  ·  $sizeText"
     AnimatedVisibility(visible = visible, enter = fadeIn(animationSpec = tween(AnimationSpecs.DURATION_NORMAL)) + slideInVertically(animationSpec = tween(AnimationSpecs.DURATION_NORMAL), initialOffsetY = { -it / 2 })) {
-        Card(cornerRadius = AppTheme.radii.radius18, modifier = Modifier.padding(vertical = 4.dp).pressable(interactionSource = interactionSource, indication = SinkFeedback()).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
+        Card(modifier = Modifier.padding(vertical = 4.dp).pressable(interactionSource = interactionSource, indication = SinkFeedback()).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(modifier = Modifier.weight(1f)) {Text(text = fileInfo.name, style = MiuixTheme.textStyles.body1, color = MiuixTheme.colorScheme.onSurface); Spacer(modifier = Modifier.size(4.dp)); Text(text = summary, style = MiuixTheme.textStyles.body2.copy(fontSize = 11.sp), color = MiuixTheme.colorScheme.onSurfaceVariantSummary) }
                 if (fileInfo.isRecording) { Text(text = FlyTxt.Log.Status.Recording, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.primary, modifier = Modifier.padding(start = 8.dp)) }

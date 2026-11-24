@@ -1,4 +1,4 @@
-﻿/*
+/*
  * This file is part of FlyCat.
  *
  * FlyCat is free software: you can redistribute it and/or modify
@@ -23,7 +23,6 @@ package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -73,6 +72,8 @@ import com.github.lmfirefly.flycat.presentation.theme.RowRevealAll
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.rememberRowShown
 import com.github.lmfirefly.flycat.presentation.theme.rowReveal
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -167,7 +168,8 @@ private fun NodeGroupCompactCard(
     onDelayTestClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(NodeCardDefaults.CornerRadius)
+    val cornerRadius = themeCardCornerRadius()
+    val shape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
     val interactionSource = remember { MutableInteractionSource() }
     val currentProxy = remember(group.proxies, group.now) {
         group.proxies.firstOrNull { it.name == group.now }
@@ -196,7 +198,7 @@ private fun NodeGroupCompactCard(
             .pressable(interactionSource = interactionSource, indication = SinkFeedback())
             .clip(shape)
             .glassCardSurface(shape = shape, fallbackColor = MiuixTheme.colorScheme.background)
-            .border(AppTheme.sizes.nodeCardBorderWidth, MiuixTheme.colorScheme.surfaceVariant, shape)
+            .themeEdgeStroke(shape = shape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -227,7 +229,6 @@ private fun NodeGroupCompactCard(
                 )
             }
         }
-        // 详细行：旗帜 + 当前节点 + 延迟（UI 仅有详细布局，无简洁分支）
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -270,10 +271,10 @@ internal fun NodeGroupCard(
     onTestClick: ((ProxyGroupInfo) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val cardShape = RoundedCornerShape(AppTheme.radii.radius18)
+    val cornerRadius = themeCardCornerRadius()
+    val cardShape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
     val interactionSource = remember { MutableInteractionSource() }
     val testInteractionSource = remember { MutableInteractionSource() }
-
     val proxiesByName = remember(group.proxies) { group.proxies.associateBy(Proxy::name) }
     val currentProxy = remember(group.now, proxiesByName) { proxiesByName[group.now] }
     val currentNode = remember(currentProxy?.name, currentProxy?.title, group.now) {
@@ -300,6 +301,7 @@ internal fun NodeGroupCard(
             spotColor = Color.Black.copy(alpha = 0.05f),
         ).pressable(interactionSource = interactionSource, indication = SinkFeedback()).clip(cardShape)
         .glassCardSurface(shape = cardShape, fallbackColor = MiuixTheme.colorScheme.background)
+        .themeEdgeStroke(shape = cardShape)
         .clickable(
             interactionSource = interactionSource,
             indication = null,

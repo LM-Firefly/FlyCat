@@ -21,13 +21,8 @@
 
 package com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node
 
-import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +41,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +64,8 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgeDollarSign
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Cloud
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Tags
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
 import com.github.lmfirefly.flycat.presentation.util.extractFlaggedName
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -78,8 +74,6 @@ import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
 internal object NodeCardDefaults {
-    val CornerRadius = 18.dp
-    val GroupCornerRadius = 18.dp
     val PaddingHorizontal = 12.dp
     val PaddingVertical = 16.dp
 }
@@ -165,25 +159,12 @@ internal fun NodeSelectableCard(
     paddingVertical: Dp,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val radii = AppTheme.radii
     val sizes = AppTheme.sizes
-    val opacity = AppTheme.opacity
     val interactionSource = remember { MutableInteractionSource() }
-    val shape = RoundedCornerShape(radii.radius18)
+    val cornerRadius = themeCardCornerRadius()
+    val shape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
     val primary = MiuixTheme.colorScheme.primary
-    val backgroundColor = if (isSelected) {
-        MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
-    } else {
-        MiuixTheme.colorScheme.background
-    }
-    val transition = updateTransition(targetState = isSelected, label = "node_card_selection")
-    val borderColor by transition.animateColor(
-        transitionSpec = { tween(durationMillis = 220, easing = FastOutSlowInEasing) },
-        label = "node_card_border_color",
-    ) { selected ->
-        if (selected) primary.copy(alpha = opacity.disabled) else MiuixTheme.colorScheme.surfaceVariant
-    }
-
+    val selectedTint = if (isSelected) primary.copy(alpha = 0.22f) else Color.Transparent
     Box(
         modifier = modifier.fillMaxWidth().let {
             if (onClick != null) {
@@ -194,11 +175,9 @@ internal fun NodeSelectableCard(
             } else {
                 it
             }
-        }.clip(shape).glassCardSurface(
-            shape = shape,
-            fallbackColor = backgroundColor,
-            glassTint = if (isSelected) primary.copy(alpha = 0.12f) else Color.Transparent,
-        ).border(sizes.nodeCardBorderWidth, borderColor, shape).let {
+        }.clip(shape).glassCardSurface(shape = shape, fallbackColor = MiuixTheme.colorScheme.background
+        ).themeEdgeStroke(shape = shape, tint = if (isSelected) primary else null, emphasized = isSelected
+        ).background(selectedTint, shape).let {
             if (onClick != null) {
                 it.clickable(
                     interactionSource = interactionSource,

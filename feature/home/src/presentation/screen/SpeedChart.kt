@@ -55,6 +55,7 @@ import com.github.lmfirefly.flycat.presentation.component.chart.TrafficChartConf
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
 import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -108,10 +109,7 @@ fun SpeedChart(
                 modifier = Modifier.matchParentSize()
                     .glassCardSurface(shape = chartShape, fallbackColor = MiuixTheme.colorScheme.surface)
                     .graphicsLayer { alpha = SPEED_CHART_GLASS_ALPHA }
-                    .edgeStroke(
-                        shape = chartShape,
-                        stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
-                    ),
+                    .themeEdgeStroke(shape = chartShape),
             )
             Canvas(modifier = Modifier.matchParentSize()) {
             val barGapPx = componentSizes.speedChartBarGap.toPx()

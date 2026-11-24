@@ -43,16 +43,15 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.FloatingSheetHeader
 import com.github.lmfirefly.flycat.presentation.component.FloatingSheetHeaderDefaults
 import com.github.lmfirefly.flycat.presentation.component.SheetHeaderIconButton
-import com.github.lmfirefly.flycat.presentation.component.rememberSurfaceBackdrop
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardMaterial
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Check
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Close
-import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.glass.GlassBottomSheetDefaults
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
@@ -61,19 +60,12 @@ import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 object AppBottomSheetDefaults {
-    /** 水平内缩只作用于内容列（标题带/按钮贴卡片边，见 [AppActionBottomSheet] 的实现注释）。 */
-    val insideMargin = DpSize(UiDp.dp24, UiDp.dp16)
-
+    /** 水平内缩只作用于内容列（标题带/按钮贴卡片边，见 [AppActionBottomSheet] 的实现注释）；12dp 与各弹窗显式取值一致，勿再叠一层卡片 screenHorizontal。 */
+    val insideMargin = DpSize(UiDp.dp12, UiDp.dp16)
     @Composable fun backgroundColor(): Color = MiuixTheme.colorScheme.surface
-
+    @Composable fun material(): GlassMaterial = glassCardMaterial()
+    @Composable fun stroke(): EdgeStroke? = GlassBottomSheetDefaults.stroke()
     @Composable fun dragHandleColor(): Color = MiuixTheme.colorScheme.onSurfaceVariantActions
-
-    @Composable
-    fun actionIconTint(enabled: Boolean): Color = if (enabled) {
-        MiuixTheme.colorScheme.onSurface
-    } else {
-        MiuixTheme.colorScheme.onSurface.copy(alpha = AppTheme.opacity.disabled)
-    }
 }
 
 data class AppBottomSheetAction(
@@ -138,7 +130,7 @@ fun AppActionBottomSheet(
     endAction: (@Composable (() -> Unit))? = null,
     backgroundColor: Color = Color.Unspecified,
     enableWindowDim: Boolean = true,
-    cornerRadius: androidx.compose.ui.unit.Dp = UiDp.dp18,
+    cornerRadius: androidx.compose.ui.unit.Dp = themeCardCornerRadius(),
     sheetMaxWidth: androidx.compose.ui.unit.Dp = BottomSheetDefaults.maxWidth,
     onDismissFinished: (() -> Unit)? = null,
     outsideMargin: DpSize = BottomSheetDefaults.outsideMargin,
@@ -149,17 +141,13 @@ fun AppActionBottomSheet(
     enableNestedScroll: Boolean = true,
     renderInRootScaffold: Boolean = true,
     onSheetTopPositioned: ((Float) -> Unit)? = null,
-    material: GlassMaterial = GlassBottomSheetDefaults.material(),
-    stroke: EdgeStroke? = GlassBottomSheetDefaults.stroke(),
+    material: GlassMaterial = AppBottomSheetDefaults.material(),
+    stroke: EdgeStroke? = AppBottomSheetDefaults.stroke(),
     content: @Composable () -> Unit,
 ) {
     val resolvedBackgroundColor = if (backgroundColor == Color.Unspecified) { AppBottomSheetDefaults.backgroundColor() } else { backgroundColor }
     val resolvedDragHandleColor = if (dragHandleColor == Color.Unspecified) { AppBottomSheetDefaults.dragHandleColor() } else { dragHandleColor }
-    // 弹层表面录制：在容器色基底上录下内容 Box，作为弹层表面的采样层。
-    // 只有内容 Box 是录制子树；玻璃消费者都在其外（浮动标题带、独立弹窗窗口），满足 HyperOS 同子树约束。
-    val sheetContentBackdrop = rememberSurfaceBackdrop(resolvedBackgroundColor)
-    // 面板复用库 GlassBottomSheet 的玻璃管线（glassBottomSheetSurface：GlassMaterial + 泛光描边），
-    // 采样页面壁纸层（非弹窗内容层）；无壁纸/无 shader 时由 containerColor 回退实色。
+    // 面板复用库 GlassBottomSheet 的玻璃管线（glassBottomSheetSurface：GlassMaterial + 泛光描边），采样页面壁纸层（非弹窗内容层）；无壁纸/无 shader 时由 containerColor 回退实色。
     val pageWallpaperBackdrop = LocalGlassBackdrop.current
     GlassBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -177,7 +165,7 @@ fun AppActionBottomSheet(
         cornerRadius = cornerRadius,
         sheetMaxWidth = sheetMaxWidth,
         outsideMargin = outsideMargin,
-        // 库的水平内缩套住整列（拖拽条+标题行+内容），既把按钮推离卡边又让内容边距与标题带不同源（重复计算）；清零水平分量，只由下方内容列施加一次。
+        // 库的水平内缩会作用于拖拽条和正文；标题带/按钮由 FloatingSheetHeader 单独布局。清零水平分量，避免与下方内容列的 padding 重复。
         insideMargin = DpSize(0.dp, insideMargin.height),
         dragHandleColor = resolvedDragHandleColor,
         material = material,
@@ -194,16 +182,11 @@ fun AppActionBottomSheet(
                 val cardTopPx = windowLocation[1] + coordinates.positionInWindow().y - with(density) { FloatingSheetHeaderDefaults.ChromeAboveContent.toPx() }
                 onSheetTopPositioned?.invoke(cardTopPx)
             }) {
-                Box(modifier = Modifier.fillMaxWidth().layerBackdrop(sheetContentBackdrop)) {
-                    // 内部控件显式续接页面壁纸层而非弹层自身录制层：防采样自身录制层（HyperOS 自引用递归崩）。
-                    CompositionLocalProvider(LocalGlassBackdrop provides pageWallpaperBackdrop) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = insideMargin.width),
-                        ) {
-                            // 浮动标题带自卡片顶边（-ChromeAboveContent）起画并压入内容顶部，内容让位 ContentTopInset。
-                            Spacer(modifier = Modifier.height(FloatingSheetHeaderDefaults.ContentTopInset))
-                            content()
-                        }
+                CompositionLocalProvider(LocalGlassBackdrop provides pageWallpaperBackdrop) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = insideMargin.width)) {
+                        // 浮动标题带自卡片顶边（-ChromeAboveContent）起画并压入内容顶部，内容让位 ContentTopInset。
+                        Spacer(modifier = Modifier.height(FloatingSheetHeaderDefaults.ContentTopInset))
+                        content()
                     }
                 }
                 FloatingSheetHeader(
@@ -211,6 +194,7 @@ fun AppActionBottomSheet(
                     sheetColor = resolvedBackgroundColor,
                     startAction = startAction,
                     endAction = endAction,
+                    pageBackdrop = pageWallpaperBackdrop,
                 )
             }
         },

@@ -22,11 +22,9 @@
 package com.github.lmfirefly.flycat.presentation.component.chart
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,132 +71,6 @@ import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-data class BarChartItem(
-    val label: String,
-    val value: Long,
-    val isHighlighted: Boolean = false,
-)
-
-@Composable
-fun TrafficBarChart(
-    items: List<BarChartItem>,
-    modifier: Modifier = Modifier,
-    maxDisplayValue: Long? = null,
-    onItemClick: ((Int) -> Unit)? = null,
-    selectedIndex: Int = -1,
-    barColor: Color = MiuixTheme.colorScheme.primary.copy(alpha = AppTheme.opacity.medium),
-    highlightColor: Color = MiuixTheme.colorScheme.primary,
-    chartHeight: Dp = AppTheme.sizes.trafficChartHeight,
-    barWidth: Dp = AppTheme.sizes.trafficBarWidth,
-) {
-    val spacing = AppTheme.spacing
-    val radii = AppTheme.radii
-    val componentSizes = AppTheme.sizes
-
-    val computedMaxValue = maxDisplayValue ?: items.maxOfOrNull { it.value } ?: 1L
-    val safeMaxValue = if (computedMaxValue <= 0L) 1L else computedMaxValue
-
-    val displayItems = remember(items) {
-        if (items.size <= 7) {
-            items + List(7 - items.size) { BarChartItem("", 0L) }
-        } else {
-            items.take(7)
-        }
-    }
-
-    // 单个 Animatable 替换了 9 个 animateFloatAsState 调用，用于最大 + 条形高度。
-    val animProgress = remember { Animatable(0f) }
-    LaunchedEffect(safeMaxValue, displayItems) {
-        animProgress.snapTo(0f)
-        animProgress.animateTo(
-            targetValue = 1f,
-            animationSpec = spring(dampingRatio = 0.85f, stiffness = 380f),
-        )
-    }
-    val animatedMaxValue = safeMaxValue.toFloat() * animProgress.value
-
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(componentSizes.trafficBarLabelHeight),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = formatBytes(animatedMaxValue.toLong()),
-                style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(spacing.space4))
-
-        Row(
-            modifier = Modifier.fillMaxWidth().height(chartHeight),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            displayItems.forEachIndexed { index, item ->
-                val isSelected = index == selectedIndex || item.isHighlighted
-                val isValidItem = item.label.isNotEmpty()
-
-                val targetHeight = if (animatedMaxValue > 0 && item.value > 0) {
-                    (item.value.toFloat() / animatedMaxValue).coerceIn(0.04f, 1f)
-                } else {
-                    0.04f
-                }
-
-                val animatedHeight = if (isValidItem) targetHeight * animProgress.value else 0f
-
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                    contentAlignment = Alignment.BottomCenter,
-                ) {
-                    if (isValidItem && animatedHeight > 0f) {
-                        Spacer(
-                            modifier = Modifier.width(barWidth).fillMaxHeight(animatedHeight).clip(
-                                RoundedCornerShape(
-                                    topStart = radii.radius4,
-                                    topEnd = radii.radius4,
-                                )
-                            ).background(if (isSelected) highlightColor else barColor).then(
-                                if (onItemClick != null) {
-                                    Modifier.clickable { onItemClick(index) }
-                                } else {
-                                    Modifier
-                                }
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(spacing.space8))
-
-        Row(
-            modifier = Modifier.fillMaxWidth().height(componentSizes.trafficBarLabelHeight),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            displayItems.forEachIndexed { index, item ->
-                val isSelected = index == selectedIndex || item.isHighlighted
-                Text(
-                    modifier = Modifier.weight(1f).wrapContentWidth(Alignment.CenterHorizontally),
-                    text = item.label,
-                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 9.sp),
-                    color = if (isSelected) {
-                        MiuixTheme.colorScheme.primary
-                    } else {
-                        MiuixTheme.colorScheme.onSurfaceVariantSummary
-                    },
-                    maxLines = 1,
-                )
-            }
-        }
-    }
-}
 
 data class TimeSlotTrafficItem(
     val slotIndex: Int,

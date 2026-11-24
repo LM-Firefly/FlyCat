@@ -39,6 +39,7 @@ import com.github.lmfirefly.flycat.presentation.component.input.EnumSelector
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
+import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceSwitchItem
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
@@ -47,7 +48,6 @@ import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 
 @Composable
@@ -144,7 +144,6 @@ fun FeatureContent(
                 Card {
                     val autoCloseItems = remember { AutoCloseMode.entries.map { it.getDisplayName() } }
                     val autoCloseValues = AutoCloseMode.entries
-
                     EnumSelector(
                         title = FlyTxt.Feature.ServiceStatus.SwitchStartSubStore,
                         summary = FlyTxt.Feature.ServiceStatus.AutoCloseModeSummary,
@@ -153,7 +152,7 @@ fun FeatureContent(
                         values = autoCloseValues,
                         onValueChange = viewModel::setAutoCloseMode,
                     )
-                    SwitchPreference(
+                    PreferenceSwitchItem(
                         title = FlyTxt.Feature.ServiceStatus.AllowLan,
                         summary = FlyTxt.Feature.ServiceStatus.AllowLanSummary,
                         checked = allowLanAccess,

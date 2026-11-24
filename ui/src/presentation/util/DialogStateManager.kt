@@ -42,12 +42,15 @@ import androidx.compose.runtime.remember
  * }
  *
  * if (deleteDialog.isShown) {
- *     ConfirmDialog(
- *         onDismiss = { deleteDialog.dismiss() },
+ *     AppConfirmDialog(
+ *         show = deleteDialog.isShown,
+ *         title = "Delete",
+ *         message = "Delete this item?",
+ *         onDismissRequest = { deleteDialog.dismiss() },
  *         onConfirm = {
  *             performDelete()
  *             deleteDialog.dismiss()
- *         }
+ *         },
  *     )
  * }
  *
@@ -132,14 +135,15 @@ class DialogState<T>(
  * }
  *
  * if (confirmDelete.isShown) {
- *     ConfirmDialog(
+ *     AppConfirmDialog(
+ *         show = confirmDelete.isShown,
  *         title = "Confirm",
  *         message = confirmDelete.message,
- *         onDismiss = { confirmDelete.dismiss() },
+ *         onDismissRequest = { confirmDelete.dismiss() },
  *         onConfirm = {
  *             confirmDelete.payload?.let { deleteFile(it) }
  *             confirmDelete.dismiss()
- *         }
+ *         },
  *     )
  * }
  * ```

@@ -122,6 +122,10 @@ icon: "smartphone"
   在 HyperOS 超级岛显示当前节点、实时流量与订阅用量。
 </ParamField>
 
+::: warning HyperOS 超级岛与小米推送通知
+开启超级岛会阻断小米服务框架（`com.xiaomi.xmsf`）的联网，依赖小米推送的应用可能无法收到通知；关闭超级岛后会尝试恢复联网。需要这些通知时，请关闭超级岛。建议使用 **Android 16 实时通知** 获得类似体验。
+:::
+
 <ParamField path="Android 16 实时通知" type="boolean" default="开启">
   在 Android 16 及以上系统将服务通知提升为实时通知（Live Update），置顶显示于通知栏并在状态栏展示实时速率；超级岛开启时自动让位。
 </ParamField>

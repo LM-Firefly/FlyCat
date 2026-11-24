@@ -32,6 +32,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -57,9 +59,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -70,13 +75,13 @@ import com.github.lmfirefly.flycat.core.util.format.formatBytes
 import com.github.lmfirefly.flycat.core.util.path.runtimeHomeDir
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProvidersViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassCapsuleSurface
 import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
 import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
 import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.component.card.Card
-import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -89,9 +94,9 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.CircleFadingArrowUp
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
 import com.github.lmfirefly.flycat.presentation.state.ProviderFilePreviewStore
+import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
-import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
 import com.github.lmfirefly.flycat.presentation.util.toast
 import java.io.File
 import java.util.Date
@@ -101,23 +106,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
+import top.yukonga.miuix.kmp.glass.glassPopupAnchor
+import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
+import top.yukonga.miuix.kmp.glass.glassPress
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Edit
-import top.yukonga.miuix.kmp.glass.glassPopupAnchor
-import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
-import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
-import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowListPopup
 
 private fun Provider.VehicleType.localizedDisplayName(): String = when (this) {
     Provider.VehicleType.HTTP -> FlyTxt.Providers.VehicleType.Http
@@ -275,6 +274,34 @@ fun ProvidersContent(navigator: Navigator) {
 }
 
 @Composable
+private fun ProviderGlassButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, fontSize: TextUnit = 15.sp, anchor: GlassPopupAnchor? = null) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val tint = MiuixTheme.colorScheme.primary
+    GlassCapsuleSurface(
+        cornerRadius = UiDp.dp18,
+        fallbackColor = tint.copy(alpha = 0.1f),
+        modifier = modifier.heightIn(min = UiDp.dp35).then(if (anchor != null) { Modifier.glassPopupAnchor(anchor = anchor, cornerRadius = UiDp.dp18, floating = true) } else { Modifier },).glassPress(interactionSource, enabled).clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            enabled = enabled,
+            role = Role.Button,
+            onClick = onClick,
+        ),
+    ) {
+        Box(modifier = if (anchor != null) Modifier.glassPopupAnchorContent(anchor) else Modifier,) { ProviderGlassButtonContent(text = text, icon = icon, enabled = enabled, tint = tint, fontSize = fontSize) }
+    }
+}
+
+@Composable
+private fun ProviderGlassButtonContent(text: String, icon: ImageVector?, enabled: Boolean, tint: Color, fontSize: TextUnit = 15.sp) {
+    val contentTint = tint.copy(alpha = if (enabled) 1f else AppTheme.opacity.disabled)
+    Row(modifier = Modifier.padding(horizontal = UiDp.dp10, vertical = UiDp.dp6), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UiDp.dp2)) {
+        icon?.let { Icon(modifier = Modifier.size(UiDp.dp20), imageVector = it, tint = contentTint, contentDescription = null) }
+        Text(modifier = Modifier.padding(end = UiDp.dp3), text = text, color = contentTint, fontWeight = FontWeight.Medium, fontSize = fontSize)
+    }
+}
+
+@Composable
 private fun ProviderCard(
     provider: Provider,
     isUpdating: Boolean,
@@ -284,15 +311,10 @@ private fun ProviderCard(
 ) {
     val context = LocalContext.current
     val showPopup = remember { mutableStateOf(false) }
-    val colorScheme = MiuixTheme.colorScheme
-    val updateBg = remember(colorScheme) { colorScheme.primary.copy(alpha = 0.1f) }
-    val updateTint = remember(colorScheme) { colorScheme.primary }
-
     val filePicker = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
         uri: Uri? ->
         uri?.let { onUpload(it) }
     }
-
     Card(modifier = Modifier.padding(vertical = UiDp.dp4)) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = UiDp.dp16, vertical = UiDp.dp12)) {
             Row(
@@ -321,71 +343,42 @@ private fun ProviderCard(
                 if (provider.path.isNotBlank()) {
                     val actionsAnchor = rememberGlassPopupAnchor()
                     Box {
-                        IconButton(
-                            // 玻璃效果适配：实色底换 glassCardSurface（无 shader 时回退原实色）+ 边缘光。
-                            backgroundColor = Color.Transparent,
-                            minHeight = UiDp.dp35,
-                            minWidth = UiDp.dp35,
+                        ProviderGlassButton(
+                            text = FlyTxt.Providers.Action.Operation,
+                            icon = MiuixIcons.Glass.Edit,
                             enabled = !isUpdating,
+                            anchor = actionsAnchor,
                             onClick = { showPopup.value = true },
-                            modifier = Modifier.clip(RoundedCornerShape(UiDp.dp18)).glassCardSurface(
-                                shape = RoundedCornerShape(UiDp.dp18),
-                                fallbackColor = updateBg,
-                                glassTint = updateBg,
-                            ).edgeStroke(
-                                shape = RoundedCornerShape(UiDp.dp18),
-                                stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
-                            ).glassPopupAnchor(anchor = actionsAnchor, cornerRadius = UiDp.dp18, floating = true),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = UiDp.dp10),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(UiDp.dp2),
-                            ) {
-                                Icon(
-                                    modifier = Modifier.size(UiDp.dp20),
-                                    imageVector = MiuixIcons.Glass.Edit,
-                                    tint = updateTint,
-                                    contentDescription = FlyTxt.Providers.Action.Operation,
-                                )
-                                Text(
-                                    modifier = Modifier.padding(end = UiDp.dp3),
-                                    text = FlyTxt.Providers.Action.Operation,
-                                    color = updateTint,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 15.sp
-                                )
-                            }
-                        }
-                        val popupItems = remember { listOf(FlyTxt.Providers.Action.View, FlyTxt.Providers.Action.Update, FlyTxt.Providers.Action.Upload) }
+                        )
                         GlassPopupHost(
                             show = showPopup.value,
                             onDismissRequest = { showPopup.value = false },
                             anchor = actionsAnchor,
                             anchorContent = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Edit,
-                                    contentDescription = FlyTxt.Providers.Action.Operation,
-                                    modifier = Modifier.size(UiDp.dp20),
+                                ProviderGlassButtonContent(
+                                    text = FlyTxt.Providers.Action.Operation,
+                                    icon = MiuixIcons.Glass.Edit,
+                                    enabled = !isUpdating,
+                                    tint = MiuixTheme.colorScheme.primary,
                                 )
                             },
                         ) {
                             GlassMenuItem(
-                                text = popupItems[0],
+                                text = FlyTxt.Providers.Action.View,
                                 onClick = {
                                     showPopup.value = false
                                     onView()
                                 },
                             )
                             GlassMenuItem(
-                                text = popupItems[1],
+                                text = FlyTxt.Providers.Action.Update,
                                 onClick = {
                                     showPopup.value = false
                                     onUpdate()
                                 },
                             )
                             GlassMenuItem(
-                                text = popupItems[2],
+                                text = FlyTxt.Providers.Action.Upload,
                                 onClick = {
                                     showPopup.value = false
                                     filePicker.launch("*/*")
@@ -529,27 +522,19 @@ private fun ProvidersInfoCard(basePath: String) {
         ) {
             Text(
                 text = FlyTxt.Providers.InfoTitle,
-                style = MiuixTheme.textStyles.subtitle,
+                style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onSurface,
             )
             Text(
                 text = FlyTxt.Providers.InfoSummary.format(basePath),
-                style = MiuixTheme.textStyles.footnote1,
+                style = MiuixTheme.textStyles.footnote1.copy(fontSize = 12.sp),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                modifier = Modifier.clip(RoundedCornerShape(50)).glassCardSurface(
-                    shape = RoundedCornerShape(50),
-                    fallbackColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    glassTint = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f),
-                ).edgeStroke(
-                    shape = RoundedCornerShape(50),
-                    stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
-                ).clickable { openFlyCatDocumentsEntry(context) }.padding(horizontal = 10.dp, vertical = 4.dp),
+            ProviderGlassButton(
                 text = FlyTxt.Providers.Action.OpenInFiles,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.primary,
+                fontSize = 13.sp,
+                onClick = { openFlyCatDocumentsEntry(context) },
             )
         }
     }

@@ -50,12 +50,12 @@ import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
+import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceSwitchItem
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.util.toast
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 private sealed interface ApplyUi {
@@ -151,11 +151,11 @@ internal fun OverrideApplyToProfilesSheet(
                             LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = componentSizes.profileSettingsListMaxHeight)) {
                                 items(items = state.profiles, key = { it.uuid }) { profile ->
                                     val isSelected = profile.uuid in state.selected
-                                    SwitchPreference(
+                                    PreferenceSwitchItem(
                                         title = profile.name,
                                         checked = isSelected,
                                         onCheckedChange = { checked ->
-                                            val current = ui as? ApplyUi.Ready ?: return@SwitchPreference
+                                            val current = ui as? ApplyUi.Ready ?: return@PreferenceSwitchItem
                                             ui = current.copy(
                                                 selected = if (checked) {
                                                     current.selected + profile.uuid

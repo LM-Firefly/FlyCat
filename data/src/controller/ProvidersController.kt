@@ -26,10 +26,13 @@ import android.net.Uri
 import com.github.lmfirefly.flycat.core.contract.ProvidersRepository
 import com.github.lmfirefly.flycat.core.model.Provider
 import com.github.lmfirefly.flycat.core.model.UpdateProvidersResult
-import java.io.File
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import java.io.File
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 class ProvidersController(
     private val context: Context,
@@ -90,9 +93,12 @@ class ProvidersController(
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun updateProviderInternal(type: Provider.Type, name: String): Result<Unit> = try {
-        updateProviderAction(type, name)
+        withTimeout(PROVIDER_UPDATE_TIMEOUT_MS) { updateProviderAction(type, name) }
         Result.success(Unit)
+    } catch (_: TimeoutCancellationException) {
+        Result.failure(IllegalStateException(FlyTxt.Providers.Message.UpdateTimeout))
     } catch (error: Exception) { // 故障屏障：注入的桥接操作可能任意失败
+        if (error is CancellationException) throw error
         Result.failure(error)
     }
 
@@ -114,6 +120,7 @@ class ProvidersController(
 
     companion object {
         private const val MAX_UPLOAD_SIZE_BYTES = 50L * 1024 * 1024
+        private const val PROVIDER_UPDATE_TIMEOUT_MS = 60_000L
         private val REGEX_PROVIDER_PATH = Regex("""^[^/]+/providers/(rules|proxies)/.+""")
     }
 }

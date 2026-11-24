@@ -173,12 +173,30 @@ public data class FlyStrings_AppSettings_Interface(
     public val HomeWallpaperSourceUrl: String,
     public val HomeWallpaperUrlDialogTitle: String,
     public val WallpaperScrimTitle: String,
-    public val WallpaperBlurTitle: String,
     public val AppBackgroundTitle: String,
     public val AppBackgroundSummary: String,
     public val AppBackgroundOff: String,
     public val AppBackgroundDynamic: String,
     public val AppBackgroundWallpaper: String,
+    public val BlurEffects: FlyStrings_AppSettings_BlurEffects,
+)
+
+public data class FlyStrings_AppSettings_BlurEffects(
+    public val CardEffectsTitle: String,
+    public val CardEffectsSummary: String,
+    public val LogoEffectsTitle: String,
+    public val BlendMode: String,
+    public val EdgeStroke: String,
+    public val CardCornerRadius: String,
+    public val BlurRadius: String,
+    public val Noise: String,
+    public val Brightness: String,
+    public val Contrast: String,
+    public val Saturation: String,
+    public val Direction: String,
+    public val Start: String,
+    public val End: String,
+    public val Curve: String,
 )
 
 public data class FlyStrings_AppSettings_Privacy(
@@ -1634,6 +1652,7 @@ public data class FlyStrings_Providers_Message(
     public val FetchFailed: String,
     public val UpdateSuccess: String,
     public val UpdateFailed: String,
+    public val UpdateTimeout: String,
     public val AllUpdated: String,
     public val UploadSuccess: String,
     public val UploadFailed: String,

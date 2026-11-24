@@ -12,6 +12,8 @@ import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.glassSurfaceBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
+import com.github.lmfirefly.flycat.presentation.theme.themePopupVisuals
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference as MiuixGlassDropdownPreference
 import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 import top.yukonga.miuix.kmp.material.edgeStroke
@@ -59,6 +61,7 @@ fun <T> GlassDropdownPreference(
         modifier = rowModifier,
         enabled = rowEnabled,
         sizing = maxHeight?.let { GlassPopupMenuSizing.copy(maxHeight = it) } ?: GlassPopupMenuSizing,
+        visuals = themePopupVisuals(),
         onSelectedIndexChange = { index ->
             options.getOrNull(index)?.let { onSelected(it.value) }
         },
@@ -71,8 +74,5 @@ private fun Modifier.glassDropdownRowSurface(): Modifier {
     val shape = RoundedCornerShape(UiDp.dp18)
     return clip(shape)
         .glassCardSurface(shape, fallbackColor = MiuixTheme.colorScheme.secondaryContainer)
-        .edgeStroke(
-            shape = shape,
-            stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
-        )
+        .themeEdgeStroke(shape = shape)
 }

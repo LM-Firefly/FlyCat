@@ -206,8 +206,9 @@ fun AppNavContainer(component: AppNavigationComponent) {
     val appSettings = koinInject<AppSettingsReader>()
     val backgroundStyle by appSettings.appBackgroundStyle.state.collectAsStateWithLifecycle()
     val wallpaperUri by appSettings.moeWallpaperUri.state.collectAsStateWithLifecycle()
-    val wallpaperBlur by appSettings.appBackgroundWallpaperBlur.state.collectAsStateWithLifecycle()
-    val appBackground = rememberAppBackgroundSpec(backgroundStyle, wallpaperUri, wallpaperBlur)
+    val wallpaperBiasX by appSettings.moeWallpaperBiasX.state.collectAsStateWithLifecycle()
+    val wallpaperBiasY by appSettings.moeWallpaperBiasY.state.collectAsStateWithLifecycle()
+    val appBackground = rememberAppBackgroundSpec(backgroundStyle, wallpaperUri, wallpaperBiasX, wallpaperBiasY)
     val predictiveBackEnabled = component.predictiveBackEnabledAtLaunch
     val scope = rememberCoroutineScope()
     @Suppress("UNUSED_EXPRESSION")

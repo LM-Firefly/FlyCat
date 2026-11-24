@@ -21,5 +21,6 @@
 
 package com.github.lmfirefly.flycat.core.model
 
-/** 全局页面背景风格：关闭（纯色）/ OS3 动态渐变 / 用户壁纸图。驱动全局玻璃可见性。 */
-enum class AppBackgroundStyle { Off, DynamicGradient, Wallpaper }
+/** 全局页面背景风格：关闭（纯色）/ OS2 动态渐变（OS2 BgFrag）/ OS3 动态渐变（OS3 BgFrag）/ 用户壁纸图。驱动全局玻璃可见性。
+ *  旧值 `DynamicGradient` 由 [com.github.lmfirefly.flycat.data.store.settings.AppSettingsStore] 迁移为 [DynamicGradientOs3]。 */
+enum class AppBackgroundStyle { Off, DynamicGradientOs2, DynamicGradientOs3, Wallpaper }

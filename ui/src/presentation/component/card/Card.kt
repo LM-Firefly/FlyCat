@@ -25,6 +25,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -33,16 +34,16 @@ import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.horizontalPadding
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
+import com.github.lmfirefly.flycat.presentation.theme.themeGlassMaterial
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.glass.glassPanel
-import top.yukonga.miuix.kmp.material.GlassColorBlendMode
-import top.yukonga.miuix.kmp.material.GlassColorLayer
 import top.yukonga.miuix.kmp.material.GlassDefaults
-import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.edgeStroke
@@ -52,14 +53,13 @@ import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
  * 全局列表卡片外壳。
  *
  * 默认卡面挂玻璃边缘光（与玻璃按钮无 shader 兜底同一套材质语言：tint/rim 而非透明度）。
- * 传入 [backdrop]（专用的壁纸/表面录制层，非 GlassScaffold 的正文录制）且支持 RuntimeShader 时，
- * 卡片升级为真玻璃：库 glassPanel 采样该背景 + 叠色，内缘再勾一圈边缘光。
+ * 传入 [backdrop]（专用的壁纸/表面录制层，非 GlassScaffold 的正文录制）且支持 RuntimeShader 时，卡片升级为真玻璃：库 glassPanel 采样该背景 + 叠色，内缘再勾一圈边缘光。
  * HyperOS 同子树约束只禁止「采样包含自身的录制」，采样兄弟录制层（如纯壁纸层）安全。
  */
 @Composable
 fun Card(
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = UiDp.dp18,
+    cornerRadius: Dp = themeCardCornerRadius(),
     insideMargin: PaddingValues = PaddingValues(UiDp.dp0),
     applyHorizontalPadding: Boolean = true,
     colors: CardColors = CardDefaults.defaultColors(),
@@ -68,23 +68,18 @@ fun Card(
     content: @Composable () -> Unit,
 ) {
     val glassEnabled = backdrop != null && isRuntimeShaderSupported()
+    val shape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
     Card(
         modifier = (if (applyHorizontalPadding) { modifier.horizontalPadding() } else { modifier }).then(
-            if (backdrop != null && isRuntimeShaderSupported()) {
+            if (glassEnabled) {
                 // 玻璃卡面叠边缘光（与玻璃圆钮/下拉行同配方）：库 glassPanel 采样壁纸，再沿内缘勾一圈光晕描边。
                 Modifier.glassCardSurface(
-                    shape = RoundedCornerShape(cornerRadius),
+                    shape = shape,
                     fallbackColor = Color.Transparent,
                     backdrop = backdrop,
-                ).edgeStroke(
-                    shape = RoundedCornerShape(cornerRadius),
-                    stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
-                )
+                ).themeEdgeStroke(shape = shape)
             } else {
-                Modifier.edgeStroke(
-                    shape = RoundedCornerShape(cornerRadius),
-                    stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
-                )
+                Modifier.themeEdgeStroke(shape = shape)
             },
         ),
         cornerRadius = cornerRadius,
@@ -94,9 +89,6 @@ fun Card(
         content()
     }
 }
-
-/** 玻璃卡片的采样模糊半径。 */
-private const val GlassCardBlurRadius = 60f
 
 /** 在着色器、描边和阴影通道中保留宿主的圆角轮廓（库 resolveGlassSurfaceShape 为 internal，此处等价重实现）。*/
 private fun resolveGlassSurfaceShape(providedShape: Shape, fallbackCornerRadius: Dp): GlassShape = when (providedShape) {
@@ -134,21 +126,6 @@ fun Modifier.glassCardSurface(
     ).then(if (glassTint != Color.Transparent) Modifier.background(glassTint, shape) else Modifier)
 }
 
-/**
- * 玻璃卡片的材质配方（单源）：亮色蓝调 Overlay + 白 HardLight 提亮，暗色灰阶 Luminosity/PlusDarker 压暗。
- * 卡片表面与其它玻璃表面（如节点弹层面板）共用此配方，保持同一观感。
- */
+/** 玻璃卡片的材质配方（单源）：由主题设置驱动——采样半径取纹理组 Blur Radius，色层由纹理组 Blend Mode 令牌翻译（见 [themeGlassMaterial]），随主题页实时更新。 */
 @Composable
-fun glassCardMaterial(): GlassMaterial = if (!isDarkTheme()) {
-    GlassMaterial(
-        blurRadius = GlassCardBlurRadius.dp,
-        first = GlassColorLayer(Color(0x340034F9), GlassColorBlendMode.Overlay),
-        second = GlassColorLayer(Color(0xB3FFFFFF), GlassColorBlendMode.HardLight),
-    )
-} else {
-    GlassMaterial(
-        blurRadius = GlassCardBlurRadius.dp,
-        first = GlassColorLayer(Color(0x4DA9A9A9), GlassColorBlendMode.Luminosity),
-        second = GlassColorLayer(Color(0x1A9C9C9C), GlassColorBlendMode.PlusDarker),
-    )
-}
+fun glassCardMaterial(): GlassMaterial = themeGlassMaterial(isDarkTheme())

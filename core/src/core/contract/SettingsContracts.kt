@@ -110,6 +110,7 @@ interface AppSettingsReader {
     val moeWallpaperScrimEnabled: Preference<Boolean>
     val appBackgroundStyle: Preference<AppBackgroundStyle>
     val appBackgroundWallpaperBlur: Preference<Float>
+    val blurTheme: Preference<String>
     val pageScale: Preference<Float>
     val predictiveBackEnabled: Preference<Boolean>
     val predictiveBackMaxProgress: Preference<Float>

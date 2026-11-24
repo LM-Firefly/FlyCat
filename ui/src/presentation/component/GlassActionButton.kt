@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.material.GlassEdgeStrokes
@@ -78,8 +79,5 @@ private fun Modifier.glassButtonSurface(fallbackColor: Color, glassTint: Color):
     // 边缘光沿胶囊内侧一圈光晕发丝，标识可点击按钮区（与玻璃圆钮同配方，miuix EdgeStroke）。
     return clip(shape)
         .glassCardSurface(shape, fallbackColor = fallbackColor, glassTint = glassTint)
-        .edgeStroke(
-            shape = shape,
-            stroke = GlassEdgeStrokes.forTheme(isDark = isDarkTheme(), light = GlassEdgeStrokes.SmallLight, dark = GlassEdgeStrokes.SmallDark),
-        )
+        .themeEdgeStroke(shape = shape)
 }

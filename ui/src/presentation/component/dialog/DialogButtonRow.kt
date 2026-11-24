@@ -30,10 +30,6 @@ import androidx.compose.ui.Modifier
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun DialogButtonRow(
@@ -54,31 +50,6 @@ fun DialogButtonRow(
             onClick = onConfirm,
             modifier = Modifier.weight(1f),
             enabled = confirmEnabled,
-            primary = true,
-        )
-    }
-}
-
-@Composable
-fun DialogFilledButtonRow(
-    onSecondary: () -> Unit,
-    onPrimary: () -> Unit,
-    secondaryText: String = FlyTxt.Component.Button.Clear,
-    primaryText: String = FlyTxt.Component.Button.Confirm,
-    secondaryEnabled: Boolean = true,
-    primaryEnabled: Boolean = true,
-    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(UiDp.dp12),
-    ) {
-        GlassTextButton(text = secondaryText, onClick = onSecondary, modifier = Modifier.weight(1f), enabled = secondaryEnabled)
-        GlassTextButton(
-            text = primaryText,
-            onClick = onPrimary,
-            modifier = Modifier.weight(1f),
-            enabled = primaryEnabled,
             primary = true,
         )
     }

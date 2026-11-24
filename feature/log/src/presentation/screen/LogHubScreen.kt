@@ -52,7 +52,6 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
-import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -115,7 +114,6 @@ private fun LogHubEntry(index: Int, title: String, summary: String, onClick: () 
         enter = fadeIn(animationSpec = tween(AnimationSpecs.DURATION_NORMAL)) + slideInVertically(animationSpec = tween(AnimationSpecs.DURATION_NORMAL), initialOffsetY = { -it / 2 }),
     ) {
         Card(
-            cornerRadius = AppTheme.radii.radius18,
             modifier = Modifier.padding(vertical = 4.dp)
             .pressable(interactionSource = interactionSource, indication = SinkFeedback())
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),

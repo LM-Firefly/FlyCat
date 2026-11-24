@@ -98,6 +98,7 @@ class AppSettingsViewModel(
     val moeWallpaperScrimEnabled: Preference<Boolean> = settings.moeWallpaperScrimEnabled
     val appBackgroundStyle: Preference<AppBackgroundStyle> = settings.appBackgroundStyle
     val appBackgroundWallpaperBlur: Preference<Float> = settings.appBackgroundWallpaperBlur
+    val blurTheme: Preference<String> = settings.blurTheme
     val pageScale: Preference<Float> = settings.pageScale
     val predictiveBackEnabled: Preference<Boolean> = settings.predictiveBackEnabled
     val predictiveBackMaxProgress: Preference<Float> = settings.predictiveBackMaxProgress

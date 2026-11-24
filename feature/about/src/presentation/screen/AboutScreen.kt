@@ -45,13 +45,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,6 +60,7 @@ import com.github.lmfirefly.flycat.feature.about.UpdateDownloadProgress
 import com.github.lmfirefly.flycat.feature.about.UpdateManifestPackage
 import com.github.lmfirefly.flycat.feature.about.universalCoverageAbis
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.ForegroundBlurIdentity
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.component.card.Card
@@ -74,6 +72,7 @@ import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandal
 import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceEnumItem
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
+import com.github.lmfirefly.flycat.presentation.component.input.GlassCheckbox
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
@@ -84,19 +83,12 @@ import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.compose.koinViewModel
 import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-internal val AppNameGradient = listOf(
-    Color(0xFFEFC0D9),
-    Color(0xFFD2C6F0),
-    Color(0xFFC0D5F5),
-)
 
 // Kernel version is read directly from BuildConfig (set at build time from mihomo git).
 private fun formatKernelVersion(): String {
@@ -116,6 +108,7 @@ fun AboutScreen(navigator: Navigator) {
     val updateUiState by updateViewModel.uiState.collectAsStateWithLifecycle()
     val downloadProgress by updateViewModel.downloadProgress.collectAsStateWithLifecycle()
     var dialogCandidate by remember { mutableStateOf<UpdateCandidate?>(null) }
+    var showLogoEffects by remember { mutableStateOf(false) }
     val scrollBehavior = MiuixScrollBehavior()
     val coreVersion = remember { formatKernelVersion() }
     LaunchedEffect(updateUiState.message) {
@@ -180,6 +173,10 @@ fun AboutScreen(navigator: Navigator) {
                         title = "FlyCat",
                         summary = "An open-source Android client based Mihomo",
                     )
+                    ArrowPreference(
+                        title = FlyTxt.AppSettings.BlurEffects.LogoEffectsTitle,
+                        onClick = { showLogoEffects = true },
+                    )
                     PreferenceEnumItem(
                         title = FlyTxt.AppSettings.Network.UpdateChannelTitle,
                         summary = FlyTxt.AppSettings.Network.UpdateChannelSummary,
@@ -234,32 +231,17 @@ fun AboutScreen(navigator: Navigator) {
             }
         }
     }
+    LogoEffectsSheet(show = showLogoEffects, onDismiss = { showLogoEffects = false })
 }
 
-/** 关于页应用标识块：logo + 渐变应用名 + 版本信息，作为普通列表内容随列表滚动（无 hero 溶解渐隐效果）。 */
+/** 关于页应用标识块：logo + 应用名（[ForegroundBlurIdentity]，按主题 Foreground Blur 组渲染）+ 版本信息，作为普通列表内容随列表滚动（无 hero 溶解渐隐效果）。 */
 @Composable
 private fun AboutIdentityHeader(name: String, version: String, buildInfo: String) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp24, bottom = UiDp.dp8),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .height(96.dp)
-                .aspectRatio(FlyCatLogoAspectRatio)
-                .clipToBounds(),
-        ) {
-            FlyCatLogoIcon(tint = Brush.linearGradient(AppNameGradient), modifier = Modifier.fillMaxSize())
-        }
-        Text(
-            text = name,
-            modifier = Modifier.padding(top = UiDp.dp12, bottom = UiDp.dp5),
-            style = MiuixTheme.textStyles.title1.copy(
-                fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
-                brush = Brush.linearGradient(AppNameGradient),
-            ),
-        )
+        ForegroundBlurIdentity(name = name)
         Text(
             text = version,
             style = MiuixTheme.textStyles.body1.copy(fontSize = 14.sp),
@@ -336,7 +318,7 @@ internal fun UpdateCandidateDialog(candidate: UpdateCandidate?, downloadProgress
                             BasicComponent(
                                 title = packageOption.packageDisplayTitle(),
                                 summary = packageOption.packageDisplaySummary(),
-                                endActions = { Checkbox(state = ToggleableState(isSelected), onClick = { selectedPackage = packageOption }) },
+                                endActions = { GlassCheckbox(state = ToggleableState(isSelected), onClick = { selectedPackage = packageOption }) },
                                 onClick = { selectedPackage = packageOption },
                             )
                         }

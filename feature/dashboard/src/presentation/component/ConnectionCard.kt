@@ -22,15 +22,16 @@
 package com.github.lmfirefly.flycat.feature.dashboard.presentation.component
 
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionCardItem
+import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -65,27 +67,22 @@ fun ConnectionCard(
     modifier: Modifier = Modifier,
 ) {
     val spacing = AppTheme.spacing
-    val radii = AppTheme.radii
     val sizes = AppTheme.sizes
-    val shape = RoundedCornerShape(radii.radius18)
     val interactionSource = remember { MutableInteractionSource() }
     val network = item.network
     val chainText = item.ruleChain
 
-    Column(
+    Card(
         modifier = modifier
             .fillMaxWidth()
             .pressable(interactionSource = interactionSource, indication = SinkFeedback())
-            .clip(shape)
-            .glassCardSurface(shape = shape, fallbackColor = MiuixTheme.colorScheme.background)
-            .border(sizes.nodeCardBorderWidth, MiuixTheme.colorScheme.surfaceVariant, shape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick,
-            )
-            .padding(horizontal = spacing.space16, vertical = spacing.space12),
-        verticalArrangement = Arrangement.spacedBy(spacing.space12),
+            ),
+        insideMargin = PaddingValues(horizontal = spacing.space16, vertical = spacing.space12),
+        applyHorizontalPadding = false,
     ) {
         Row(
             verticalAlignment = Alignment.Top,
@@ -163,6 +160,7 @@ fun ConnectionCard(
                 )
             }
         }
+        Spacer(modifier = Modifier.height(spacing.space12))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

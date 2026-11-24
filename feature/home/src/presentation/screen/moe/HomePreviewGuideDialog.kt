@@ -88,7 +88,6 @@ fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit) {
             else -> FlyTxt.Home.PreviewGuide.AddDescription
         },
         summaryColor = DialogDefaults.summaryColor(),
-        backgroundColor = DialogDefaults.backgroundColor(),
         enableWindowDim = true,
         onDismissRequest = onDismissRequest,
         outsideMargin = DialogDefaults.outsideMargin,

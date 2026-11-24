@@ -69,8 +69,9 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     override val moeHomeQuoteAuthor by strFlow("Firefly")
     override val moeSidebarExpanded by boolFlow(true)
     override val moeWallpaperScrimEnabled by boolFlow(true)
-    override val appBackgroundStyle by enumFlow(AppBackgroundStyle.DynamicGradient)
+    override val appBackgroundStyle by enumFlow(AppBackgroundStyle.DynamicGradientOs3)
     override val appBackgroundWallpaperBlur by floatFlow(0f)
+    override val blurTheme by strFlow("")
     override val pageScale by floatFlow(1.0f)
     override val predictiveBackEnabled by boolFlow(false)
     override val predictiveBackMaxProgress by floatFlow(50.0f)
@@ -80,7 +81,17 @@ class AppSettingsStore(externalMmkv: MMKV) : MMKVPreference(externalMmkv = exter
     override val customUserAgent by strFlow("")
     override val webDav: WebDavSettingsReader = WebDavSettings(externalMmkv)
 
-    init { migrateLegacyHomeKeys() }
+    init {
+        migrateLegacyHomeKeys()
+        migrateLegacyBackgroundStyle()
+    }
+
+    /** 一次性迁移：动态渐变拆分为 OS2/OS3 两档前，旧值 `DynamicGradient` 统一映射为 [AppBackgroundStyle.DynamicGradientOs3]。 */
+    private fun migrateLegacyBackgroundStyle() {
+        if (mmkv.decodeString("appBackgroundStyle") == "DynamicGradient") {
+            mmkv.encode("appBackgroundStyle", AppBackgroundStyle.DynamicGradientOs3.name)
+        }
+    }
 
     /** 一次性重命名迁移：重命名前的构建版本将 home/wallpaper 首选项持久化在 `acg*` 键下。当新键仍然不存在时，将旧值复制到新的 `moe*` 键上，以确保升级用户保留其保存的语录、作者、壁纸和裁剪框设置。 */
     private fun migrateLegacyHomeKeys() {

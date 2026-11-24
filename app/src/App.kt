@@ -56,6 +56,8 @@ import com.github.lmfirefly.flycat.di.ServiceBootstrapReaderImpl
 import com.github.lmfirefly.flycat.di.appModule
 import com.github.lmfirefly.flycat.feature.about.GitHubUpdateManager
 import com.github.lmfirefly.flycat.feature.settings.presentation.util.MoeWallpaperImporter
+import com.github.lmfirefly.flycat.presentation.component.misc.WallpaperDecodeCache
+import com.github.lmfirefly.flycat.presentation.component.misc.resolveWallpaperModel
 import com.github.lmfirefly.flycat.runtime.api.constants.Components
 import com.github.lmfirefly.flycat.runtime.api.constants.Intents
 import com.github.lmfirefly.flycat.runtime.api.contract.AppScreenState
@@ -70,7 +72,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.koin.androidContext
@@ -84,32 +85,19 @@ import timber.log.Timber
 
 class App : Application() {
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    companion object {
-        lateinit var instance: App
-            private set
-        private const val GEO_EXTRACT_MAX_FAILURES = 3
-    }
-
+    companion object { private const val GEO_EXTRACT_MAX_FAILURES = 3 }
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
         /** priv-kit 接入要求：全局豁免 hidden API。
          * 配对协议反射平台 conscrypt 的隐藏方法 (Conscrypt.exportKeyingMaterial)，被 hidden API enforcement 屏蔽时表现为 NoSuchMethodError。
          * release 的 pack 加载器也会豁免，此处幂等兼容 debug 构建。 */
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            runCatching { HiddenApiBypass.addHiddenApiExemptions("L") }
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) { runCatching { HiddenApiBypass.addHiddenApiExemptions("L") } }
         // 只压 so 方案：解载 XZ 原生载荷并注入 classloader 搜索路径（必须在 HiddenApiBypass 之后）。
         NativeLibraryLoader.installCompressedNativeLibs(this)
     }
-
     override fun onCreate() {
         super.onCreate()
-
-        instance = this
-        if (BuildConfig.DEBUG && Timber.forest().isEmpty()) {
-            Timber.plant(Timber.DebugTree())
-        }
+        if (BuildConfig.DEBUG && Timber.forest().isEmpty()) { Timber.plant(Timber.DebugTree()) }
         AppScreenState.init(this)
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityResumed(activity: Activity) = AppForegroundState.onActivityResumed()
@@ -121,40 +109,40 @@ class App : Application() {
             override fun onActivityDestroyed(activity: Activity) = Unit
         })
         // 阶段1：核心基础架构（logging, crash handler, native globals）
-        val koin = try {
-            initCoreInfrastructure()
-        } catch (e: Exception) {
+        val koin = try { initCoreInfrastructure() } catch (e: Exception) {
             Timber.e(e, "Fatal error during core infrastructure init")
             CrashHandler.init(this)
             return
         }
         // 阶段2：应用用户设置
-        startupScope.launch {
-            safeRun("App", "Apply user settings") { applyUserSettings(koin) }
-        }
+        startupScope.launch { safeRun("App", "Apply user settings") { applyUserSettings(koin) } }
         // 阶段2a：在后台线程上预加载原生桥接库
+        startupScope.launch { withContext(Dispatchers.IO) { safeRun("App", "Bridge preload") { Bridge.preload() } } }
+        // 阶段2b：预热壁纸解码。必须并行尽早启动（不要排进启动任务链——geo 等慢任务会让预热赶不上 UI 首帧）。
+        // 首帧经 WallpaperDecodeCache.imageBitmap 取图：预热入槽则直接命中；未赶上则在首帧组合中同步解码（耗时被 Splash 吸收），两条路径都保证用户看到的第一帧已带壁纸，预热只是把解码开销从首帧挪到后台。
         startupScope.launch {
             withContext(Dispatchers.IO) {
-                safeRun("App", "Bridge preload") { Bridge.preload() }
+                safeRun("App", "Pre-decode Moe wallpaper") {
+                    val appSettings: AppSettingsStore = koin.get()
+                    val model = resolveWallpaperModel(this@App, appSettings.moeWallpaperUri.value)
+                    val metrics = resources.displayMetrics
+                    WallpaperDecodeCache.warmUp(this@App, model, metrics.widthPixels, metrics.heightPixels)
+                }
             }
         }
         // mihomo 日志订阅由 MihomoLogViewModel 在预览可见时直接持有（Clash.subscribeLogcat），不再经此中转。
         val applicationScope = koin.get<CoroutineScope>(named(APPLICATION_SCOPE_NAME))
-        // 阶段2b：从不完整的文件操作（原子重命名残留物）中恢复
-        startupScope.launch {
-            withContext(Dispatchers.IO) {
-                safeRun("App", "Startup recovery") { recoverIncompleteOperations() }
-            }
-        }
-        // 阶段3：启动更新检查协程
+        // 阶段2c：从不完整的文件操作（原子重命名残留物）中恢复
+        startupScope.launch { withContext(Dispatchers.IO) { safeRun("App", "Startup recovery") { recoverIncompleteOperations() } } }
+        // 阶段3：调度更新检查与运行时恢复观察者
         safeRun("App", "Schedule update check") { startUpdateCheck(koin, applicationScope) }
         safeRun("App", "Schedule runtime recovery") { observeRuntimeRecoveryScheduling(koin, applicationScope) }
-        // 阶段4：延迟运行时任务（geo assets, traffic collector, auto-start）
+        // 阶段4：延迟运行时任务（geo 资产、自定义路由默认值、壁纸本地副本、流量采集、代理预热、配置自动更新、首次打开初始化、Wi-Fi 自动化与代理自动启动）
         safeRun("App", "Schedule deferred startup tasks") { scheduleDeferredStartupTasks(koin) }
         // 阶段5：独立生命周期观察者（始终安全可启动）
         applicationScope.launch { observeAndBroadcastForegroundState() }
     }
-    /** 第 1 阶段：初始化日志记录、崩溃处理器、全局上下文、MMKV 和 Koin 依赖注入。成功时返回 Koin 实例；严重失败时抛出异常。 */
+    /** 阶段 1：初始化日志记录、崩溃处理器、全局上下文、MMKV 和 Koin 依赖注入。成功时返回 Koin 实例；严重失败时抛出异常。 */
     private fun initCoreInfrastructure(): Koin {
         // AppLogTree 必须始终植入（App 日志缓冲与崩溃日志附带的「最近日志」都取自它）： debug 构建在 onCreate 已植入裸 DebugTree，旧 isEmpty 守卫会在此跳过 AppLogTree，
         // 导致 AppLog 完全不采集（录制文件恒 0B、预览/导出恒空）。
@@ -175,29 +163,17 @@ class App : Application() {
             uiBuildId = BuildConfig.UI_BUILD_ID,
             kernelGitVersion = BuildConfig.KERNEL_GIT_VERSION,
         )
-        Components.register(
-            mainActivityClassName = MainActivity::class.java.name,
-            proxySheetActivityClassName = ProxySheetActivity::class.java.name,
-        )
+        Components.register(mainActivityClassName = MainActivity::class.java.name, proxySheetActivityClassName = ProxySheetActivity::class.java.name)
         Timber.d("Core infrastructure initialized")
         val koin = startKoin {
             androidContext(this@App)
             modules(appModule)
         }.koin
         AppLogBridge.runtimeLogWriter = koin.get<RuntimeLogWriter>()::writeLog
-        ServiceBootstrapHolder.initialize(
-            ServiceBootstrapReaderImpl(
-                appSettingsStore = koin.get(),
-                featureStore = koin.get(),
-                networkSettingsStore = koin.get(),
-                mmkvProvider = koin.get(),
-            )
-        )
+        ServiceBootstrapHolder.initialize(ServiceBootstrapReaderImpl(appSettingsStore = koin.get(), featureStore = koin.get(), networkSettingsStore = koin.get(), mmkvProvider = koin.get()))
         return koin
     }
-    /**
-     * 阶段 2：应用已保存的用户偏好设置（语言、日志级别、预测性返回、功能版本）。
-     */
+    /** 阶段 2：应用已保存的用户偏好设置（日志级别、语言、功能版本）。 */
     private fun applyUserSettings(koin: Koin) {
         val appSettingsStorage: AppSettingsStore = koin.get()
         val appLogSettings: AppLogSettings = koin.get()
@@ -206,44 +182,26 @@ class App : Application() {
         val featureStore: FeatureStore = koin.get()
         featureStore.syncAppVersion(BuildConfig.VERSION_CODE)
     }
-    /**
-     * 阶段三：观察自动检查更新偏好，并相应地启动/停止。
-     */
+    /** 阶段 3：观察自动检查更新偏好，并相应地启动/停止自动更新检查。 */
     private fun startUpdateCheck(koin: Koin, applicationScope: CoroutineScope) {
         val appSettingsStorage: AppSettingsStore = koin.get()
         val updateManager: GitHubUpdateManager = koin.get()
         applicationScope.launch {
-            appSettingsStorage.autoCheckAppUpdate.state.collect { enabled ->
-                if (enabled) {
-                    updateManager.startAutoCheck(this)
-                } else {
-                    updateManager.stopAutoCheck()
-                }
-            }
+            appSettingsStorage.autoCheckAppUpdate.state.collect { enabled -> if (enabled) { updateManager.startAutoCheck(this) } else { updateManager.stopAutoCheck() } }
         }
     }
     /** 仅在"自动重启"开启时调度周期性运行时恢复检查，关闭即取消，避免无谓的后台唤醒。*/
     private fun observeRuntimeRecoveryScheduling(koin: Koin, applicationScope: CoroutineScope) {
         val appSettingsStorage: AppSettingsStore = koin.get()
         applicationScope.launch {
-            appSettingsStorage.automaticRestart.state.collect { enabled ->
-                if (enabled) {
-                    RuntimeRecoveryWorker.schedule(this@App)
-                } else {
-                    RuntimeRecoveryWorker.cancel(this@App)
-                }
-            }
+            appSettingsStorage.automaticRestart.state.collect { enabled -> if (enabled) { RuntimeRecoveryWorker.schedule(this@App) } else { RuntimeRecoveryWorker.cancel(this@App) } }
         }
     }
-    /**
-     * 阶段 4：在后台范围调度延迟任务（地理资产、预热、自动启动）。
-     */
+    /** 阶段 4：在后台范围调度延迟任务（geo 资产、自定义路由默认值、壁纸本地副本、流量采集、代理预热、配置自动更新、首次打开初始化），预热链结束后再恢复 Wi-Fi 自动化并执行代理自动启动。 */
     private fun scheduleDeferredStartupTasks(koin: Koin) {
         val featureStore: FeatureStore = koin.get()
         StartupTaskCoordinator.startWarmup(startupScope) {
-            withContext(Dispatchers.IO) {
-                safeRun("App", "Prepare geo assets") { ensureGeoAssetsPrepared() }
-            }
+            withContext(Dispatchers.IO) { safeRun("App", "Prepare geo assets") { ensureGeoAssetsPrepared() } }
             safeRun("App", "Bootstrap custom routing defaults") { koin.get<CustomRoutingInitializer>().ensureDefaultContent() }
             safeRun("App", "Ensure Moe wallpaper local copy") { ensureMoeWallpaperLocalCopy(koin.get()) }
             safeRun("App", "Init traffic collector") { koin.get<AppTrafficStatisticsCollector>() }
@@ -259,16 +217,12 @@ class App : Application() {
             }
         }
         val networkSettingsStorage = koin.get<NetworkSettingsReader>()
-        // Use applicationScope so auto-start survives startupScope cancellation (e.g. onTrimMemory).
+        // 使用 applicationScope 以便自动启动能够在 startupScope 被取消后存活（例如 onTrimMemory）。
         val applicationScope = koin.get<CoroutineScope>(named(APPLICATION_SCOPE_NAME))
         applicationScope.launch {
             StartupTaskCoordinator.awaitWarmup()
-            // Restore Wi-Fi automation service if the user previously enabled it.
-            safeRun("App", "Restore Wi-Fi automation") {
-                if (networkSettingsStorage.wifiAutomationEnabled.value) {
-                    WifiAutomationService.start(this@App)
-                }
-            }
+            // 如果用户之前已启用过，则恢复Wi-Fi自动化服务。
+            safeRun("App", "Restore Wi-Fi automation") { if (networkSettingsStorage.wifiAutomationEnabled.value) { WifiAutomationService.start(this@App) } }
             if (!AutoStartSessionGate.tryBeginAutoActions()) return@launch
             var handled = false
             try {
@@ -282,37 +236,30 @@ class App : Application() {
                     serviceCache = koin.get(qualifier = named("service_cache")),
                 )
                 handled = true
-            } finally {
-                AutoStartSessionGate.finishAutoActions(markHandled = handled)
-            }
+            } finally { AutoStartSessionGate.finishAutoActions(markHandled = handled) }
         }
     }
     /**
      *  从不完整的原子文件操作中恢复。如果进程在 rename(old→bak) 与 rename(new→target) 之间被终止，则 .bak 目录会被孤立，且目标文件丢失。
      *  此机制在启动时会恢复 .bak→target。
-     *
      *  涵盖范围：
      *  - 配置文件更新：imported/{uuid}.bak→imported/{uuid}
      *  - 备份还原：imported.bak, overrides.bak, substore-data.bak
      */
     private fun recoverIncompleteOperations() {
-        // Recover per-profile directories (from ProfileProcessor.update)
+        // 恢复每个配置的目录（来自 ProfileProcessor.update）
         val importedDir = filesDir.resolve("imported")
         if (importedDir.isDirectory) {
-            importedDir.listFiles()
-                ?.filter { it.isDirectory && it.name.endsWith(".bak") }
-                ?.forEach { bakDir ->
-                    val targetName = bakDir.name.removeSuffix(".bak")
-                    val target = importedDir.resolve(targetName)
-                    if (!target.exists()) {
-                        moveDirectoryFallback(bakDir, target)
-                        Timber.i("Startup recovery: restored imported/$targetName")
-                    } else {
-                        bakDir.deleteRecursively()
-                    }
-                }
+            importedDir.listFiles()?.filter { it.isDirectory && it.name.endsWith(".bak") }?.forEach { bakDir ->
+                val targetName = bakDir.name.removeSuffix(".bak")
+                val target = importedDir.resolve(targetName)
+                if (!target.exists()) {
+                    moveDirectoryFallback(bakDir, target)
+                    Timber.i("Startup recovery: restored imported/$targetName")
+                } else { bakDir.deleteRecursively() }
+            }
         }
-        // Recover top-level directories (from BackupRepository.replaceBackupDirectory)
+        // 恢复顶层目录（来自 BackupRepository.replaceBackupDirectory）
         val subStoreDataDir = SubStorePaths.dataDir
         val recoverableDirs = listOf(
             filesDir.resolve("imported") to filesDir.resolve("imported.bak"),
@@ -323,50 +270,41 @@ class App : Application() {
             if (bak.isDirectory && !target.exists()) {
                 moveDirectoryFallback(bak, target)
                 Timber.i("Startup recovery: restored ${target.name}")
-            } else if (bak.exists()) {
-                bak.deleteRecursively()
-            }
+            } else if (bak.exists()) { bak.deleteRecursively() }
         }
     }
-
-    //** 将 [source] 移动到 [target]，当 renameTo 静默失败时回退到复制操作。 */
+    /** 将 [source] 移动到 [target]，当 renameTo 静默失败时回退到复制操作。 */
     private fun moveDirectoryFallback(source: File, target: File) {
         if (source.renameTo(target)) return
         target.deleteRecursively()
         source.copyRecursively(target, overwrite = true)
         source.deleteRecursively()
     }
-
     /**
-     * Best-effort self-heal for the Moe wallpaper: if the persisted [AppSettingsStore.moeWallpaperUri] points at a local file:// copy that no longer exists, but the original source is still recorded and readable, re-import it so the home screen keeps rendering the user's choice after a cache or data wipe.
-     * Silent no-op otherwise; the render path falls back to the bundled asset.
+     * Moe 壁纸尽力自愈：如果持久化的 [AppSettingsStore.moeWallpaperUri] 指向一个已不存在的本地 file:// 副本，但原始来源仍被记录且可读取，则重新导入该文件，以便主屏幕在缓存或数据清除后仍能继续渲染用户的选择。
+     * 其余情况静默无操作；副本确实无法恢复时，渲染路径（resolveWallpaperModel）回退到内置壁纸。
      */
     private suspend fun ensureMoeWallpaperLocalCopy(appSettings: AppSettingsStore) {
         val stored = appSettings.moeWallpaperUri.value
         if (!stored.startsWith("file://")) return
-        val localPath = stored.removePrefix("file://")
+        val localPath = stored.removePrefix("file://").substringBefore('#')
         if (localPath.startsWith("/android_asset/")) return
         if (File(localPath).exists()) return
         val source = appSettings.moeWallpaperSourceUri.value
         if (source.isBlank()) return
         val reimported = MoeWallpaperImporter.importToLocal(this, source)
-        if (reimported != null) {
-            appSettings.moeWallpaperUri.set(reimported)
-        }
+        if (reimported != null) { appSettings.moeWallpaperUri.set(reimported) }
     }
     private suspend fun observeAndBroadcastForegroundState() {
-        AppForegroundState.foreground
-            .collect { isForeground ->
-                safeRunSilent("App", "Broadcast foreground state") {
-                    val intent = android.content.Intent(
-                        Intents.actionAppForeground(packageName)
-                    ).apply {
-                        setPackage(packageName)
-                        putExtra(Intents.EXTRA_APP_FOREGROUND, isForeground)
-                    }
-                    sendBroadcast(intent)
+        AppForegroundState.foreground.collect { isForeground ->
+            safeRunSilent("App", "Broadcast foreground state") {
+                val intent = android.content.Intent(Intents.actionAppForeground(packageName)).apply {
+                    setPackage(packageName)
+                    putExtra(Intents.EXTRA_APP_FOREGROUND, isForeground)
                 }
+                sendBroadcast(intent)
             }
+        }
     }
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -376,16 +314,14 @@ class App : Application() {
         super.onTrimMemory(level)
         @Suppress("DEPRECATION")
         if (level >= TRIM_MEMORY_COMPLETE) {
-            // Process is about to be killed→cancel startupScope to release resources promptly.
+            // 进程即将被终止→取消startupScope以及时释放资源。
             safeRunSilent("App", "Cancel startup scope on trim memory") { startupScope.cancel() }
         }
     }
     override fun onTerminate() {
         safeRunSilent("App", "Execute shutdown handlers") {
             val koin = GlobalContext.getOrNull()
-            koin?.getAll<AppShutdownHandler>()?.forEach { handler ->
-                safeRunSilent("App", "Execute shutdown handler") { handler.onShutdown() }
-            }
+            koin?.getAll<AppShutdownHandler>()?.forEach { handler -> safeRunSilent("App", "Execute shutdown handler") { handler.onShutdown() } }
         }
         safeRunSilent("App", "Cancel startup scope on terminate") { startupScope.cancel() }
         super.onTerminate()
@@ -400,10 +336,7 @@ class App : Application() {
             val failureKey = "fail_count_$name"
             val failCount = mmkv.getInt(failureKey, 0)
             if (failCount >= GEO_EXTRACT_MAX_FAILURES) {
-                Timber.w(
-                    "Geo asset %s.xz skipped: failed %d times previously",
-                    name, failCount,
-                )
+                Timber.w("Geo asset %s.xz skipped: failed %d times previously", name, failCount)
                 return@forEach
             }
             val prepared = extractXzAsset("$name.xz", target)
@@ -419,22 +352,12 @@ class App : Application() {
     private fun extractXzAsset(assetName: String, target: File): Boolean {
         return runCatching {
             target.parentFile?.mkdirs()
-            assets.open(assetName).use { input ->
-                XZInputStream(input.buffered()).use { xz ->
-                    target.outputStream().buffered().use { output ->
-                        xz.copyTo(output)
-                    }
-                }
-            }
+            assets.open(assetName).use { input -> XZInputStream(input.buffered()).use { xz -> target.outputStream().buffered().use { output -> xz.copyTo(output) } } }
             true
         }.getOrElse { error ->
             runCatching { if (target.exists()) target.delete() }
             Timber.w(error, "Geo asset extract failed: %s", assetName)
             false
         }
-    }
-    private fun copyAsset(name: String, target: File) {
-        target.parentFile?.mkdirs()
-        assets.open(name).use { it.copyTo(target.outputStream()) }
     }
 }

@@ -70,12 +70,12 @@ import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIc
 import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
+import com.github.lmfirefly.flycat.presentation.component.input.GlassCheckbox
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
-import com.github.lmfirefly.flycat.presentation.component.navigation.rememberScrollAwareFabController
 import com.github.lmfirefly.flycat.presentation.component.rememberAppIconBitmap
 import com.github.lmfirefly.flycat.presentation.component.rememberGlassSubmenuState
 import com.github.lmfirefly.flycat.presentation.component.state.SearchStatus
@@ -88,9 +88,9 @@ import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme.spacing
 import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -117,7 +117,6 @@ fun AccessControlScreen(navigator: Navigator) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val importStrategy by viewModel.importStrategy.state.collectAsStateWithLifecycle()
     val filteredApps by viewModel.filteredApps.collectAsStateWithLifecycle()
-    val settingsFabController = rememberScrollAwareFabController()
     var showSortMenu by remember { mutableStateOf(false) }
     var showOpsMenu by remember { mutableStateOf(false) }
     val sortAnchor = rememberGlassPopupAnchor()
@@ -134,15 +133,6 @@ fun AccessControlScreen(navigator: Navigator) {
     val dynamicTopPadding by remember { derivedStateOf { spacing.space12 * (1f - scrollBehavior.state.collapsedFraction) } }
     val listStartPadding = spacing.screenHorizontal
     val listEndPadding = spacing.screenHorizontal
-    val currentSearchStatus = remember(searchStatus, filteredApps) {
-        searchStatus.copy(
-            resultStatus = when {
-                searchStatus.searchText.isBlank() -> SearchStatus.ResultStatus.DEFAULT
-                filteredApps.isEmpty() -> SearchStatus.ResultStatus.EMPTY
-                else -> SearchStatus.ResultStatus.SHOW
-            }
-        )
-    }
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
@@ -176,7 +166,7 @@ fun AccessControlScreen(navigator: Navigator) {
     Box(modifier = Modifier.fillMaxSize()) {
         GlassScaffold(
             topBar = {
-                currentSearchStatus.TopAppBarAnim {
+                searchStatus.TopAppBarAnim {
                     TopBar(
                         title = FlyTxt.AccessControl.Title,
                         scrollBehavior = scrollBehavior,
@@ -233,7 +223,7 @@ fun AccessControlScreen(navigator: Navigator) {
                             AccessControlSearchBar(
                                 query = searchStatus.searchText,
                                 onQueryChange = { searchStatus = searchStatus.copy(searchText = it) },
-                                label = currentSearchStatus.label,
+                                label = searchStatus.label,
                                 topPadding = dynamicTopPadding,
                                 startPadding = listStartPadding,
                                 endPadding = listEndPadding,
@@ -259,7 +249,7 @@ fun AccessControlScreen(navigator: Navigator) {
                 ) {
                     InfiniteProgressIndicator(color = MiuixTheme.colorScheme.onSurface)
                 }
-            } else if (currentSearchStatus.shouldCollapse()) {
+            } else if (searchStatus.shouldCollapse()) {
                 if (searchStatus.searchText.isNotBlank() && filteredApps.isEmpty()) {
                     SearchEmptyState(text = FlyTxt.AccessControl.Search.Empty, modifier = Modifier.padding(bottom = listBottomPadding))
                 } else {
@@ -341,10 +331,7 @@ private fun AccessControlSearchBar(
                 }
             }
         },
-        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).edgeStroke(
-            shape = CircleShape,
-            stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
-        ),
+        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).themeEdgeStroke(shape = CircleShape),
     )
 }
 
@@ -544,7 +531,7 @@ private fun AppCard(
                 )
             },
             endActions = {
-                Checkbox(
+                GlassCheckbox(
                     state = ToggleableState(selected),
                     onClick = { onSelectionChange(!selected) },
                 )

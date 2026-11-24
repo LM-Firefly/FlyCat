@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -126,16 +127,19 @@ fun HomePager(mainInnerPadding: PaddingValues, onOpenDashboard: (() -> Unit)? = 
 
     val quoteTitle = if (homeHitokotoEnabled) homeQuote.ifBlank { FlyTxt.Home.Title } else FlyTxt.Home.Title
     val isHomeQuote = homeHitokotoEnabled && homeQuote.isNotBlank()
-    // 一言放 titleContent（随滚动缩放），作者放 bottomContent（不缩放），固定于一言下一行右下角。
+    val homeListState = rememberLazyListState()
+    // 一言放 titleContent（两档缩放），作者放 bottomContent（不缩放），固定于一言下一行右下角。
+    val titleCollapsed = homeListState.firstVisibleItemIndex > 0 || homeListState.firstVisibleItemScrollOffset >= 80
     GlassScaffold(topBar = { TopBar(title = quoteTitle, titleContent = if (isHomeQuote) {
         { Text(text = quoteTitle, style = MiuixTheme.textStyles.title1.copy(fontSize = 36.sp, lineHeight = 38.sp), color = MiuixTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth().padding(horizontal = TopAppBarDefaults.TitlePadding)) }
-    } else null, scrollBehavior = scrollBehavior, bottomContent = {
+    } else null, titleCollapsed = titleCollapsed, scrollBehavior = scrollBehavior, bottomContent = {
         if (isHomeQuote && homeQuoteAuthor.isNotBlank()) {
             Text(text = "—— ${homeQuoteAuthor}", style = MiuixTheme.textStyles.body1, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, modifier = Modifier.fillMaxWidth().padding(start = TopAppBarDefaults.TitlePadding, end = TopAppBarDefaults.TitlePadding, bottom = UiDp.dp8), textAlign = TextAlign.End)
         }
     }) }) { innerPadding ->
         ScreenLazyColumn(
             scrollBehavior = scrollBehavior,
+            lazyListState = homeListState,
             innerPadding = combinePaddingValues(innerPadding, mainInnerPadding),
         ) {
             item {

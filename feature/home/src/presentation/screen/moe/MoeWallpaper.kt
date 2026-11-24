@@ -14,30 +14,31 @@ package com.github.lmfirefly.flycat.feature.home.presentation.screen.moe
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import com.github.lmfirefly.flycat.presentation.component.misc.BUNDLED_WALLPAPER_URI
+import com.github.lmfirefly.flycat.presentation.component.misc.WallpaperDecodeCache
 import com.github.lmfirefly.flycat.presentation.component.misc.calculateWallpaperViewportLayout
-import com.github.panpf.sketch.cache.CachePolicy
+import com.github.lmfirefly.flycat.presentation.component.misc.readWallpaperBounds
+import com.github.lmfirefly.flycat.presentation.component.misc.resolveWallpaperModel
+import com.github.lmfirefly.flycat.presentation.component.misc.wallpaperCacheKey
+import com.github.lmfirefly.flycat.presentation.component.misc.wallpaperImageRequest
 import com.github.panpf.sketch.rememberAsyncImagePainter
-import com.github.panpf.sketch.request.ImageRequest
-import com.github.panpf.sketch.resize.Precision
-import com.github.panpf.sketch.resize.Scale
-import com.github.panpf.sketch.util.Size
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 
 @Composable
 internal fun MoeWallpaperBackground(
@@ -50,24 +51,33 @@ internal fun MoeWallpaperBackground(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
-    val model by
-        produceState(wallpaperUri.ifBlank { BUNDLED_WALLPAPER }, wallpaperUri) {
-            value = withContext(Dispatchers.IO) { resolveWallpaperModel(context, wallpaperUri) }
-        }
-    val imageBounds by produceState<Pair<Int, Int>?>(null, model) {
-        value = if (model.startsWith("file:///android_asset/")) null else readImageBounds(context, model)
-    }
-
+    val model by produceState(wallpaperUri.ifBlank { BUNDLED_WALLPAPER_URI }, wallpaperUri) { value = withContext(Dispatchers.IO) { resolveWallpaperModel(context, wallpaperUri) } }
+    // 图片头读取（毫秒级）：完整画幅的显示宽高，供等比解码与偏置取景计算共用。
+    val sourceBounds = remember(model) { readWallpaperBounds(context, model) }
+    // 每次组合都取内容版本（一次 stat）：文件被覆盖写入而 URI 不变时，remember 住的旧键会让旧位图常驻。
+    val cacheKey = wallpaperCacheKey(model)
     BoxWithConstraints(modifier = modifier) {
         val width = with(density) { maxWidth.toPx() }.coerceAtLeast(1f)
         val height = with(density) { maxHeight.toPx() }.coerceAtLeast(1f)
-        val painter = rememberWallpaperPainter(context, model, width, height, qualityMode)
+        // 首帧同步路径：预热已入槽则直接取位图；未入槽则当场同步解码（耗时被 Splash 吸收），不出现「垫色 → 淡入」。
+        val cachedBitmap = remember(model, cacheKey, sourceBounds, width, height, qualityMode) {
+            WallpaperDecodeCache.imageBitmap(
+                context = context,
+                model = model,
+                cacheKey = cacheKey,
+                bounds = sourceBounds,
+                boxWidth = width.toInt(),
+                boxHeight = height.toInt(),
+                multiplier = if (qualityMode == MoeWallpaperQualityMode.BackgroundBlur) 1.2f else 1f,
+            )
+        }
+        val painter: Painter = if (cachedBitmap != null) { remember(cachedBitmap) { BitmapPainter(cachedBitmap) } } else { rememberWallpaperPainter(context, model, cacheKey, sourceBounds, width, height, qualityMode) }
         val intrinsic = painter.intrinsicSize
         val layout = calculateWallpaperViewportLayout(
             containerWidthPx = width,
             containerHeightPx = height,
-            imageWidthPx = intrinsic.width.takeIf { it > 0f && it.isFinite() } ?: imageBounds?.first?.toFloat(),
-            imageHeightPx = intrinsic.height.takeIf { it > 0f && it.isFinite() } ?: imageBounds?.second?.toFloat(),
+            imageWidthPx = sourceBounds?.first?.toFloat() ?: intrinsic.width.takeIf { it > 0f && it.isFinite() },
+            imageHeightPx = sourceBounds?.second?.toFloat() ?: intrinsic.height.takeIf { it > 0f && it.isFinite() },
             zoom = wallpaperZoom.coerceIn(1f, 5f),
             biasX = wallpaperBiasX,
             biasY = wallpaperBiasY,
@@ -83,48 +93,16 @@ internal fun MoeWallpaperBackground(
 }
 
 @Composable
-private fun rememberWallpaperPainter(
-    context: Context,
-    model: String,
-    width: Float,
-    height: Float,
-    quality: MoeWallpaperQualityMode,
-) = rememberAsyncImagePainter(
-    request = ImageRequest(context, model) {
-        scale(Scale.CENTER_CROP)
-        memoryCachePolicy(CachePolicy.DISABLED)
-        downloadCachePolicy(CachePolicy.DISABLED)
-        resultCachePolicy(CachePolicy.DISABLED)
-        if (quality == MoeWallpaperQualityMode.BackgroundBlur) {
-            size(kotlin.math.ceil(width * 1.2f).toInt(), kotlin.math.ceil(height * 1.2f).toInt())
-            precision(Precision.LESS_PIXELS)
-        } else {
-            size(Size.Origin)
-            precision(Precision.EXACTLY)
-        }
+private fun rememberWallpaperPainter(context: Context, model: String, cacheKey: String, bounds: Pair<Int, Int>?, width: Float, height: Float, quality: MoeWallpaperQualityMode): Painter = rememberAsyncImagePainter(
+    request = remember(model, cacheKey, bounds, width, height, quality) {
+        wallpaperImageRequest(
+            context = context,
+            model = model,
+            cacheKey = cacheKey,
+            bounds = bounds,
+            boxWidth = width.toInt(),
+            boxHeight = height.toInt(),
+            multiplier = if (quality == MoeWallpaperQualityMode.BackgroundBlur) 1.2f else 1f,
+        )
     },
 )
-
-private suspend fun readImageBounds(context: Context, model: String): Pair<Int, Int>? = withContext(Dispatchers.IO) {
-    runCatching {
-        context.contentResolver.openInputStream(Uri.parse(model))?.use { input ->
-            BitmapFactory.Options().apply { inJustDecodeBounds = true }.also { options ->
-                BitmapFactory.decodeStream(input, null, options)
-            }.takeIf { it.outWidth > 0 && it.outHeight > 0 }?.let { it.outWidth to it.outHeight }
-        }
-    }.getOrNull()
-}
-
-private const val BUNDLED_WALLPAPER = "file:///android_asset/wallpaper.jpg"
-
-private fun resolveWallpaperModel(context: Context, uri: String): String {
-    if (uri.isBlank()) return BUNDLED_WALLPAPER
-    if (uri.startsWith("file://")) {
-        val path = uri.removePrefix("file://")
-        return if (path.startsWith("/android_asset/") || File(path).exists()) uri else BUNDLED_WALLPAPER
-    }
-    val readable = runCatching {
-        context.contentResolver.openInputStream(Uri.parse(uri))?.use { true } ?: false
-    }.getOrDefault(false)
-    return if (readable) uri else BUNDLED_WALLPAPER
-}

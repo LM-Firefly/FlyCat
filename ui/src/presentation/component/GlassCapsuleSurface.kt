@@ -45,14 +45,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 与 [GlassTopIconButton] 同材质配方的磨砂胶囊底座：带文字/图标的状态胶囊与圆钮使用。
- *
- * 玻璃采样**兄弟录制层**——位于 GlassScaffold 录制子树内的控件不得采样 LocalTopBarBackdrop
- * （层自引用会让 hwui prepareTree 无限递归崩溃，见特权服务页记录）；
- * 无 RuntimeShader 时回退玻璃面+边缘光，再退 [fallbackColor] 实色。
- *
- * 传入 [anchor] 即可挂接 [GlassPopupHost] 玻璃菜单：胶囊上报边界并隐藏自身、把玻璃材质发布为弹窗
- * 变换的折叠端点（关闭动画落点即胶囊本体，不闪无玻璃样式）；内容区已标注为弹窗拷贝来源，
- * `GlassPopupHost` 的 `anchorContent` 传与 [content] 相同的组合即可。
+ * 玻璃优先采样 GlassScaffold 的壁纸录制层，无壁纸时回退到兄弟表面录制层； 位于 GlassScaffold 录制子树内的控件不得采样 LocalTopBarBackdrop （层自引用会让 hwui prepareTree 无限递归崩溃，见特权服务页记录）；无 RuntimeShader 时回退玻璃面+边缘光，再退 [fallbackColor] 实色。
+ * 传入 [anchor] 即可挂接 [GlassPopupHost] 玻璃菜单：胶囊上报边界并隐藏自身、把玻璃材质发布为弹窗变换的折叠端点（关闭动画落点即胶囊本体，不闪无玻璃样式）；内容区已标注为弹窗拷贝来源， `GlassPopupHost` 的 `anchorContent` 传与 [content] 相同的组合即可。
  */
 @Composable
 fun GlassCapsuleSurface(
@@ -66,24 +60,12 @@ fun GlassCapsuleSurface(
     val glass = rememberGlassTopActionStyle()
     val capsuleShape = remember { Capsule() }
     val glassShape = remember(cornerRadius) { GlassShape(cornerRadius) }
-    // 无锚点胶囊（如卡内动作按钮）优先采样页面壁纸录制层——否则磨砂玻璃铺在纯色上不可见；
-    // 带锚点胶囊仍走自建兄弟层（弹窗变换端点需要自有录制层）。
-    val glassBackdrop = if (anchor == null) LocalGlassBackdrop.current else null
+    // 锚点只负责发布弹窗折叠端点，不应改变采样源；否则带菜单的胶囊会被不透明正文底色染成白面。
+    val glassBackdrop = LocalGlassBackdrop.current
     val surfaceBackdrop = rememberSurfaceBackdrop(MiuixTheme.colorScheme.background)
     val sampleBackdrop = glassBackdrop ?: surfaceBackdrop
-    Box(
-        modifier = modifier.then(
-            if (anchor != null) {
-                Modifier.glassPopupAnchor(anchor = anchor, cornerRadius = cornerRadius, floating = true)
-            } else {
-                Modifier
-            }
-        ),
-        contentAlignment = contentAlignment,
-    ) {
-        if (glassBackdrop == null) {
-            Box(modifier = Modifier.matchParentSize().layerBackdrop(surfaceBackdrop))
-        }
+    Box(modifier = modifier.then(if (anchor != null) { Modifier.glassPopupAnchor(anchor = anchor, cornerRadius = cornerRadius, floating = true) } else { Modifier }), contentAlignment = contentAlignment) {
+        if (glassBackdrop == null) { Box(modifier = Modifier.matchParentSize().layerBackdrop(surfaceBackdrop)) }
         Box(
             modifier = Modifier.matchParentSize().then(
                 if (isRuntimeShaderSupported()) {
@@ -98,7 +80,7 @@ fun GlassCapsuleSurface(
                         fallback = Modifier.background(fallbackColor),
                     )
                 } else {
-                    // 无 RuntimeShader 时按库语义纯色回退（原 FlyBlur.glassSurface 的纹理模糊分支在此不可达，已删）。
+                    // 无 RuntimeShader 时按库语义纯色回退。
                     Modifier.background(fallbackColor, capsuleShape)
                     .edgeStroke(
                         shape = capsuleShape,
@@ -107,9 +89,6 @@ fun GlassCapsuleSurface(
                 },
             ),
         )
-        Box(
-            modifier = Modifier.clip(capsuleShape).then(if (anchor != null) Modifier.glassPopupAnchorContent(anchor) else Modifier),
-            content = { content() },
-        )
+        Box(modifier = Modifier.clip(capsuleShape).then(if (anchor != null) Modifier.glassPopupAnchorContent(anchor) else Modifier), content = { content() })
     }
 }

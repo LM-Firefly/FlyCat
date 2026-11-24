@@ -72,6 +72,7 @@ import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
 import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.component.SheetHeaderIconButton
+import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowRight
@@ -215,7 +216,7 @@ internal fun ProfileFormContent(
 
 @Composable
 private fun ProfileTypeSelectorCard(selectedImportType: ProfileImportType, profileLocked: Boolean, onTypeSelected: (ProfileImportType) -> Unit) {
-    top.yukonga.miuix.kmp.basic.Card {
+    Card(modifier = Modifier.fillMaxWidth(), applyHorizontalPadding = false) {
         Box(
             modifier = Modifier.alpha(if (profileLocked) 0.5f else 1f).clickable(
                 enabled = profileLocked,

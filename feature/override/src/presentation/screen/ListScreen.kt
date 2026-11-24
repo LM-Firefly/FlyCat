@@ -28,7 +28,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +43,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +61,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +75,7 @@ import com.github.lmfirefly.flycat.core.model.override.OverrideConfig
 import com.github.lmfirefly.flycat.core.model.override.OverrideContentType
 import com.github.lmfirefly.flycat.feature.override.presentation.viewmodel.OverrideConfigViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.GlassCapsuleSurface
 import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
 import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
 import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
@@ -128,7 +128,6 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.glass.GlassPopupAnchor
-import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
@@ -418,7 +417,12 @@ private fun ReorderableCollectionItemScope.OverrideConfigCard(
         OverrideConfigRow(
             config = config,
             anchor = actionsMenuAnchor,
-            statusBadge = { OverrideConfigStatusBadge(isBuiltIn = false, isInUse = isInUse) },
+            isBuiltIn = false,
+            isInUse = isInUse,
+            onActionsClick = {
+                actionsMounted = true
+                actionsOpen = true
+            },
         )
     }
     if (actionsMounted) {
@@ -463,7 +467,12 @@ private fun OverrideBuiltInConfigCard(
         OverrideConfigRow(
             config = config,
             anchor = actionsMenuAnchor,
-            statusBadge = { OverrideConfigStatusBadge(isBuiltIn = true, isInUse = true) },
+            isBuiltIn = true,
+            isInUse = true,
+            onActionsClick = {
+                actionsMounted = true
+                actionsOpen = true
+            },
         )
     }
     if (actionsMounted) {
@@ -487,7 +496,9 @@ private fun OverrideBuiltInConfigCard(
 private fun OverrideConfigRow(
     config: OverrideConfig,
     anchor: GlassPopupAnchor,
-    statusBadge: @Composable () -> Unit,
+    isBuiltIn: Boolean,
+    isInUse: Boolean,
+    onActionsClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -516,15 +527,12 @@ private fun OverrideConfigRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Box(
-            modifier = Modifier.glassPopupAnchor(
-                anchor = anchor,
-                cornerRadius = AppTheme.sizes.statusCapsuleHeight / 2,
-                floating = true,
-            ),
-        ) {
-            statusBadge()
-        }
+        OverrideConfigStatusBadge(
+            isBuiltIn = isBuiltIn,
+            isInUse = isInUse,
+            anchor = anchor,
+            onClick = onActionsClick,
+        )
     }
 }
 
@@ -589,18 +597,36 @@ private fun OverrideConfigActionsMenu(
 
 /** 卡片与菜单共享的盾牌徽章：内置 > 使用中 > 未使用。 */
 @Composable
-private fun OverrideConfigStatusBadge(isBuiltIn: Boolean, isInUse: Boolean) {
+private fun OverrideConfigStatusBadge(
+    isBuiltIn: Boolean,
+    isInUse: Boolean,
+    anchor: GlassPopupAnchor? = null,
+    onClick: (() -> Unit)? = null,
+) {
     val active = isInUse && !isBuiltIn
-    Box(
-        modifier = Modifier.size(AppTheme.sizes.statusCapsuleHeight + AppTheme.spacing.space4).background(
-            color = if (active) {
-                colorScheme.primary.copy(alpha = AppTheme.opacity.subtle)
+    val fallbackColor = if (active) {
+        colorScheme.primary.copy(alpha = AppTheme.opacity.subtle)
+    } else {
+        colorScheme.secondaryContainer.copy(alpha = AppTheme.opacity.surfaceVariant)
+    }
+    val iconTint = if (active) colorScheme.primary else colorScheme.onSurfaceVariantSummary
+    val iconSize = AppTheme.sizes.statusCapsuleHeight + AppTheme.spacing.space4
+    GlassCapsuleSurface(
+        anchor = anchor,
+        cornerRadius = iconSize / 2,
+        fallbackColor = fallbackColor,
+        modifier = Modifier.size(iconSize).then(
+            if (onClick != null) {
+                Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    role = Role.Button,
+                    onClick = onClick,
+                )
             } else {
-                colorScheme.secondaryContainer.copy(alpha = AppTheme.opacity.surfaceVariant)
+                Modifier
             },
-            shape = CircleShape,
         ),
-        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = if (isBuiltIn || isInUse) FlyCat.ShieldCheck else FlyCat.ShieldMinus,
@@ -609,7 +635,7 @@ private fun OverrideConfigStatusBadge(isBuiltIn: Boolean, isInUse: Boolean) {
                 isInUse -> FlyTxt.Override.Status.InUse
                 else -> FlyTxt.Override.Status.NotInUse
             },
-            tint = if (active) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
+            tint = iconTint,
             modifier = Modifier.size(UiDp.dp18),
         )
     }

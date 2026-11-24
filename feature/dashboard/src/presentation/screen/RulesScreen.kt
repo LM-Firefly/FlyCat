@@ -54,6 +54,7 @@ import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
+import com.github.lmfirefly.flycat.presentation.component.input.GlassSwitch
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -65,6 +66,7 @@ import com.github.lmfirefly.flycat.presentation.component.state.TopAppBarAnim
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
 import com.github.lmfirefly.flycat.presentation.util.toast
 import java.util.Locale
 import org.koin.androidx.compose.koinViewModel
@@ -73,7 +75,6 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Search
@@ -104,14 +105,6 @@ fun RulesScreen(navigator: Navigator) {
     val dynamicTopPadding by remember { derivedStateOf { spacing.space12 * (1f - scrollBehavior.state.collapsedFraction) } }
     val listStartPadding = spacing.screenHorizontal
     val listEndPadding = spacing.screenHorizontal
-    val currentSearchStatus = remember(searchStatus, filteredRules) {
-        searchStatus.copy(resultStatus = when {
-                searchStatus.searchText.isBlank() -> SearchStatus.ResultStatus.DEFAULT
-                filteredRules.isEmpty() -> SearchStatus.ResultStatus.EMPTY
-                else -> SearchStatus.ResultStatus.SHOW
-            }
-        )
-    }
 
     LaunchedEffect(state.toggleError) {
         val error = state.toggleError ?: return@LaunchedEffect
@@ -134,7 +127,7 @@ fun RulesScreen(navigator: Navigator) {
     Box(modifier = Modifier.fillMaxSize()) {
         GlassScaffold(
             topBar = {
-                currentSearchStatus.TopAppBarAnim {
+                searchStatus.TopAppBarAnim {
                     TopBar(
                         title = FlyTxt.Rules.Title,
                         scrollBehavior = scrollBehavior,
@@ -154,7 +147,7 @@ fun RulesScreen(navigator: Navigator) {
                 }
             },
         ) { innerPadding ->
-            if (currentSearchStatus.shouldCollapse()) {
+            if (searchStatus.shouldCollapse()) {
                 when {
                     state.isLoading && state.rules.isEmpty() -> {
                         CenteredText(
@@ -253,10 +246,7 @@ private fun RulesSearchBar(
                 }
             }
         },
-        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).edgeStroke(
-            shape = CircleShape,
-            stroke = if (isLightTheme) GlassEdgeStrokes.SmallLight else GlassEdgeStrokes.SmallDark,
-        ),
+        modifier = Modifier.fillMaxWidth().padding(start = startPadding, end = endPadding).padding(top = topPadding, bottom = AppTheme.sizes.searchBarBottomPadding).clip(CircleShape).glassCardSurface(CircleShape, fallbackColor = surfaceColor).themeEdgeStroke(shape = CircleShape),
     )
 }
 
@@ -290,7 +280,7 @@ private fun RuleCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Switch(
+                GlassSwitch(
                     checked = enabled,
                     onCheckedChange = onEnabledChange,
                     enabled = !toggling,

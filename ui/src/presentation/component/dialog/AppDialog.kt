@@ -21,23 +21,14 @@
 
 package com.github.lmfirefly.flycat.presentation.component.dialog
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
-import com.github.lmfirefly.flycat.presentation.component.rememberSurfaceBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
-import com.github.lmfirefly.flycat.presentation.theme.UiDp
-import com.github.lmfirefly.flycat.presentation.theme.isDarkTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
 import top.yukonga.miuix.kmp.glass.glassDialogSurface
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -45,16 +36,10 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
 object AppDialogDefaults {
     @Composable fun titleColor(): Color = DialogDefaults.titleColor()
-
     @Composable fun summaryColor(): Color = DialogDefaults.summaryColor()
-
-    @Composable fun backgroundColor(): Color = DialogDefaults.backgroundColor()
-
-    val outsideMargin: DpSize
-        get() = DialogDefaults.outsideMargin
-
-    val insideMargin: DpSize
-        get() = DialogDefaults.insideMargin
+    @Composable fun backgroundColor(): Color = AppBottomSheetDefaults.backgroundColor()
+    val outsideMargin: DpSize get() = DialogDefaults.outsideMargin
+    val insideMargin: DpSize get() = DialogDefaults.insideMargin
 }
 
 @Composable
@@ -71,22 +56,19 @@ fun AppDialog(
     onDismissFinished: (() -> Unit)? = null,
     outsideMargin: DpSize = AppDialogDefaults.outsideMargin,
     insideMargin: DpSize = AppDialogDefaults.insideMargin,
-    cornerRadius: Dp = UiDp.dp18,
+    cornerRadius: Dp = themeCardCornerRadius(),
     defaultWindowInsetsPadding: Boolean = true,
     renderInRootScaffold: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    // 面板级玻璃表面：委托库 glassDialogSurface（材质单源 GlassDialogDefaults.material()，stroke=null 保持现观感；
-    // 库默认带 ScrimBackdrop 压暗）。自带无 shader/无背景的实色回退。
     val pageWallpaperBackdrop = LocalGlassBackdrop.current
     OverlayDialog(
         show = show,
         modifier = modifier,
-        // 面板级玻璃表面：委托库 glassDialogSurface（材质单源 GlassDialogDefaults.material()，stroke=null 保持现观感；
-        // 库默认带 ScrimBackdrop 压暗）。圆角由 OverlayDialog 的 cornerRadius 经 DialogSurfaceScope 提供。
         surface = glassDialogSurface(
             backdrop = pageWallpaperBackdrop,
-            stroke = null,
+            material = AppBottomSheetDefaults.material(),
+            stroke = AppBottomSheetDefaults.stroke(),
             containerColor = backgroundColor,
         ),
         title = title,

@@ -21,6 +21,7 @@
 
 package com.github.lmfirefly.flycat.presentation.component.navigation
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -39,7 +41,6 @@ import androidx.compose.ui.unit.Dp
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
-import kotlin.math.abs
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
@@ -49,8 +50,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /**
  * 路由顶栏：委托库 [GlassTopAppBar]，对齐 miuix 示例 app 的渐进模糊（AdaptiveTopAppBar 的玻璃路径）。
  * 内容滚入顶栏下方时，顶栏背景对正文录制层做渐进模糊，色带随折叠渐显，槽位按钮采样同一渲染场景。
- * 滚动状态走库的 scrollBehavior 通道（isContentScrolled = contentOffset/overscrollOffset 判定，与示例同一公式），
- * 渐进模糊由库内 maskProgress/collapseFraction 驱动；不再做 fork 期的 visualContentOffset/collapsedFraction 补偿。
+ * 滚动状态由库从 scrollBehavior.state 的 contentOffset/overscrollOffset 推导，渐进模糊与折叠动画由库内部处理。
  *
  * @param title 标题，顶栏折叠时居中显示。
  * @param scrollBehavior 驱动折叠与材质渐显的滚动行为。
@@ -74,6 +74,7 @@ fun TopBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     titleContent: (@Composable () -> Unit)? = null,
+    titleCollapsed: Boolean = false,
     bottomContent: @Composable () -> Unit = {},
     backdrop: Backdrop? = LocalTopBarBackdrop.current ?: LocalGlassBackdrop.current,
     transparent: Boolean = false,
@@ -89,12 +90,13 @@ fun TopBar(
             actions = actions,
             backdrop = backdrop,
             transparent = transparent,
+            titleCollapsed = titleCollapsed,
             bottomContent = {
                 // 标题块（随滚动缩放）与 bottomContent 纵向堆叠；bottomContent 在缩放层之外，保持原位不随标题缩小。
                 Column(Modifier.fillMaxWidth()) {
-                    // contentOffset 在钉住模式下仍随列表滚动更新。
-                    val shrink = (abs(scrollBehavior.state.contentOffset) / 160f).coerceIn(0f, 1f)
-                    val scale = 1f - 0.28f * shrink
+                    // 标题字号只保留两档（展开/收起）：由调用方以列表滚动位置驱动（[titleCollapsed]，回顶自然归零）。
+                    // 旧实现读 contentOffset 的 consumed 累计，下拉回顶时被链条上的其他 nestedScroll 消费掉一部分而归不了零，会卡在小档。
+                    val scale by animateFloatAsState(targetValue = if (titleCollapsed) 0.72f else 1f, label = "titleShrink")
                     Box(
                         Modifier
                             // 布局高度与绘制缩放同步收窄，下方代理链路/列表才能跟着上移；只做 graphicsLayer 的话占位不变，列表可见区域不会变多。
@@ -151,6 +153,7 @@ fun SmallTopBar(
     actionIconPadding: Dp = UiDp.dp24,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    titleCollapsed: Boolean = false,
     bottomContent: @Composable () -> Unit = {},
     backdrop: Backdrop? = LocalTopBarBackdrop.current ?: LocalGlassBackdrop.current,
     transparent: Boolean = false,

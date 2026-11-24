@@ -26,6 +26,7 @@
 - **Moe 首页**：自定义壁纸、代理链路拓扑图、速度图表、流量展示
 - **连接管理**：详细连接视图，支持速度显示与一键关闭全部连接
 - **流量统计**：分时段堆叠柱状图，支持分应用流量排序
+- **超级岛与实时通知**：HyperOS 超级岛展示当前节点、实时流量与订阅用量；Android 16 实时通知将服务通知置顶并在状态栏展示实时速率。超级岛接管时优先展示
 - **Web 面板**：内置 MetaCubeXD / Zashboard / Yacd 面板
 - **SubStore**：可选 SubStore 集成，方便订阅管理
 - **备份恢复**：WebDAV 备份，支持 Age 加密
@@ -42,6 +43,8 @@ FlyCat 目前仅支持 **Android 13（API 33）及以上系统**。
 - 前往 [Release](https://github.com/LM-Firefly/FlyCat/releases) 页面下载对应架构的安装包
 - 更多内容请访问官方文档：[lm-firefly.github.io/FlyCat](https://lm-firefly.github.io/FlyCat/)
 - 覆写配置语法参考：[覆写文档](https://lm-firefly.github.io/FlyCat/override/override)
+
+> **HyperOS 超级岛提示**：开启 HyperOS 超级岛会阻断小米服务框架（`com.xiaomi.xmsf`）的联网，依赖小米推送的应用可能无法收到通知；关闭超级岛后会尝试恢复联网。需要这些通知时，请关闭超级岛。建议使用 **Android 16 实时通知** 获得类似体验。
 
 如果这个项目对你有帮助，请点一个 Star，这是持续更新的动力。
 

@@ -53,7 +53,9 @@ import com.github.lmfirefly.flycat.presentation.component.layout.KeyValueEditorS
 import com.github.lmfirefly.flycat.presentation.navigation.AppNavContainer
 import com.github.lmfirefly.flycat.presentation.navigation.AppNavigationComponent
 import com.github.lmfirefly.flycat.presentation.theme.FlyTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalBlurTheme
 import com.github.lmfirefly.flycat.presentation.theme.ProvideAndroidPlatformTheme
+import com.github.lmfirefly.flycat.presentation.theme.parseBlurTheme
 import com.github.lmfirefly.flycat.runtime.client.util.IntentController
 import com.github.lmfirefly.flycat.runtime.client.util.extractPendingImportUrl
 import com.tencent.mmkv.MMKV
@@ -129,7 +131,8 @@ class MainActivity : FragmentActivity() {
             ProvideAndroidPlatformTheme {
                 val systemDensity = LocalDensity.current
                 val scaledDensity = remember(systemDensity, activitySettings.pageScale) { Density(systemDensity.density * activitySettings.pageScale, systemDensity.fontScale) }
-                CompositionLocalProvider(LocalDensity provides scaledDensity) {
+                val blurThemeJson by appSettingsStore.blurTheme.state.collectAsStateWithLifecycle()
+                CompositionLocalProvider(LocalDensity provides scaledDensity, LocalBlurTheme provides parseBlurTheme(blurThemeJson)) {
                     FlyTheme(
                         themeMode = activitySettings.themeMode,
                         themeSeedColorArgb = activitySettings.themeSeedColorArgb,

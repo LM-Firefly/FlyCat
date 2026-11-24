@@ -75,7 +75,9 @@ import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottom
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
 import com.github.lmfirefly.flycat.presentation.component.input.AgeSecretKeyField
+import com.github.lmfirefly.flycat.presentation.component.input.GlassCheckbox
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
+import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceSwitchItem
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowRight
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Copy
@@ -91,13 +93,11 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.layout.DialogDefaults
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -402,7 +402,7 @@ internal fun ProfileSettingsDialog(
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.space16)) {
                             Card(applyHorizontalPadding = false) {
                                 Column {
-                                    SwitchPreference(
+                                    PreferenceSwitchItem(
                                         title = FlyTxt.ProfilesPage.SettingsDialog.CustomRouting,
                                         summary = FlyTxt.ProfilesPage.SettingsDialog.CustomRoutingSummary,
                                         checked = customRoutingSelected,
@@ -429,7 +429,7 @@ internal fun ProfileSettingsDialog(
                                                             title = config.name,
                                                             modifier = Modifier.longPressDraggableHandle().alpha(if (isDragging) 0.9f else 1f),
                                                             endActions = {
-                                                                Checkbox(
+                                                                GlassCheckbox(
                                                                     state = ToggleableState.On,
                                                                     onClick = {
                                                                         overrideSelectionInitialized = true
@@ -444,7 +444,7 @@ internal fun ProfileSettingsDialog(
                                                     BasicComponent(
                                                         title = config.name,
                                                         endActions = {
-                                                            Checkbox(
+                                                            GlassCheckbox(
                                                                 state = ToggleableState.Off,
                                                                 onClick = {
                                                                     toggleUserOverrideSelection(id)

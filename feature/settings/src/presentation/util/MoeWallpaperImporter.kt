@@ -31,19 +31,15 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Copies the Moe wallpaper from an external [sourceUri] into the app-private files dir, so
- * rendering survives deletion/permission loss of the original source.
+ * 将 Moe 壁纸从外部 [sourceUri] 复制到应用私有文件目录中，使渲染不因原始来源的删除/权限丢失而失效。
+ * 支持三种来源类型：
+ * - `http://` / `https://` 远程 URL（通过 HTTP 下载）
+ * - `content://` 来自照片选择器的 URI
+ * - `file://` 本地路径
  *
- * Supports three source types:
- * - `http://` / `https://` remote URLs (downloaded via HTTP)
- * - `content://` URIs from the photo picker
- * - `file://` local paths
- *
- * The copy is written to a temp file then renamed over the stable slot, so a half-written copy
- * never replaces a good one (storage-failure edge case).
- *
- * @return a `file://` URI pointing at the local copy on success, or `null` if the source could not
- *   be read (caller should fall back to the original source URI in that case).
+ * 复制先写入临时文件，再重命名覆盖到稳定槽位，确保半写入的副本不会替换完好副本（存储失败的边界情况）。
+ * @return 成功时返回指向本地副本的 `file://` URI，若源无法读取则返回 `null`（此时调用方应回退到原始来源 URI）。
+ *   本地副本是固定文件名覆盖写入的，返回的 URI 会附加 `#v=<时间戳>` 内容版本后缀：写盘后 URI 字符串必然变化，既让设置流在同路径重写后仍能发射更新，也让渲染侧的解码缓存键随内容失效（见 `wallpaperCacheKey`）。
  */
 object MoeWallpaperImporter {
     suspend fun importToLocal(context: Context, sourceUri: String): String? = withContext(Dispatchers.IO) {
@@ -64,10 +60,9 @@ object MoeWallpaperImporter {
                 target.delete()
                 check(tmp.renameTo(target)) { "Failed to swap Moe wallpaper temp file" }
             }
-            "file://${target.absolutePath}"
+            "file://${target.absolutePath}#v=${System.currentTimeMillis()}"
         }.getOrNull()
     }
-
     private fun downloadToFile(remoteUrl: String, target: File) {
         val conn = URL(remoteUrl).openConnection() as HttpURLConnection
         try {

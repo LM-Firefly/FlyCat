@@ -73,23 +73,24 @@ class ProvidersViewModel(
         val providerKey = "${provider.type}_${provider.name}"
         viewModelScope.launch {
             _uiState.update { it.copy(updatingProviders = it.updatingProviders + providerKey) }
-            val result = providersRepository.updateProvider(provider)
-            result
-                .onSuccess {
+            try {
+                val result = providersRepository.updateProvider(provider)
+                result.onSuccess {
                     refreshProviders()
                     _uiState.update {
                         it.copy(
                             message = FlyTxt.Providers.Message.UpdateSuccess.format(provider.name)
                         )
                     }
-                }
-                .onFailure { error ->
+                }.onFailure { error ->
                     Timber.e(error, "Failed to update provider: %s", provider.name)
                     _uiState.update {
                         it.copy(error = FlyTxt.Providers.Message.UpdateFailed.format(error.message ?: "Unknown error"))
                     }
                 }
-            _uiState.update { it.copy(updatingProviders = it.updatingProviders - providerKey) }
+            } finally {
+                _uiState.update { it.copy(updatingProviders = it.updatingProviders - providerKey) }
+            }
         }
     }
 
@@ -97,14 +98,11 @@ class ProvidersViewModel(
         viewModelScope.launch {
             val httpProviders = _providers.value.filter { it.vehicleType == Provider.VehicleType.HTTP }
             if (httpProviders.isEmpty()) return@launch
-
-            _uiState.update { it.copy(isUpdatingAll = true) }
             val providerKeys = httpProviders.map { "${it.type}_${it.name}" }.toSet()
-            _uiState.update { it.copy(updatingProviders = providerKeys) }
-
-            val result = providersRepository.updateAllProviders(httpProviders)
-            result
-                .onSuccess { updateResult ->
+            _uiState.update { it.copy(isUpdatingAll = true, updatingProviders = it.updatingProviders + providerKeys) }
+            try {
+                val result = providersRepository.updateAllProviders(httpProviders)
+                result.onSuccess { updateResult ->
                     refreshProviders()
                     if (updateResult.failedProviders.isEmpty()) {
                         _uiState.update { it.copy(message = FlyTxt.Providers.Message.AllUpdated) }
@@ -115,15 +113,15 @@ class ProvidersViewModel(
                             it.copy(error = FlyTxt.Providers.Message.UpdateFailed.format("Failed providers: $failedNames"))
                         }
                     }
-                }
-                .onFailure { error ->
+                }.onFailure { error ->
                     Timber.e(error, "Failed to update all providers")
                     _uiState.update {
                         it.copy(error = FlyTxt.Providers.Message.UpdateFailed.format(error.message ?: "Unknown error"))
                     }
                 }
-
-            _uiState.update { it.copy(isUpdatingAll = false, updatingProviders = emptySet()) }
+            } finally {
+                _uiState.update { it.copy(isUpdatingAll = false, updatingProviders = it.updatingProviders - providerKeys) }
+            }
         }
     }
 
@@ -137,27 +135,23 @@ class ProvidersViewModel(
 
     fun uploadProviderFile(context: Context, provider: Provider, uri: Uri) {
         val providerKey = "${provider.type}_${provider.name}"
-        viewModelScope.launch {
-            _uiState.update { it.copy(updatingProviders = it.updatingProviders + providerKey) }
-
-            val result = providersRepository.uploadProviderFile(context, provider, uri)
-            result
-                .onSuccess {
+        viewModelScope.launch { _uiState.update { it.copy(updatingProviders = it.updatingProviders + providerKey) }
+            try {
+                val result = providersRepository.uploadProviderFile(context, provider, uri)
+                result.onSuccess {
                     refreshProviders()
                     _uiState.update {
                         it.copy(
                             message = FlyTxt.Providers.Message.UploadSuccess.format(provider.name)
                         )
                     }
-                }
-                .onFailure { error ->
+                }.onFailure { error ->
                     Timber.e(error, "Failed to upload provider file: %s", provider.name)
                     _uiState.update {
                         it.copy(error = FlyTxt.Providers.Message.UploadFailed.format(error.message ?: "Unknown error"))
                     }
                 }
-
-            _uiState.update { it.copy(updatingProviders = it.updatingProviders - providerKey) }
+            } finally { _uiState.update { it.copy(updatingProviders = it.updatingProviders - providerKey) } }
         }
     }
 

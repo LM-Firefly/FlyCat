@@ -54,6 +54,8 @@ fun rememberSurfaceBackdrop(containerColor: Color): LayerBackdrop = key(containe
 @Stable
 class CompositeBackdrop(private val base: Backdrop, private val overlay: Backdrop) : Backdrop {
     override val isCoordinatesDependent: Boolean get() = base.isCoordinatesDependent || overlay.isCoordinatesDependent
+    override val offsetResidualX: Float get() = overlay.offsetResidualX
+    override val offsetResidualY: Float get() = overlay.offsetResidualY
     override fun DrawScope.drawBackdrop(
         density: Density,
         coordinates: LayoutCoordinates?,

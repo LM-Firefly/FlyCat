@@ -431,7 +431,7 @@ private fun WifiScanSheet(
                         exit = fadeOut() + shrinkVertically(),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(spacing.space12)) {
-                            Card {
+                            Card(applyHorizontalPadding = false) {
                                 GlassDropdownPreference(
                                     title = FlyTxt.NetworkSettings.WifiAutomation.ActionTitle,
                                     options = listOf(
@@ -443,7 +443,7 @@ private fun WifiScanSheet(
                                 )
                             }
                             if (action == WifiAutomationAction.Start) {
-                                Card {
+                                Card(applyHorizontalPadding = false) {
                                     WifiProfileSwitchSelector(
                                         profiles = profiles,
                                         profileUuid = profileUuid,
@@ -453,7 +453,7 @@ private fun WifiScanSheet(
                             }
                         }
                     }
-                    Card {
+                    Card(applyHorizontalPadding = false) {
                         LazyColumn(
                             modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
                         ) {
@@ -534,7 +534,7 @@ private fun WifiRuleEditSheet(
                 exit = fadeOut() + shrinkVertically(),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(spacing.space12)) {
-                    Card {
+                    Card(applyHorizontalPadding = false) {
                         GlassDropdownPreference(
                             title = FlyTxt.NetworkSettings.WifiAutomation.ActionTitle,
                             options = listOf(
@@ -546,7 +546,7 @@ private fun WifiRuleEditSheet(
                         )
                     }
                     if (action == WifiAutomationAction.Start) {
-                        Card {
+                        Card(applyHorizontalPadding = false) {
                             WifiProfileSwitchSelector(
                                 profiles = profiles,
                                 profileUuid = profileUuid,
@@ -559,7 +559,7 @@ private fun WifiRuleEditSheet(
             if (rules.isEmpty()) {
                 BasicComponent(title = FlyTxt.NetworkSettings.WifiAutomation.EmptyRules)
             } else {
-                Card {
+                Card(applyHorizontalPadding = false) {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
                     ) {

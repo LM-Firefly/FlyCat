@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -46,15 +45,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.CompositeBackdrop
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowDownUp
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Bolt
@@ -257,25 +254,5 @@ enum class BottomBarDestination(val icon: ImageVector) {
         Proxy -> FlyTxt.Component.BottomBar.Proxy
         Config -> FlyTxt.Component.BottomBar.Config
         Setting -> FlyTxt.Component.BottomBar.Setting
-    }
-}
-
-/**
- * 把两层 [Backdrop] 合成一层采样：先画 [under]，再画 [over]。
- * 供玻璃消费者同时采样两层录制（如壁纸层 + 页面内容层）：内容录制层在无内容区域是透明的，单独采样会让玻璃在这些区域整体透出；垫上不透明的底层后采样处处完整。
- */
-@Stable
-private class CompositeBackdrop(private val under: Backdrop, private val over: Backdrop) : Backdrop {
-    override val isCoordinatesDependent: Boolean = under.isCoordinatesDependent || over.isCoordinatesDependent
-    override val offsetResidualX: Float get() = over.offsetResidualX
-    override val offsetResidualY: Float get() = over.offsetResidualY
-    override fun DrawScope.drawBackdrop(
-        density: Density,
-        coordinates: LayoutCoordinates?,
-        layerBlock: (GraphicsLayerScope.() -> Unit)?,
-        downscaleFactor: Float,
-    ) {
-        with(under) { with(this@drawBackdrop) { drawBackdrop(density, coordinates, layerBlock, downscaleFactor) } }
-        with(over) { with(this@drawBackdrop) { drawBackdrop(density, coordinates, layerBlock, downscaleFactor) } }
     }
 }

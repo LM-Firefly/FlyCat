@@ -21,8 +21,6 @@
 
 package com.github.lmfirefly.flycat.feature.settings.presentation.screen
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -39,7 +37,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,18 +49,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import com.github.panpf.sketch.rememberAsyncImagePainter
-import com.github.panpf.sketch.request.ImageRequest
-import com.github.panpf.sketch.resize.Precision
-import com.github.panpf.sketch.resize.Scale
 import com.github.panpf.sketch.util.screenSize
 import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AppSettingsViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.misc.calculateWallpaperViewportLayout
+import com.github.lmfirefly.flycat.presentation.component.misc.readWallpaperBounds
+import com.github.lmfirefly.flycat.presentation.component.misc.wallpaperCacheKey
+import com.github.lmfirefly.flycat.presentation.component.misc.wallpaperImageRequest
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import kotlin.math.max
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -72,52 +67,34 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun MoeWallpaperCropScreen(
-    navigator: Navigator,
-    wallpaperUri: String,
-    initialZoom: Float = 1f,
-    initialBiasX: Float = 0f,
-    initialBiasY: Float = 0f,
-) {
+fun MoeWallpaperCropScreen(navigator: Navigator, wallpaperUri: String, initialZoom: Float = 1f, initialBiasX: Float = 0f, initialBiasY: Float = 0f) {
     val viewModel = koinViewModel<AppSettingsViewModel>()
     val context = LocalContext.current
     var biasX by remember(wallpaperUri, initialBiasX) { mutableFloatStateOf(initialBiasX.coerceIn(-1f, 1f)) }
     var biasY by remember(wallpaperUri, initialBiasY) { mutableFloatStateOf(initialBiasY.coerceIn(-1f, 1f)) }
+    // 取景数学以源图完整画幅为准（EXIF 修正）：painter 的 intrinsicSize 解码前为 Unspecified、解码后也只是输出尺寸，仅作兜底。
+    val sourceBounds = remember(wallpaperUri) { readWallpaperBounds(context, wallpaperUri) }
+    val cacheKey = wallpaperCacheKey(wallpaperUri)
     val painter = rememberAsyncImagePainter(
-        request = remember(wallpaperUri, context) {
-            ImageRequest(context, wallpaperUri) {
-                crossfade(true)
-                precision(Precision.LESS_PIXELS)
-                scale(Scale.CENTER_CROP)
-                size(context.screenSize())
-            }
+        request = remember(wallpaperUri, sourceBounds, cacheKey) {
+            wallpaperImageRequest(
+                context = context,
+                model = wallpaperUri,
+                cacheKey = cacheKey,
+                bounds = sourceBounds,
+                boxWidth = context.screenSize().width,
+                boxHeight = context.screenSize().height,
+            )
         }
     )
     val density = LocalDensity.current
-    val imageBounds by produceState<Pair<Int, Int>?>(initialValue = null, wallpaperUri) {
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                context.contentResolver.openInputStream(Uri.parse(wallpaperUri))?.use {
-                    input ->
-                    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeStream(input, null, options)
-                    if (options.outWidth > 0 && options.outHeight > 0) {
-                        options.outWidth to options.outHeight
-                    } else {
-                        null
-                    }
-                }
-            }.getOrNull()
-        }
-    }
-
     Scaffold { innerPadding ->
         BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color.Black)) {
             val containerWidthPx = with(density) { maxWidth.toPx() }.coerceAtLeast(1f)
             val containerHeightPx = with(density) { maxHeight.toPx() }.coerceAtLeast(1f)
             val painterIntrinsic = painter.intrinsicSize
-            val imageWidthPx = painterIntrinsic.width.takeIf { it > 0f && it.isFinite() } ?: imageBounds?.first?.toFloat()
-            val imageHeightPx = painterIntrinsic.height.takeIf { it > 0f && it.isFinite() } ?: imageBounds?.second?.toFloat()
+            val imageWidthPx = sourceBounds?.first?.toFloat() ?: painterIntrinsic.width.takeIf { it > 0f && it.isFinite() }
+            val imageHeightPx = sourceBounds?.second?.toFloat() ?: painterIntrinsic.height.takeIf { it > 0f && it.isFinite() }
             val viewportLayout = calculateWallpaperViewportLayout(
                 containerWidthPx = containerWidthPx,
                 containerHeightPx = containerHeightPx,
@@ -127,7 +104,6 @@ fun MoeWallpaperCropScreen(
                 biasX = biasX,
                 biasY = biasY,
             )
-
             Box(
                 modifier = Modifier.fillMaxSize().pointerInput(
                     viewportLayout.maxShiftX,
@@ -166,7 +142,6 @@ fun MoeWallpaperCropScreen(
                     modifier = Modifier.align(Alignment.Center).fillMaxSize(),
                 )
             }
-
             val bottomInsetPx = with(density) {
                 max(
                     WindowInsets.navigationBars.getBottom(this),
