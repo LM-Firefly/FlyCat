@@ -2,17 +2,44 @@
 
 本文件记录 FlyCat 的重要变更。更新日志按主题分组整理，与网站[更新日志](website/update/history.md)同步。
 
-## [Unreleased]
+## [Unreleased][]
+
+## [0.6.1][] - 2026-11-25
 
 ### 新增
 
+- **主题化模糊玻璃体系**：新增 BlurThemeSettings（纹理 / 前景 / 渐进三组）与 blurTheme 偏好，JSON 整体持久化并经 LocalBlurTheme 全局分发；新增 ColorBlendToken 混色令牌表（Info / Colored / Pured / Overlay 明暗档）与 themeGlassMaterial / themeEdgeStroke / themePopupVisuals 主题驱动玻璃材质、描边与弹层视觉，替换各处硬编码（`feat(ui)`）
+- **模糊效果设置**：应用背景 / 卡片效果 / Logo 及 App 名称效果改为底部弹窗（WallpaperBlurSheet / CardEffectsSheet / LogoEffectsSheet）；应用背景拆分 OS2 / OS3 两套动态渐变（旧值自动迁移）并支持渐进模糊方向 / 混色 / 梯度起讫 / 曲率调节；卡片效果新增全局圆角滑杆（8–36dp，默认 18）与混色模式、边缘描边、模糊半径、噪点、亮度 / 对比度 / 饱和度调节（`feat(settings)`）
+- **玻璃组件扩展**：新增 GlassCheckbox / GlassSwitch 并全局替换 miuix 开关复选框；新增 ForegroundBlurIdentity 前景模糊（logo + 应用名），FlyCatLogo 迁至 ui 模块并在关于页接入（`feat(ui)`）
+- **通知内容四行自定义**：通知栏内容扩展至四行独立配置（第三 / 四行来源与自定义文本），正文按行渲染、空白行跳过，设置页支持多行实时预览（`feat(notification)`）
 - **Android 16 实时通知**：服务常驻通知支持提升为实时通知（promoted ongoing / Live Update），置顶显示于通知栏并在状态栏 chip 展示实时速率；与 HyperOS 超级岛互斥展示，岛不接管的路径（非岛设备/root 模式）自动启用，含设置开关与备份支持（`feat(settings)`）
+- **统计层省电设计**：common / smart / ebpf 三通道 0002 补丁收敛对齐，空闲期 tick 完全停摆、有流量即刻唤醒，updateMemory 1 秒限频按需采样；ebpf 通道重定基至 liuran001 574c6db4a 适配 per-source 流量计数，消费端契约不变（`feat(patches)`）
+
+### 修复
+
+- **全屏子树触控截胡**：对话框宿主 Scaffold 由兄弟节点改为父容器包裹内容，修复根 Surface 指针跟踪节点截胡全屏子树触控（`fix(ui)`）
+- **玻璃视觉修复**：底栏玻璃叠采样壁纸层并改平涂染色，修复无内容区域完全透明（#220）；ProxySheetActivity 壁纸衬层改 alpha(0) 仅录制不上屏，消除双重背景与磨砂带（`fix(ui)`）
+- **顶栏玻璃折叠期错位**：渐进色带模糊节点保持固定高度、可视区裁剪随栏收窄，折叠期壁纸副本不错位、色带下缘不再遮挡正文；短列表 overscroll 以折叠度兜底渐显，修复色带全透与首项重叠（`fix(ui)`）
+- **壁纸首帧垫色淡入**：新增 WallpaperDecodeCache 单槽解码缓存 + 启动预热 + EXIF 修正，首帧同步出图消除垫色淡入；AppBackgroundProvider 渐进模糊统一覆盖三类背景，壁纸按裁剪取景偏置显示（`fix(ui)`）
+- **编辑器背景透出**：编辑器主背景与行号栏背景置透明并随 TextMate 主题重申，透出全局壁纸 / 渐变 / 纯色背景（`fix(ui)`）
+- **回顶残留与排版**：TopAppBar 标题改两档缩放（titleCollapsed）修复回顶归零，ScreenLazyColumn 回顶清零 contentOffset / overscrollOffset 残留负值；首页一言按缩放比例反向测量重排，消除缩小后右侧留白（`fix(ui)`）
+- **订阅更新卡死**：ProvidersController 订阅更新加 60s 超时与 UpdateTimeout 多语言提示，ViewModel 更新状态改 try/finally 保证复位（`fix(proxy)`）
+- **异常处理规范**：CancellationException 不再被吞掉（ClashGateway / HttpClashManager / NetworkSettingsViewModel），Sub-Store 启动超时改抛 TimeoutException，WebDAV 校验 scheme 并警告明文 HTTP（`fix(runtime)`）
+
+### 变更
+
+- **miuix 0.9.5 对齐**：升级 miuix 0.9.5-beta01 → 0.9.5-beta03，引入 miuix-glass / miuix-glass-icons / miuix-material 官方制品并删除 vendored 玻璃 / material / agsl / icon 全部上游源码；边缘光改用 miuix edgeStroke，图标迁移 miuix-glass-icons，Card / 弹层 / 顶栏适配新 API（`refactor(ui)`）
+- **玻璃管线收敛**：AppDialog / AppActionBottomSheet 改采样页面壁纸层并复用 AppBottomSheetDefaults 材质描边，GlassCapsuleSurface 锚点胶囊统一采样 LocalGlassBackdrop；删除 AnimatedFab / ConfirmDialog / MessageHost / ConfigInput / NullableSelector / SearchPager / LoadingAnimation 等未使用组件（`refactor(ui)`）
+- **交互与文案细节**：GlassTopAction 新增统一禁用语义（去点击 + 图标降对比度），GlassTextField 焦点态改主题色描边，编辑器撤销 / 重做补多语言文案，浮动头部超长标题跑马灯滚动（`fix(ui)`）
+- **构建链升级**：Gradle wrapper、jetbrainsCompose 1.13.0-rc01、bcprov / decompose / privKit、sing-tun v0.4.29、golang.org/x 系列、Rust 依赖、vitepress v2.0.0-alpha.21；BuildSoPayloadTask 增加 XZ 幂等保护防增量构建二次压缩（`chore(deps)`）
+- **CI 供应链加固**：workflows 全部 action 改 commit SHA 钉定；通知小图标新增爪印镂空负形，HyperIsland 区分 appIcon / smallIcon 槽位，Quick Settings 磁贴改白色图标（`chore`）
 
 ### 文档
 
 - **通知引导**：双语 README 与应用指南补充 HyperOS 超级岛阻断 XMSF 联网对小米推送通知的影响，以及关闭超级岛或改用 Android 16 实时通知的建议（`docs`）
+- **界面设置说明**：应用指南更新应用背景（OS2 / OS3 动态渐变与壁纸参数）、卡片效果（全局圆角等）与 Logo 及 App 名称效果说明（`docs`）
 
-## [0.6.0] - 2026-11-07
+## [0.6.0][] - 2026-11-07
 
 ### 新增
 
@@ -41,7 +68,7 @@
 - **构建链升级**：Gradle 9.8.2、AGP 9.6.0-alpha02、Go 1.27、privKit 0.17.9、versionCatalogUpdate 1.1.2、Codacy 工作流 SARIF 上传 action v4.39.1；开源许可页同名库改分组展开（`chore(deps)`）
 - **注释规范化**：校验新增注释与实现的一致性，英文注释统一译为中文（`chore`）
 
-## [0.5.9] - 2026-10-25
+## [0.5.9][] - 2026-10-25
 
 ### 新增
 
@@ -72,7 +99,7 @@
 - **APK 命名**：删除 geo 段（builtin/Extension→Extension），CI 改按完整连字符段严格提取 abi/build_id（`fix(build)`）
 - **内核与依赖**：mihomo 与 native go 模块同步更新；Cargo.lock 依赖更新（boa、serde_json、syn 等）；CI 升级 checkout@v7 与 NDK 30.0.16248370（`chore`）
 
-## [0.5.8] - 2026-10-09
+## [0.5.8][] - 2026-10-09
 
 ### 新增
 
@@ -92,7 +119,7 @@
 - **构建依赖精简**：移除 gropify 插件及其 Jackson 3 传递依赖，根治相关 Dependabot 告警；升级 mipstack、sing-tun 并同步 eBPF patch（`fix(proxy)`）
 - **配置导入**：`ProfileImportType` 枚举替代导入类型常量，清理冗余文件（`refactor(profiles)`）
 
-## [0.5.7] - 2026-09-27
+## [0.5.7][] - 2026-09-27
 
 ### 新增
 
@@ -132,7 +159,8 @@
 - **遥控器架构**：新增 `RemoteSwitch` 统一外部控制器探测/挂起/回退生命周期，连续 3 次探测失败才回退本地运行时（`refactor(runtime)`）
 - **构建/文档**：CI 工作流与 Gradle 依赖升级、Rust YAML 库重构、README 重写、国旗 URL 归一化（`chore`）
 
-[Unreleased]: https://github.com/LM-Firefly/FlyCat/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/LM-Firefly/FlyCat/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/LM-Firefly/FlyCat/releases/tag/v0.6.1
 [0.6.0]: https://github.com/LM-Firefly/FlyCat/releases/tag/v0.6.0
 [0.5.9]: https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.9
 [0.5.8]: https://github.com/LM-Firefly/FlyCat/releases/tag/v0.5.8

@@ -199,7 +199,7 @@ const response = ref<{
 
 // ---------- spec 解析 ----------
 function anchorId(method: string, path: string) {
-  return (method.toLowerCase() + '-' + path).replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return `${method.toLowerCase()}-${path}`.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 const ops = computed<OpEntry[]>(() => {
@@ -212,7 +212,7 @@ const ops = computed<OpEntry[]>(() => {
         method: method.toUpperCase(),
         path,
         summary: op.summary || `${method.toUpperCase()} ${path}`,
-        tag: (op.tags && op.tags[0]) || '其他',
+        tag: op.tags?.[0] || '其他',
         op,
         item
       })
@@ -224,8 +224,9 @@ const ops = computed<OpEntry[]>(() => {
 const groups = computed(() => {
   const map = new Map<string, OpEntry[]>()
   for (const o of ops.value) {
-    if (!map.has(o.tag)) map.set(o.tag, [])
-    map.get(o.tag)!.push(o)
+    const group = map.get(o.tag)
+    if (group) group.push(o)
+    else map.set(o.tag, [o])
   }
   return [...map.entries()].map(([tag, list]) => ({ tag, ops: list }))
 })
@@ -233,7 +234,9 @@ const groups = computed(() => {
 const selected = computed<OpEntry>(() => ops.value.find((o) => o.key === selectedKey.value) ?? ops.value[0])
 
 const bearerDesc = computed(
-  () => spec.value?.components?.securitySchemes?.bearerAuth?.description ?? '在请求头中携带 Authorization: Bearer ${secret}。'
+  () =>
+    spec.value?.components?.securitySchemes?.bearerAuth?.description ??
+    ['在请求头中携带 Authorization: Bearer ', '{secret}。'].join('')
 )
 
 // ---------- 请求参数 ----------
@@ -288,7 +291,7 @@ const fullUrl = computed(() => {
 const headers = computed(() => {
   const h: Record<string, string> = {}
   const t = token.value.trim()
-  if (t) h['Authorization'] = /^bearer\s/i.test(t) ? t : `Bearer ${t}`
+  if (t) h.Authorization = /^bearer\s/i.test(t) ? t : `Bearer ${t}`
   for (const p of headerParams.value) {
     if (paramValues[p.name]) h[p.name] = paramValues[p.name]
   }
@@ -394,7 +397,9 @@ const snippet = computed(() => {
   const lines = [`curl --request ${method} \\`, `  --url '${url}' \\`]
   for (const { k, v } of headerLines) lines.push(`  --header '${k}: ${v}' \\`)
   if (body) lines.push(`  --data '${body.replace(/\n\s*/g, ' ')}'`)
-  if (lines.at(-1)!.endsWith(' \\')) lines[lines.length - 1] = lines[lines.length - 1].slice(0, -2)
+  const lastIndex = lines.length - 1
+  const last = lines[lastIndex]
+  if (last?.endsWith(' \\')) lines[lastIndex] = last.slice(0, -2)
   return lines.join('\n')
 })
 

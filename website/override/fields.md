@@ -5,26 +5,28 @@ description: "YAML 和 JavaScript 覆写的语义、脚本 API 与故障行为�
 icon: "braces"
 ---
 
+<!-- markdownlint-disable MD041 -->
+
 本页是覆写系统的语义参考。入门说明见 [覆写](/override/override)。
 
 ## 文件类型
 
-| 后缀 | 处理方式 |
-|------|----------|
-| `.yaml` / `.yml` | 解析为补丁文档，并按覆写语义合并到当前配置 |
-| `.js` | 执行 `main(profile)`，使用返回对象作为下一版配置 |
+| 后缀             | 处理方式                                         |
+| ---------------- | ------------------------------------------------ |
+| `.yaml` / `.yml` | 解析为补丁文档，并按覆写语义合并到当前配置       |
+| `.js`            | 执行 `main(profile)`，使用返回对象作为下一版配置 |
 
 空文件会被跳过并记录 warning。未知后缀会中断编译。
 
 ## YAML 补丁语义
 
-| 写法 | 行为 |
-|------|------|
-| `key: value` | 标量覆盖；对象递归合并；列表替换 |
-| `key-start: [...]` | 插入到列表开头 |
-| `key-end: [...]` | 追加到列表末尾 |
-| `key-merge: {...}` | 合并 Map |
-| `key-force: value` | 强制替换整个字段 |
+| 写法               | 行为                                 |
+| ------------------ | ------------------------------------ |
+| `key: value`       | 标量覆盖；对象递归合并；列表替换     |
+| `key-start: [...]` | 插入到列表开头                       |
+| `key-end: [...]`   | 追加到列表末尾                       |
+| `key-merge: {...}` | 合并 Map                             |
+| `key-force: value` | 强制替换整个字段                     |
 | `<key-end>: value` | 将带修饰符样式的字段名按普通字段处理 |
 
 ### 对象合并
@@ -87,18 +89,18 @@ function main(profile) {
 
 ### 可用 API
 
-| API | 说明 |
-|-----|------|
-| `yaml.parse(text)` | YAML 字符串转对象 |
-| `yaml.stringify(value)` | 对象转 YAML 字符串 |
-| `deepMerge(target, patch, true)` | 使用 JS helper 的覆写语义合并对象 |
-| `fetch(url, init?)` | HTTP 请求，仅支持 `http://` |
-| `response.text()` | 读取响应文本 |
-| `response.json()` | 读取 JSON 响应 |
-| `response.yaml()` | 读取 YAML 响应 |
-| `console.log/info/warn/error/debug` | 写入同名 `.log` 文件 |
-| `Buffer.from(...)` | 支持 `utf8` 与 `base64` |
-| `b64e(value)` / `b64d(value)` | Base64 编码与解码 |
+| API                                 | 说明                              |
+| ----------------------------------- | --------------------------------- |
+| `yaml.parse(text)`                  | YAML 字符串转对象                 |
+| `yaml.stringify(value)`             | 对象转 YAML 字符串                |
+| `deepMerge(target, patch, true)`    | 使用 JS helper 的覆写语义合并对象 |
+| `fetch(url, init?)`                 | HTTP 请求，仅支持 `http://`       |
+| `response.text()`                   | 读取响应文本                      |
+| `response.json()`                   | 读取 JSON 响应                    |
+| `response.yaml()`                   | 读取 YAML 响应                    |
+| `console.log/info/warn/error/debug` | 写入同名 `.log` 文件              |
+| `Buffer.from(...)`                  | 支持 `utf8` 与 `base64`           |
+| `b64e(value)` / `b64d(value)`       | Base64 编码与解码                 |
 
 ::: warning
 嵌入式 `fetch` 只支持 `http://`，不支持 `https://`。
@@ -121,12 +123,12 @@ function main(profile) {
 
 ## 日志与失败行为
 
-| 场景 | 行为 |
-|------|------|
-| JS 执行成功 | 写入开始、日志输出和成功记录 |
-| JS 执行失败 | 跳过当前 JS 覆写，保留执行前配置，并记录 warning |
-| 空覆写文件 | 跳过并记录 warning |
-| age 加密订阅 | warning 与 JS 日志隐藏敏感配置内容 |
+| 场景         | 行为                                             |
+| ------------ | ------------------------------------------------ |
+| JS 执行成功  | 写入开始、日志输出和成功记录                     |
+| JS 执行失败  | 跳过当前 JS 覆写，保留执行前配置，并记录 warning |
+| 空覆写文件   | 跳过并记录 warning                               |
+| age 加密订阅 | warning 与 JS 日志隐藏敏感配置内容               |
 
 JS 日志路径与脚本同名，例如 `example.js` 对应 `example.log`。
 

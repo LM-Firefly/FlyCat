@@ -5,6 +5,8 @@ description: 首页手势、设置项详解与 flycat:// 深度链接
 icon: "smartphone"
 ---
 
+<!-- markdownlint-disable MD041 -->
+
 ## 首页手势
 
 默认的 Moe 首页支持两种手势，无需进入设置即可操作壁纸与侧栏：
@@ -52,12 +54,20 @@ icon: "smartphone"
   应用语言：跟随系统 / 简体中文 / 繁體中文 / English / 日本語 / Русский。
 </ParamField>
 
-<ParamField path="应用背景" type="enum" default="动态渐变">
-  全局页面背景效果（含二级页）：关闭 / 动态渐变 / 壁纸图片。选择「壁纸图片」后可设置壁纸来源（相册 / URL）并调整壁纸模糊强度（0 – 25）。
+<ParamField path="应用背景" type="弹窗" default="动态渐变">
+  全局页面背景效果（含二级页），弹窗内可选：关闭 / OS2 动态渐变 / OS3 动态渐变 / 壁纸图片。选择「壁纸图片」后可设置壁纸来源（相册 / URL）；弹窗内还可调节渐进模糊的方向（上 / 下 / 左 / 右）、混色模式、模糊半径、噪点与梯度起点 / 终点 / 曲率。
 </ParamField>
 
 <ParamField path="滑动隐藏底栏" type="boolean" default="开启">
   内容向下滑动时自动隐藏底部浮动导航栏，向上滑动时重新显示。
+</ParamField>
+
+<ParamField path="卡片效果" type="弹窗">
+  列表卡片与下拉菜单的玻璃效果：混色模式、边缘描边、全局圆角（8 – 36dp，默认 18）、模糊半径、噪点、亮度 / 对比度 / 饱和度。
+</ParamField>
+
+<ParamField path="Logo 及 App 名称效果" type="弹窗">
+  在「关于」页打开，调节 Logo 与应用名前景模糊的混色模式、模糊半径、噪点、亮度 / 对比度 / 饱和度；关于页标识块即为实时预览。
 </ParamField>
 
 <ParamField path="页面缩放" type="number" default="100%">

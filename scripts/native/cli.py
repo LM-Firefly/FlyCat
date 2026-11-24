@@ -12,7 +12,6 @@ from .geo import ResourceDownloader
 from .go_core import GoCoreBuilder
 from .rust_builder import RustBuilder
 
-
 MESSAGE = r"""
   _____  _           ____       _
  |  ___)| | _   _   / ___| __ _| |_

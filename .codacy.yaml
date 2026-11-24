@@ -7,6 +7,21 @@ engines:
   spectral:
     exclude_paths:
       - "website/api/openapi.json"
+  # JSHint and Biome do not understand Vue single-file templates and report
+  # template-only bindings as unused JavaScript.
+  jshint:
+    exclude_paths:
+      - "website/.vitepress/theme/components/*.vue"
+      - "website/.vitepress/theme/components/**/*.vue"
+  biome:
+    exclude_paths:
+      - "website/.vitepress/theme/components/*.vue"
+      - "website/.vitepress/theme/components/**/*.vue"
+  # CSSLint predates custom properties, :has() and modern color syntax.
+  # Stylelint remains enabled for this file.
+  csslint:
+    exclude_paths:
+      - "website/.vitepress/theme/vars.css"
   markdownlint:
     exclude_paths:
       - "PRIVACY_POLICY.md"

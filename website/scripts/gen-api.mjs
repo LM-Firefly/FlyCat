@@ -68,7 +68,7 @@ function fmtType(schema) {
 }
 
 function anchorId(op) {
-  return (op.method.toLowerCase() + '-' + op.path).replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return `${op.method.toLowerCase()}-${op.path}`.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 // ---------- 收集操作 ----------
@@ -76,7 +76,7 @@ const ops = []
 for (const [path, item] of Object.entries(spec.paths)) {
   for (const [method, op] of Object.entries(item)) {
     if (!HTTP_METHODS.includes(method)) continue
-    const tag = (op.tags && op.tags[0]) || '其他'
+    const tag = op.tags?.[0] || '其他'
     ops.push({ path, method: method.toUpperCase(), op, item, tag })
   }
 }
@@ -199,7 +199,7 @@ function renderOpPage(group) {
   // 去掉末尾多余的分隔线
   if (lines.at(-1) === '') lines.pop()
   if (lines.at(-1) === '---') lines.pop()
-  return lines.join('\n') + '\n'
+  return `${lines.join('\n')}\n`
 }
 
 function renderIndex() {
@@ -211,7 +211,7 @@ function renderIndex() {
     '',
     '# API 参考',
     '',
-    '> ' + esc(spec.info?.description || ''),
+    `> ${esc(spec.info?.description || '')}`,
     '',
     '本站的 API 文档由 [`api/openapi.json`](https://github.com/LM-Firefly/FlyCat/blob/Moes/website/api/openapi.json) 自动生成；交互式调试请前往 [调试台](./playground)。',
     '',
@@ -229,7 +229,7 @@ function renderIndex() {
       )
     })
   }
-  return lines.join('\n') + '\n'
+  return `${lines.join('\n')}\n`
 }
 
 // ---------- 写文件 ----------

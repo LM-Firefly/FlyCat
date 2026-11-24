@@ -5,6 +5,8 @@ description: 基于 mihomo 内核的开源 Android 客户端
 icon: "house"
 ---
 
+<!-- markdownlint-disable MD041 -->
+
 <Frame>
 
 ![FlyCat](/logo/FlyCat.webp)
@@ -20,17 +22,17 @@ icon: "house"
 **[FlyCat](https://github.com/LM-Firefly/FlyCat) 是一个基于 [YumeBox](https://github.com/YumeYucca/YumeBox) 的开源 Android 客户端，使用 [mihomo](https://github.com/MetaCubeX/mihomo) 作为内核，提供代理管理与配置覆写等功能。**
 
 **FlyCat 继承了 YumeBox 的核心理念：尽可能少地覆写原配置中的内容，非必要不进行覆写，拒绝将明确的配置[字段](https://wiki.metacubex.one/config/)抽象为模棱两可的功能开关。**
+
 ## 发展
 
 FlyCat 基于 YumeBox 持续迭代，未来将一直保持 **开源 & 免费**，承诺不会有任何收集隐私、上传数据或广告行为。
 
-
 ## 下载
+
 如果需要历史版本，请查看 [更新日志](/update/history)
 <Card title="下载" icon="square-arrow-down" horizontal href="https://github.com/LM-Firefly/FlyCat/releases">
    前往 Github Release 下载安装包
 </Card>
-
 
 ## 快速开始
 
@@ -61,7 +63,6 @@ FlyCat 基于 YumeBox 持续迭代，未来将一直保持 **开源 & 免费**�
 </Card>
 
 </CardGroup>
-
 
 ## 其他资料
 

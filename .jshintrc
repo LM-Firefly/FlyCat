@@ -1,0 +1,7 @@
+{
+  "esversion": 11,
+  "module": true,
+  "asi": true,
+  "laxbreak": true,
+  "loopfunc": true
+}

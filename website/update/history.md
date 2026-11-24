@@ -3,7 +3,7 @@ title: "更新日志"
 description: "FlyCat 项目的版本更新记录和变更历史"
 ---
 
-# 更新日志
+<!-- markdownlint-disable MD041 -->
 
 FlyCat 项目的版本更新记录和变更历史。本页与仓库 [`CHANGELOG.md`](https://github.com/LM-Firefly/FlyCat/blob/Moes/CHANGELOG.md) 同步维护。
 
@@ -13,21 +13,53 @@ FlyCat 项目的版本更新记录和变更历史。本页与仓库 [`CHANGELOG.
 
 </Card>
 
-## 未发布
+## v0.6.1 · 主题化模糊玻璃体系、通知增强与统计层省电 {#v0-6-1}
 
-*功能更新 / 文档*
+> 2026-11-25 · 功能更新 / 性能优化 / 问题修复 / 变更 / 文档
 
-### Android 16 实时通知
+### 主题化模糊玻璃体系
 
-- 服务常驻通知支持提升为实时通知（promoted ongoing / Live Update），置顶显示于通知栏并在状态栏 chip 展示实时速率；与 HyperOS 超级岛互斥展示，岛不接管的路径（非岛设备/root 模式）自动启用，含设置开关与备份支持
+- 新增 BlurThemeSettings（纹理 / 前景 / 渐进三组）与 blurTheme 偏好，JSON 整体持久化并全局分发；新增 ColorBlendToken 混色令牌表（Info / Colored / Pured / Overlay 明暗档）与主题驱动的玻璃材质、描边、弹层视觉，替换各处硬编码
+- 新增 GlassCheckbox / GlassSwitch 并全局替换 miuix 开关复选框；GlassTextField 焦点态改主题色描边；新增 Logo 及 App 名称前景模糊（ForegroundBlurIdentity），FlyCatLogo 迁至 ui 模块并在关于页接入
+- AppDialog / AppActionBottomSheet 改采样页面壁纸层并复用统一样式，锚点胶囊统一采样玻璃背景层
+
+### 模糊效果设置
+
+- 应用背景 / 卡片效果 / Logo 及 App 名称效果改为底部弹窗；应用背景拆分 OS2 / OS3 两套动态渐变（旧值自动迁移），壁纸支持渐进模糊方向 / 混色 / 梯度起讫 / 曲率调节
+- 卡片效果新增全局圆角滑杆（8–36dp，默认 18）与混色模式、边缘描边、模糊半径、噪点、亮度 / 对比度 / 饱和度调节
+
+### 通知增强
+
+- 通知栏内容扩展至四行独立配置（第三 / 四行来源与自定义文本），正文按行渲染、空白行跳过，设置页多行实时预览
+- Android 16 及以上可将服务通知提升为实时通知（Live Update），置顶显示并在状态栏 chip 展示实时速率；与 HyperOS 超级岛互斥展示，岛不接管的路径自动启用
+
+### 界面修复
+
+- 对话框宿主 Scaffold 改父容器包裹内容，修复全屏子树触控截胡；底栏玻璃叠采样壁纸层并改平涂染色，修复无内容区域完全透明（#220）
+- 顶栏渐进色带折叠期壁纸副本不错位、下缘不再遮挡正文；TopAppBar 标题两档缩放修复回顶归零，列表回顶清零残留偏移；编辑器背景透明，透出全局壁纸 / 渐变 / 纯色
+- 壁纸解码缓存 + 启动预热 + EXIF 修正，首帧同步出图消除垫色淡入；渐进模糊统一覆盖三类背景
+- 订阅更新加 60s 超时并保证状态复位；异常处理规范化（CancellationException / TimeoutException / WebDAV scheme 校验）
+
+### 性能与功耗
+
+- 统计层省电设计三通道（common / smart / ebpf）收敛：空闲期 tick 完全停摆、有流量即刻唤醒，updateMemory 1 秒限频按需采样
+
+### 变更
+
+- miuix 升级 0.9.5-beta03，删除 vendored 玻璃 / material 实现改用官方 miuix-glass / miuix-glass-icons / miuix-material 制品
+- 构建链升级（Gradle wrapper、Compose 1.13.0-rc01、bcprov / decompose / privKit、sing-tun v0.4.29 等）；CI workflows 全部 action 改 commit SHA 钉定
+- 通知小图标改爪印镂空负形，Quick Settings 磁贴白色图标；删除未使用组件与废弃脚本
 
 ### 文档
 
 - 双语 README 与应用指南补充 HyperOS 超级岛阻断 XMSF 联网对小米推送通知的影响，以及关闭超级岛或改用 Android 16 实时通知的建议
+- 应用指南更新应用背景（OS2 / OS3 动态渐变与壁纸参数）、卡片效果与 Logo 及 App 名称效果说明
+
+[下载链接](https://github.com/LM-Firefly/FlyCat/releases/tag/v0.6.1)
 
 ## v0.6.0 · 液态玻璃视觉体系、规则页修复与连接链路提速 {#v0-6-0}
 
-*2026-11-07 · 功能更新 / 性能优化 / 问题修复 / 变更*
+> 2026-11-07 · 功能更新 / 性能优化 / 问题修复 / 变更
 
 ### 液态玻璃视觉体系
 
@@ -63,7 +95,7 @@ FlyCat 项目的版本更新记录和变更历史。本页与仓库 [`CHANGELOG.
 
 ## v0.5.9 · 日志中心、特权服务与打包管线升级 {#v0-5-9}
 
-*2026-10-25 · 功能更新 / 性能优化 / 问题修复 / 变更*
+> 2026-10-25 · 功能更新 / 性能优化 / 问题修复 / 变更
 
 ### 日志中心
 
@@ -101,7 +133,7 @@ FlyCat 项目的版本更新记录和变更历史。本页与仓库 [`CHANGELOG.
 
 ## v0.5.8 · 节点搜索、切节点防卡死与 emoji 对齐 {#v0-5-8}
 
-*2026-10-09 · 功能更新 / 问题修复 / 变更*
+> 2026-10-09 · 功能更新 / 问题修复 / 变更
 
 ### 代理页体验
 
@@ -126,7 +158,7 @@ FlyCat 项目的版本更新记录和变更历史。本页与仓库 [`CHANGELOG.
 
 ## v0.5.7 · 代理稳定性、功耗优化与超级岛通知 {#v0-5-7}
 
-*2026-09-27 · 功能更新 / 性能优化 / 问题修复*
+> 2026-09-27 · 功能更新 / 性能优化 / 问题修复
 
 ### 代理体验与稳定性
 
@@ -169,7 +201,7 @@ FlyCat 项目的版本更新记录和变更历史。本页与仓库 [`CHANGELOG.
 
 ## v0.5.6 · FlyCat 独立维护初始化 {#v0-5-6}
 
-*2026-09-09 · 里程碑 / 功能更新*
+> 2026-09-09 · 里程碑 / 功能更新
 
 ### FlyCat 正式作为独立项目维护
 
