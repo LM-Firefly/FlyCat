@@ -162,12 +162,8 @@ class ProfilesViewModel(
         viewModelScope.launch {
             try {
                 setLoading(true)
-                val newUuid = profileCrud.cloneProfile(uuid)
-                if (newUuid != null) {
-                    showMessage(FlyTxt.ProfilesVM.Message.ProfileAdded.format("Clone"))
-                } else {
-                    showError(FlyTxt.ProfilesVM.Message.AddFailed.format("Unknown"))
-                }
+                profileCrud.cloneProfile(uuid)
+                showMessage(FlyTxt.ProfilesVM.Message.ProfileAdded.format("Clone"))
                 refreshProfiles()
             } catch (error: Exception) {
                 if (error is CancellationException) throw error

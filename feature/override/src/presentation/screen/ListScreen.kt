@@ -63,7 +63,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -655,38 +658,36 @@ private fun CreateConfigDialog(
     val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
     var inputMode by remember(show.value, initialMode) { mutableStateOf(initialMode) }
-    val nameTextFieldValueState = remember(show.value) { mutableStateOf(TextFieldValue()) }
+    val nameState = rememberTextFieldState()
+    val networkImportUrlState = rememberTextFieldState()
+    val selectedImportFileNameState = rememberTextFieldState()
     var contentType by remember(show.value) { mutableStateOf(OverrideContentType.Yaml) }
     var selectedImportUri by remember(show.value) { mutableStateOf<Uri?>(null) }
-    var selectedImportFileName by remember(show.value) { mutableStateOf("") }
-    var networkImportUrl by remember(show.value) { mutableStateOf("") }
     var isNetworkImporting by remember(show.value) { mutableStateOf(false) }
     var stableContentHeightPx by remember(show.value) { mutableStateOf(0) }
+    LaunchedEffect(show.value) {
+        if (show.value) {
+            nameState.setTextAndPlaceCursorAtEnd("")
+            networkImportUrlState.setTextAndPlaceCursorAtEnd("")
+            selectedImportFileNameState.setTextAndPlaceCursorAtEnd("")
+        }
+    }
     val canConfirm = when (inputMode) {
-        OverrideConfigInputMode.CreateNew -> nameTextFieldValueState.value.text.isNotBlank()
-        OverrideConfigInputMode.LocalFile -> selectedImportUri != null && selectedImportFileName.isNotBlank()
-        OverrideConfigInputMode.NetworkUrl -> networkImportUrl.isNotBlank() && !isNetworkImporting
+        OverrideConfigInputMode.CreateNew -> nameState.text.isNotBlank()
+        OverrideConfigInputMode.LocalFile -> selectedImportUri != null && selectedImportFileNameState.text.isNotBlank()
+        OverrideConfigInputMode.NetworkUrl -> networkImportUrlState.text.isNotBlank() && !isNetworkImporting
     }
     val stableContentHeight = remember(stableContentHeightPx, density) { if (stableContentHeightPx <= 0) { UiDp.dp0 } else { with(density) { stableContentHeightPx.toDp() } } }
     val importConfigLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
         selectedImportUri = uri
-        selectedImportFileName = uri?.let { selectedUri ->
-            context.contentResolver.query(
-                selectedUri,
-                arrayOf(OpenableColumns.DISPLAY_NAME),
-                null,
-                null,
-                null,
-            )
-            ?.use { cursor ->
-                val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (cursor.moveToFirst() && columnIndex >= 0) { cursor.getString(columnIndex) } else { "" }
-            }.orEmpty().ifBlank {
-                selectedUri.lastPathSegment
-                    ?.substringAfterLast('/')
-                    ?.substringAfterLast('\\').orEmpty()
-            }
-        }.orEmpty()
+        selectedImportFileNameState.setTextAndPlaceCursorAtEnd(
+            uri?.let { selectedUri ->
+                context.contentResolver.query(selectedUri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                    val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (cursor.moveToFirst() && columnIndex >= 0) cursor.getString(columnIndex) else ""
+                }.orEmpty().ifBlank { selectedUri.lastPathSegment ?.substringAfterLast('/') ?.substringAfterLast('\\').orEmpty() }
+            }.orEmpty()
+        )
     }
 
     AppActionBottomSheet(
@@ -702,7 +703,7 @@ private fun CreateConfigDialog(
                     keyboardController?.hide()
                     when (inputMode) {
                         OverrideConfigInputMode.CreateNew -> {
-                            onConfirmCreate(nameTextFieldValueState.value.text, contentType)
+                            onConfirmCreate(nameState.text.toString(), contentType)
                         }
 
                         OverrideConfigInputMode.LocalFile -> {
@@ -714,7 +715,7 @@ private fun CreateConfigDialog(
                                     ?.use { reader -> reader.readText() }
                                     ?: error(FlyTxt.Override.Import.ReadError)
                             }.onSuccess { content ->
-                                onConfirmImport(content, selectedImportFileName)
+                                onConfirmImport(content, selectedImportFileNameState.text.toString())
                             }.onFailure { error ->
                                 context.toast(
                                     FlyTxt.Override.Import.FileError.format(error.message)
@@ -723,7 +724,7 @@ private fun CreateConfigDialog(
                         }
 
                         OverrideConfigInputMode.NetworkUrl -> {
-                            val url = networkImportUrl.trim()
+                            val url = networkImportUrlState.text.toString().trim()
                             scope.launch {
                                 isNetworkImporting = true
                                 onConfirmNetworkImport(url)
@@ -771,12 +772,10 @@ private fun CreateConfigDialog(
                                 verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
                             ) {
                                 GlassTextField(
-                                    value = nameTextFieldValueState.value,
-                                    onValueChange = { updatedTextFieldValue ->
-                                        nameTextFieldValueState.value = updatedTextFieldValue
-                                    },
+                                    state = nameState,
                                     label = FlyTxt.Override.Dialog.Create.Name,
                                     useLabelAsPlaceholder = true,
+                                    lineLimits = TextFieldLineLimits.MultiLine(),
                                 )
                             }
                         }
@@ -784,7 +783,7 @@ private fun CreateConfigDialog(
                         OverrideConfigInputMode.LocalFile -> {
                             ImportOverrideFileContent(
                                 modifier = Modifier.fillMaxWidth().onSizeChanged { stableContentHeightPx = maxOf(stableContentHeightPx, it.height) },
-                                fileName = selectedImportFileName,
+                                fileNameState = selectedImportFileNameState,
                                 onPickFile = { importConfigLauncher.launch("*/*") },
                             )
                         }
@@ -792,9 +791,8 @@ private fun CreateConfigDialog(
                         OverrideConfigInputMode.NetworkUrl -> {
                             ImportOverrideNetworkContent(
                                 modifier = Modifier.fillMaxWidth().onSizeChanged { stableContentHeightPx = maxOf(stableContentHeightPx, it.height) },
-                                url = networkImportUrl,
+                                urlState = networkImportUrlState,
                                 enabled = !isNetworkImporting,
-                                onUrlChange = { networkImportUrl = it },
                             )
                         }
                     }
@@ -836,7 +834,7 @@ private fun OverrideTypeSelector(
 @Composable
 private fun ImportOverrideFileContent(
     modifier: Modifier = Modifier,
-    fileName: String,
+    fileNameState: TextFieldState,
     onPickFile: () -> Unit,
 ) {
     Box(
@@ -847,10 +845,10 @@ private fun ImportOverrideFileContent(
         )
     ) {
         GlassTextField(
-            value = fileName,
-            onValueChange = {},
+            state = fileNameState,
             label = FlyTxt.ProfilesPage.Input.SelectFile,
             useLabelAsPlaceholder = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             readOnly = true,
             enabled = false,
             modifier = Modifier.fillMaxWidth(),
@@ -861,16 +859,14 @@ private fun ImportOverrideFileContent(
 @Composable
 private fun ImportOverrideNetworkContent(
     modifier: Modifier = Modifier,
-    url: String,
+    urlState: TextFieldState,
     enabled: Boolean,
-    onUrlChange: (String) -> Unit,
 ) {
     GlassTextField(
-        value = url,
-        onValueChange = onUrlChange,
+        state = urlState,
         label = FlyTxt.Override.Dialog.Create.Url,
         useLabelAsPlaceholder = true,
-        singleLine = true,
+        lineLimits = TextFieldLineLimits.SingleLine,
         enabled = enabled,
         modifier = modifier,
     )

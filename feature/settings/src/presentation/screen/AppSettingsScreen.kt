@@ -30,12 +30,19 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.KeyboardActionHandler
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,8 +52,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -62,8 +67,11 @@ import com.github.lmfirefly.flycat.feature.settings.presentation.viewmodel.AppSe
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.card.Card
+import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppTextFieldDialog
+import com.github.lmfirefly.flycat.presentation.component.dialog.DialogButtonRow
 import com.github.lmfirefly.flycat.presentation.component.dialog.WarningBottomSheet
+import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.combinePaddingValues
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
@@ -95,7 +103,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun AppSettingsScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val viewModel = koinViewModel<AppSettingsViewModel>()
-
     GlassScaffold(
         topBar = { TopBar(title = FlyTxt.AppSettings.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
@@ -118,7 +125,6 @@ fun AppSettingsScreen(navigator: Navigator) {
 private fun AppBehaviorSettingsSection(viewModel: AppSettingsViewModel) {
     val automaticRestart by viewModel.automaticRestart.state.collectAsStateWithLifecycle()
     val autoUpdateCurrentProfileOnStart by viewModel.autoUpdateCurrentProfileOnStart.state.collectAsStateWithLifecycle()
-
     Title(FlyTxt.AppSettings.Section.Behavior)
     Card {
         PreferenceSwitchItem(
@@ -515,41 +521,31 @@ private fun MoeQuotePreferenceItem(
 ) {
     val showEditDialog = remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    var localTextFieldValue by remember { mutableStateOf(TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))) }
-
+    val textFieldState = rememberTextFieldState(initialText = currentValue)
+    fun confirm() {
+        onConfirm(textFieldState.text.toString())
+        focusManager.clearFocus()
+        showEditDialog.value = false
+    }
     PreferenceValueItem(
         title = title,
         summary = summary,
         onClick = {
-            localTextFieldValue = TextFieldValue(text = currentValue, selection = TextRange(currentValue.length))
+            textFieldState.setTextAndPlaceCursorAtEnd(currentValue)
             showEditDialog.value = true
         },
     )
-
     AppTextFieldDialog(
         show = showEditDialog.value,
         title = dialogTitle,
-        textFieldValue = localTextFieldValue,
-        onTextFieldValueChange = { updatedTextFieldValue ->
-            localTextFieldValue = updatedTextFieldValue
-        },
+        state = textFieldState,
         onDismissRequest = {
             showEditDialog.value = false
             focusManager.clearFocus()
         },
-        onConfirm = {
-            onConfirm(localTextFieldValue.text)
-            focusManager.clearFocus()
-            showEditDialog.value = false
-        },
-        singleLine = true,
-        keyboardActions = KeyboardActions(
-            onDone = {
-                onConfirm(localTextFieldValue.text)
-                focusManager.clearFocus()
-                showEditDialog.value = false
-            }
-        ),
+        onConfirm = { confirm() },
+        lineLimits = TextFieldLineLimits.SingleLine,
+        onKeyboardAction = KeyboardActionHandler { confirm() },
     )
 }
 
@@ -634,42 +630,32 @@ private fun CustomUserAgentPreferenceItem(customUserAgent: String, onConfirm: (S
     val customUserAgentSummary = remember(customUserAgent) { customUserAgent.ifEmpty { FlyTxt.AppSettings.Network.CustomUserAgentSummaryDefault } }
     val showEditCustomUserAgentDialog = remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    var localTextFieldValue by remember { mutableStateOf(TextFieldValue(text = customUserAgent, selection = TextRange(customUserAgent.length))) }
-
+    val textFieldState = rememberTextFieldState(initialText = customUserAgent)
+    fun confirm() {
+        onConfirm(textFieldState.text.toString())
+        focusManager.clearFocus()
+        showEditCustomUserAgentDialog.value = false
+    }
     PreferenceArrowItem(
         title = FlyTxt.AppSettings.Network.CustomUserAgentTitle,
         summary = customUserAgentSummary,
         onClick = {
-            localTextFieldValue = TextFieldValue(text = customUserAgent, selection = TextRange(customUserAgent.length))
+            textFieldState.setTextAndPlaceCursorAtEnd(customUserAgent)
             showEditCustomUserAgentDialog.value = true
         },
         holdDownState = showEditCustomUserAgentDialog.value,
     )
-
     AppTextFieldDialog(
         show = showEditCustomUserAgentDialog.value,
         title = FlyTxt.AppSettings.EditDialog.UserAgentTitle,
-        textFieldValue = localTextFieldValue,
-        onTextFieldValueChange = { updatedTextFieldValue ->
-            localTextFieldValue = updatedTextFieldValue
-        },
+        state = textFieldState,
         onDismissRequest = {
             showEditCustomUserAgentDialog.value = false
             focusManager.clearFocus()
         },
-        onConfirm = {
-            onConfirm(localTextFieldValue.text)
-            focusManager.clearFocus()
-            showEditCustomUserAgentDialog.value = false
-        },
-        singleLine = true,
-        keyboardActions = KeyboardActions(
-            onDone = {
-                onConfirm(localTextFieldValue.text)
-                focusManager.clearFocus()
-                showEditCustomUserAgentDialog.value = false
-            }
-        ),
+        onConfirm = { confirm() },
+        lineLimits = TextFieldLineLimits.SingleLine,
+        onKeyboardAction = KeyboardActionHandler { confirm() },
     )
 }
 
@@ -681,33 +667,48 @@ private fun PageScaleDialog(
     onApply: (Float) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    var scaleText by remember(show, pageScale) { mutableStateOf((pageScale * 100).toInt().toString()) }
-
-    AppTextFieldDialog(
+    val scaleState = rememberTextFieldState()
+    val scaleInputTransformation = remember {
+        InputTransformation {
+            val filtered = toString().filter(Char::isDigit)
+            if (filtered != toString()) replace(0, length, filtered)
+        }
+    }
+    LaunchedEffect(show) {
+        if (show) scaleState.setTextAndPlaceCursorAtEnd((pageScale * 100).toInt().toString())
+    }
+    AppDialog(
         show = show,
         title = FlyTxt.AppSettings.Interface.PageScaleTitle,
-        value = scaleText,
-        onValueChange = { value ->
-            if (value.isEmpty() || value.all(Char::isDigit)) { scaleText = value }
-        },
-        onDismissRequest = onDismissRequest,
-        onConfirm = {
-            val parsedPercent = scaleText.toFloatOrNull() ?: (pageScale * 100)
-            val clampedScale = parsedPercent.coerceIn(80f, 120f) / 100f
-            onPageScaleChange(clampedScale)
-            onApply(clampedScale)
-            onDismissRequest()
-        },
         summary = FlyTxt.AppSettings.Interface.PageScaleDialogSummary,
+        onDismissRequest = onDismissRequest,
         renderInRootScaffold = true,
-        singleLine = true,
-        trailingIcon = {
-            Text(
-                text = "%",
-                modifier = Modifier.padding(horizontal = UiDp.dp16),
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(UiDp.dp16)) {
+            GlassTextField(
+                state = scaleState,
+                modifier = Modifier.fillMaxWidth().padding(bottom = UiDp.dp8),
+                inputTransformation = scaleInputTransformation,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                trailingIcon = {
+                    Text(
+                        text = "%",
+                        modifier = Modifier.padding(horizontal = UiDp.dp16),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                    )
+                },
             )
-        },
-    )
+            DialogButtonRow(
+                onCancel = onDismissRequest,
+                onConfirm = {
+                    val scaleText = scaleState.text.toString()
+                    val parsedPercent = scaleText.toFloatOrNull() ?: (pageScale * 100)
+                    val clampedScale = parsedPercent.coerceIn(80f, 120f) / 100f
+                    onPageScaleChange(clampedScale)
+                    onApply(clampedScale)
+                    onDismissRequest()
+                },
+            )
+        }
+    }
 }
-

@@ -44,6 +44,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -58,10 +63,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import com.github.lmfirefly.flycat.core.util.crypto.AgeKeyCrypto
@@ -151,20 +152,16 @@ internal fun DownloadProgressContent(
 internal fun ProfileFormContent(
     selectedImportType: ProfileImportType,
     profileLocked: Boolean,
-    nameTextFieldValue: TextFieldValue,
-    urlTextFieldValue: TextFieldValue,
-    fileNameTextFieldValue: TextFieldValue,
-    ageSecretKeyTextFieldValue: TextFieldValue,
-    intervalTextFieldValue: TextFieldValue,
+    nameState: TextFieldState,
+    urlState: TextFieldState,
+    fileNameState: TextFieldState,
+    ageSecretKeyState: TextFieldState,
+    intervalState: TextFieldState,
     error: String,
     hasCameraPermission: Boolean,
     showCameraPreview: Boolean,
     onContainerMeasured: (androidx.compose.ui.unit.IntSize) -> Unit,
     onTypeSelected: (ProfileImportType) -> Unit,
-    onNameChange: (TextFieldValue) -> Unit,
-    onUrlChange: (TextFieldValue) -> Unit,
-    onAgeSecretKeyChange: (TextFieldValue) -> Unit,
-    onIntervalChange: (TextFieldValue) -> Unit,
     onPickFile: () -> Unit,
     onSelectQrImage: () -> Unit,
     onQrScanned: (String) -> Unit,
@@ -197,16 +194,12 @@ internal fun ProfileFormContent(
                     ManualProfileContent(
                         importType = importType,
                         profileLocked = profileLocked,
-                        nameTextFieldValue = nameTextFieldValue,
-                        urlTextFieldValue = urlTextFieldValue,
-                        fileNameTextFieldValue = fileNameTextFieldValue,
-                        ageSecretKeyTextFieldValue = ageSecretKeyTextFieldValue,
-                        intervalTextFieldValue = intervalTextFieldValue,
+                        nameState = nameState,
+                        urlState = urlState,
+                        fileNameState = fileNameState,
+                        ageSecretKeyState = ageSecretKeyState,
+                        intervalState = intervalState,
                         error = error,
-                        onNameChange = onNameChange,
-                        onUrlChange = onUrlChange,
-                        onAgeSecretKeyChange = onAgeSecretKeyChange,
-                        onIntervalChange = onIntervalChange,
                         onPickFile = onPickFile,
                     )
             }
@@ -278,41 +271,40 @@ private fun QrScannerContent(
 private fun ManualProfileContent(
     importType: ProfileImportType,
     profileLocked: Boolean,
-    nameTextFieldValue: TextFieldValue,
-    urlTextFieldValue: TextFieldValue,
-    fileNameTextFieldValue: TextFieldValue,
-    ageSecretKeyTextFieldValue: TextFieldValue,
-    intervalTextFieldValue: TextFieldValue,
+    nameState: TextFieldState,
+    urlState: TextFieldState,
+    fileNameState: TextFieldState,
+    ageSecretKeyState: TextFieldState,
+    intervalState: TextFieldState,
     error: String,
-    onNameChange: (TextFieldValue) -> Unit,
-    onUrlChange: (TextFieldValue) -> Unit,
-    onAgeSecretKeyChange: (TextFieldValue) -> Unit,
-    onIntervalChange: (TextFieldValue) -> Unit,
     onPickFile: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var ageKeyVisible by remember { mutableStateOf(false) }
-    var agePublicKey by remember { mutableStateOf("") }
+    val agePublicKeyState = rememberTextFieldState()
+    val intervalInputTransformation = remember {
+        InputTransformation {
+            val filtered = toString().filter(Char::isDigit).take(6)
+            if (filtered != toString()) replace(0, length, filtered)
+        }
+    }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(UiDp.dp16),
     ) {
         GlassTextField(
-            value = nameTextFieldValue,
-            onValueChange = onNameChange,
+            state = nameState,
             label = FlyTxt.ProfilesPage.Input.ProfileName,
             useLabelAsPlaceholder = true,
             modifier = Modifier.fillMaxWidth(),
         )
-
         if (importType == ProfileImportType.Url) {
             GlassTextField(
-                value = urlTextFieldValue,
-                onValueChange = onUrlChange,
+                state = urlState,
                 label = FlyTxt.ProfilesPage.Input.SubscriptionUrl,
                 useLabelAsPlaceholder = true,
-                maxLines = 2,
+                lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 2),
                 readOnly = profileLocked,
                 enabled = !profileLocked,
                 modifier = Modifier.fillMaxWidth(),
@@ -320,11 +312,11 @@ private fun ManualProfileContent(
             if (!profileLocked) {
                 Column(verticalArrangement = Arrangement.spacedBy(UiDp.dp4)) {
                     GlassTextField(
-                        value = intervalTextFieldValue,
-                        onValueChange = onIntervalChange,
+                        state = intervalState,
+                        inputTransformation = intervalInputTransformation,
                         label = FlyTxt.ProfilesPage.Input.AutoUpdateInterval,
                         useLabelAsPlaceholder = true,
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Text(
@@ -336,8 +328,7 @@ private fun ManualProfileContent(
             }
         } else {
             GlassTextField(
-                value = fileNameTextFieldValue,
-                onValueChange = {},
+                state = fileNameState,
                 label = FlyTxt.ProfilesPage.Input.SelectFile,
                 useLabelAsPlaceholder = true,
                 readOnly = true,
@@ -358,22 +349,21 @@ private fun ManualProfileContent(
                 horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
             ) {
                 GlassTextField(
-                    value = agePublicKey,
-                    onValueChange = { agePublicKey = it },
+                    state = agePublicKeyState,
                     label = FlyTxt.ProfilesPage.AgeKey.PublicKeyPlaceholder,
                     useLabelAsPlaceholder = true,
                     readOnly = true,
                     modifier = Modifier.weight(1f),
-                    singleLine = true,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                 )
                 SheetHeaderIconButton(
                     icon = FlyCat.ArrowRight,
                     contentDescription = FlyTxt.ProfilesPage.AgeKey.DerivePublicKey,
                     onClick = {
                         scope.launch {
-                            val keys = AgeKeyCrypto.agePublicKey(ageSecretKeyTextFieldValue.text)
+                            val keys = AgeKeyCrypto.agePublicKey(ageSecretKeyState.text.toString())
                             if (keys != null) {
-                                agePublicKey = keys
+                                agePublicKeyState.setTextAndPlaceCursorAtEnd(keys)
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 clipboard.setPrimaryClip(ClipData.newPlainText("age_key", keys))
                                 Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.GeneratedPublicKey.format(keys), Toast.LENGTH_SHORT).show()
@@ -388,8 +378,8 @@ private fun ManualProfileContent(
                     contentDescription = FlyTxt.ProfilesPage.AgeKey.CopiedPublicKey,
                     onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("age_key", agePublicKey))
-                        Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedPublicKey.format(agePublicKey), Toast.LENGTH_SHORT).show()
+                        clipboard.setPrimaryClip(ClipData.newPlainText("age_key", agePublicKeyState.text.toString()))
+                        Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedPublicKey.format(agePublicKeyState.text), Toast.LENGTH_SHORT).show()
                     },
                 )
             }
@@ -407,12 +397,10 @@ private fun ManualProfileContent(
                 horizontalArrangement = Arrangement.spacedBy(UiDp.dp8),
             ) {
                 GlassTextField(
-                    value = ageSecretKeyTextFieldValue,
-                    onValueChange = onAgeSecretKeyChange,
-                    singleLine = true,
+                    state = ageSecretKeyState,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.weight(1f),
-                    visualTransformation = if (ageKeyVisible) VisualTransformation.None
-                        else PasswordVisualTransformation(),
+                    secure = !ageKeyVisible,
                 )
                 SheetHeaderIconButton(
                     icon = FlyCat.Sparkles,
@@ -421,7 +409,7 @@ private fun ManualProfileContent(
                         scope.launch {
                             val result = AgeKeyCrypto.genAgeKey()
                             if (result != null) {
-                                onAgeSecretKeyChange(TextFieldValue(result.secretKey, TextRange(result.secretKey.length)))
+                                ageSecretKeyState.setTextAndPlaceCursorAtEnd(result.secretKey)
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 clipboard.setPrimaryClip(ClipData.newPlainText("age_key", result.secretKey))
                                 Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.GeneratedSecretKey.format(result.secretKey), Toast.LENGTH_SHORT).show()
@@ -436,8 +424,9 @@ private fun ManualProfileContent(
                     contentDescription = FlyTxt.ProfilesPage.AgeKey.CopiedSecretKey,
                     onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("age_key", ageSecretKeyTextFieldValue.text))
-                        Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedSecretKey.format(ageSecretKeyTextFieldValue.text), Toast.LENGTH_SHORT).show()
+                        val secretKey = ageSecretKeyState.text.toString()
+                        clipboard.setPrimaryClip(ClipData.newPlainText("age_key", secretKey))
+                        Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedSecretKey.format(secretKey), Toast.LENGTH_SHORT).show()
                     },
                 )
                 SheetHeaderIconButton(

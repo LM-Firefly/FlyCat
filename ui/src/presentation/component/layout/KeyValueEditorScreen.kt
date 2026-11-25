@@ -26,6 +26,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -34,10 +38,9 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppConfirmDialog
@@ -59,6 +62,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationB
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgePlus
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
+import kotlinx.coroutines.flow.drop
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.AddCircle
@@ -460,26 +464,20 @@ private fun SimpleTextEditorDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var textFieldValue by remember(initialValue) {
-        mutableStateOf(
-            TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
-        )
-    }
+    val textState = rememberTextFieldState(initialValue)
     AppTextFieldDialog(
         show = true,
         title = title,
-        textFieldValue = textFieldValue,
-        onTextFieldValueChange = { updatedTextFieldValue ->
-            textFieldValue = updatedTextFieldValue
-        },
+        state = textState,
         onDismissRequest = onDismiss,
         onConfirm = {
-            val normalizedValue = textFieldValue.text.trim()
+            val normalizedValue = textState.text.toString().trim()
             if (normalizedValue.isNotBlank()) {
                 onConfirm(normalizedValue)
             }
         },
         label = placeholder,
+        lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 1),
     )
 }
 
@@ -495,25 +493,21 @@ private fun KeyValueFormDialog(
     initialValue: String,
     currentEditingKey: String? = null,
 ) {
-    var keyTextFieldValue by remember(initialKey) {
-        mutableStateOf(
-            TextFieldValue(text = initialKey, selection = TextRange(initialKey.length))
-        )
-    }
-    var valueTextFieldValue by remember(initialValue) {
-        mutableStateOf(
-            TextFieldValue(text = initialValue, selection = TextRange(initialValue.length))
-        )
-    }
+    val keyState = rememberTextFieldState(initialKey)
+    val valueState = rememberTextFieldState(initialValue)
     var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(keyState) {
+        snapshotFlow { keyState.text.toString() }.drop(1).collect { error = null }
+    }
 
     AppFormDialog(
         show = true,
         title = title,
         onDismissRequest = onDismiss,
         onConfirm = {
-            val normalizedKey = keyTextFieldValue.text.trim()
-            val normalizedValue = valueTextFieldValue.text.trim()
+            val normalizedKey = keyState.text.toString().trim()
+            val normalizedValue = valueState.text.toString().trim()
             error = when {
                 normalizedKey.isBlank() -> FlyTxt.Component.Editor.Error.KeyEmpty
                 normalizedKey != currentEditingKey && normalizedKey in existingKeys -> FlyTxt.Component.Editor.Error.KeyExists
@@ -526,20 +520,15 @@ private fun KeyValueFormDialog(
         error = error,
     ) {
         GlassTextField(
-            value = keyTextFieldValue,
-            onValueChange = { updatedTextFieldValue ->
-                keyTextFieldValue = updatedTextFieldValue
-                error = null
-            },
+            state = keyState,
             label = keyPlaceholder,
+            lineLimits = TextFieldLineLimits.MultiLine(),
             modifier = Modifier.fillMaxWidth(),
         )
         GlassTextField(
-            value = valueTextFieldValue,
-            onValueChange = { updatedTextFieldValue ->
-                valueTextFieldValue = updatedTextFieldValue
-            },
+            state = valueState,
             label = valuePlaceholder,
+            lineLimits = TextFieldLineLimits.MultiLine(),
             modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -548,11 +537,15 @@ private fun KeyValueFormDialog(
 @Composable
 private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var ruleType by remember { mutableStateOf("DOMAIN-SUFFIX") }
-    var payloadTextFieldValue by remember { mutableStateOf(TextFieldValue()) }
+    val payloadState = rememberTextFieldState()
     var target by remember { mutableStateOf(FlyTxt.Component.Editor.Rule.TargetReject) }
     var useSrc by remember { mutableStateOf(false) }
     var useNoResolve by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(payloadState) {
+        snapshotFlow { payloadState.text.toString() }.drop(1).collect { error = null }
+    }
 
     val targetItems = remember {
         listOf(
@@ -572,7 +565,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
         onDismissRequest = onDismiss,
         onConfirm = {
             val normalizedType = ruleType.trim().uppercase()
-            val normalizedPayload = payloadTextFieldValue.text.trim()
+            val normalizedPayload = payloadState.text.toString().trim()
 
             if (target != FlyTxt.Component.Editor.Rule.TargetMatch && normalizedPayload.isBlank()) {
                 error = FlyTxt.Component.Editor.Rule.ErrorContentRequired
@@ -615,12 +608,9 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
             },
         )
         GlassTextField(
-            value = payloadTextFieldValue,
-            onValueChange = { updatedTextFieldValue ->
-                payloadTextFieldValue = updatedTextFieldValue
-                error = null
-            },
+            state = payloadState,
             label = FlyTxt.Component.Editor.Rule.Content,
+            lineLimits = TextFieldLineLimits.MultiLine(),
             modifier = Modifier.fillMaxWidth(),
         )
         if (supportsRuleExtra(ruleType)) {

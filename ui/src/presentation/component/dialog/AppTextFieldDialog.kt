@@ -24,19 +24,14 @@ package com.github.lmfirefly.flycat.presentation.component.dialog
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.KeyboardActionHandler
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -45,91 +40,17 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun AppTextFieldDialog(
     show: Boolean,
     title: String,
-    value: String,
-    onValueChange: (String) -> Unit,
+    state: TextFieldState,
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
     summary: String? = null,
     label: String = "",
     useLabelAsPlaceholder: Boolean = false,
-    singleLine: Boolean = false,
-    maxLines: Int = 1,
+    lineLimits: TextFieldLineLimits = TextFieldLineLimits.SingleLine,
     renderInRootScaffold: Boolean = false,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
-    trailingIcon: @Composable (() -> Unit)? = null,
-    supportingContent: @Composable (() -> Unit)? = null,
-) {
-    var localTextFieldValue by
-        remember(show) {
-            mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
-        }
-    var pendingExternalSyncText by remember(show) { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(show) {
-        if (show) {
-            localTextFieldValue = TextFieldValue(text = value, selection = TextRange(value.length))
-            pendingExternalSyncText = null
-        }
-    }
-
-    LaunchedEffect(value, show) {
-        if (!show) return@LaunchedEffect
-        when {
-            value == localTextFieldValue.text -> {
-                pendingExternalSyncText = null
-            }
-
-            pendingExternalSyncText != null -> {
-                localTextFieldValue = TextFieldValue(text = value, selection = TextRange(value.length))
-                pendingExternalSyncText = null
-            }
-        }
-    }
-
-    AppTextFieldDialog(
-        show = show,
-        title = title,
-        textFieldValue = localTextFieldValue,
-        onTextFieldValueChange = { updatedTextFieldValue ->
-            localTextFieldValue = updatedTextFieldValue
-            pendingExternalSyncText = updatedTextFieldValue.text
-            onValueChange(updatedTextFieldValue.text)
-        },
-        onDismissRequest = onDismissRequest,
-        onConfirm = onConfirm,
-        modifier = modifier,
-        summary = summary,
-        label = label,
-        useLabelAsPlaceholder = useLabelAsPlaceholder,
-        singleLine = singleLine,
-        maxLines = maxLines,
-        renderInRootScaffold = renderInRootScaffold,
-        keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
-        trailingIcon = trailingIcon,
-        supportingContent = supportingContent,
-    )
-}
-
-@Composable
-fun AppTextFieldDialog(
-    show: Boolean,
-    title: String,
-    textFieldValue: TextFieldValue,
-    onTextFieldValueChange: (TextFieldValue) -> Unit,
-    onDismissRequest: () -> Unit,
-    onConfirm: () -> Unit,
-    modifier: Modifier = Modifier,
-    summary: String? = null,
-    label: String = "",
-    useLabelAsPlaceholder: Boolean = false,
-    singleLine: Boolean = false,
-    maxLines: Int = 1,
-    renderInRootScaffold: Boolean = false,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    onKeyboardAction: KeyboardActionHandler? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     supportingContent: @Composable (() -> Unit)? = null,
 ) {
@@ -143,31 +64,16 @@ fun AppTextFieldDialog(
     ) {
         AppDialogColumn {
             val textFieldModifier = Modifier.fillMaxWidth().padding(bottom = if (supportingContent == null) UiDp.dp0 else UiDp.dp8)
-            if (label.isBlank()) {
-                GlassTextField(
-                    modifier = textFieldModifier,
-                    value = textFieldValue,
-                    onValueChange = onTextFieldValueChange,
-                    singleLine = singleLine,
-                    maxLines = maxLines,
-                    keyboardOptions = keyboardOptions,
-                    keyboardActions = keyboardActions,
-                    trailingIcon = trailingIcon,
-                )
-            } else {
-                GlassTextField(
-                    modifier = textFieldModifier,
-                    value = textFieldValue,
-                    onValueChange = onTextFieldValueChange,
-                    label = label,
-                    useLabelAsPlaceholder = useLabelAsPlaceholder,
-                    singleLine = singleLine,
-                    maxLines = maxLines,
-                    keyboardOptions = keyboardOptions,
-                    keyboardActions = keyboardActions,
-                    trailingIcon = trailingIcon,
-                )
-            }
+            GlassTextField(
+                state = state,
+                modifier = textFieldModifier,
+                label = label,
+                useLabelAsPlaceholder = useLabelAsPlaceholder,
+                lineLimits = lineLimits,
+                keyboardOptions = keyboardOptions,
+                onKeyboardAction = onKeyboardAction,
+                trailingIcon = trailingIcon,
+            )
             supportingContent?.invoke()
             DialogButtonRow(onCancel = onDismissRequest, onConfirm = onConfirm)
         }

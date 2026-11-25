@@ -61,8 +61,8 @@ private val LocalSheetHeaderBackdrop = compositionLocalOf<Backdrop?> { null }
 object FloatingSheetHeaderDefaults {
     /** 固定标题带高度：有无侧边按钮时标题都垂直居中。 */
     val Height = 76.dp
-    /** miuix 弹层在内容上方铺的 chrome：24dp 拖拽条 + 空标题行（6dp + 12dp）。标题带上移这么多后正好从卡片顶边开始画，拖拽条浮在带上部。 */
-    val ChromeAboveContent = 42.dp
+    /** 自绘标题时库 Header 仅保留 24dp 拖拽条；标题带上移该高度后从卡片顶边起画。 */
+    val ChromeAboveContent = 24.dp
     /** 滚动内容在标题带下方的顶部留白。 */
     val ContentTopInset = Height - ChromeAboveContent
     /** 侧边按钮距卡片边缘的内缩（仅外侧）。 */

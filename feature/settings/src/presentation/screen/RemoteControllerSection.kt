@@ -27,7 +27,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -187,16 +192,41 @@ private fun BackendEditSheet(
     onDelete: (() -> Unit)?,
 ) {
     val spacing = AppTheme.spacing
-    var name by remember(state) { mutableStateOf(state.name) }
-    var host by remember(state) { mutableStateOf(state.host) }
-    var port by remember(state) { mutableStateOf(state.port) }
-    var secret by remember(state) { mutableStateOf(state.secret) }
-
+    val nameState = rememberTextFieldState()
+    val hostState = rememberTextFieldState()
+    val portState = rememberTextFieldState()
+    val secretState = rememberTextFieldState()
+    val hostInputTransformation = remember(portState) {
+        InputTransformation {
+            val input = parseHostPortInput(toString(), portState.text.toString())
+            if (input.host != toString()) {
+                replace(0, length, input.host)
+            }
+            if (input.port != portState.text.toString()) {
+                portState.setTextAndPlaceCursorAtEnd(input.port)
+            }
+        }
+    }
+    val portInputTransformation = remember {
+        InputTransformation {
+            val filtered = toString().filter(Char::isDigit).take(5)
+            if (filtered != toString()) {
+                replace(0, length, filtered)
+            }
+        }
+    }
+    LaunchedEffect(state) {
+        nameState.setTextAndPlaceCursorAtEnd(state.name)
+        hostState.setTextAndPlaceCursorAtEnd(state.host)
+        portState.setTextAndPlaceCursorAtEnd(state.port)
+        secretState.setTextAndPlaceCursorAtEnd(state.secret)
+    }
+    val host = hostState.text.toString()
+    val port = portState.text.toString()
     val normalizedHost = host.trim().removePrefix("http://").removePrefix("https://").trimEnd('/')
     val parsedPort = port.trim().toIntOrNull()
     val portValid = parsedPort != null && parsedPort in 1..65535
     val canConfirm = normalizedHost.isNotEmpty() && portValid
-
     AppDialog(
         show = show,
         title = title,
@@ -212,47 +242,38 @@ private fun BackendEditSheet(
                 verticalArrangement = Arrangement.spacedBy(spacing.space12),
             ) {
                 GlassTextField(
-                    value = name,
-                    onValueChange = { name = it },
+                    state = nameState,
                     label = FlyTxt.Feature.RemoteController.Name,
-                    singleLine = true,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth(),
                 )
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(spacing.space12),
                     verticalAlignment = Alignment.Top,
                 ) {
                     GlassTextField(
-                        value = host,
-                        onValueChange = { raw ->
-                            val input = parseHostPortInput(raw, port)
-                            host = input.host
-                            port = input.port
-                        },
+                        state = hostState,
+                        inputTransformation = hostInputTransformation,
                         label = FlyTxt.Feature.RemoteController.Host,
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         modifier = Modifier.weight(1f),
                     )
                     GlassTextField(
-                        value = port,
-                        onValueChange = { port = it.filter(Char::isDigit).take(5) },
+                        state = portState,
+                        inputTransformation = portInputTransformation,
                         label = FlyTxt.Feature.RemoteController.Port,
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(0.45f),
                     )
                 }
-
                 GlassTextField(
-                    value = secret,
-                    onValueChange = { secret = it },
+                    state = secretState,
                     label = FlyTxt.Feature.RemoteController.Secret,
-                    singleLine = true,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth(),
                 )
-
                 if (!portValid && port.isNotBlank()) {
                     Text(
                         text = FlyTxt.Feature.RemoteController.PortRangeError,
@@ -262,7 +283,6 @@ private fun BackendEditSheet(
                     )
                 }
             }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(spacing.space16),
@@ -283,7 +303,17 @@ private fun BackendEditSheet(
                 }
                 GlassTextButton(
                     text = FlyTxt.Component.Button.Confirm,
-                    onClick = { if (canConfirm) onConfirm(name, normalizedHost, parsedPort, secret) },
+                    onClick = {
+                        if (canConfirm) {
+                            val validPort = parsedPort
+                            onConfirm(
+                                nameState.text.toString(),
+                                normalizedHost,
+                                validPort,
+                                secretState.text.toString(),
+                            )
+                        }
+                    },
                     modifier = Modifier.weight(1f),
                     enabled = canConfirm,
                     primary = true,
@@ -295,9 +325,7 @@ private fun BackendEditSheet(
 
 private sealed interface BackendSheetState {
     val form: BackendFormState
-
     data class Add(override val form: BackendFormState) : BackendSheetState
-
     data class Edit(override val form: BackendFormState) : BackendSheetState
 }
 
@@ -310,7 +338,6 @@ private data class BackendFormState(
 ) {
     companion object {
         fun empty() = BackendFormState(id = null, name = "", host = "", port = "9090", secret = "")
-
         fun from(backend: RemoteBackend) = BackendFormState(
             id = backend.id,
             name = backend.name,

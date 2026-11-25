@@ -16,7 +16,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,17 +58,31 @@ internal fun MoeHomeSettingsSheet(
     onDismiss: () -> Unit,
 ) {
     val spacing = AppTheme.spacing
-    var draftQuote by remember(show, quote) { mutableStateOf(quote) }
-    var draftQuoteAuthor by remember(show, quoteAuthor) { mutableStateOf(quoteAuthor) }
+    val draftQuote = rememberTextFieldState(quote)
+    val draftQuoteAuthor = rememberTextFieldState(quoteAuthor)
     var draftClassicHomeEnabled by remember(show, classicHomeEnabled) { mutableStateOf(classicHomeEnabled) }
     var draftHomeHitokotoEnabled by remember(show, homeHitokotoEnabled) { mutableStateOf(homeHitokotoEnabled) }
     var draftSidebarExpanded by remember(show, sidebarExpanded) { mutableStateOf(sidebarExpanded) }
     var draftWallpaperScrimEnabled by remember(show, wallpaperScrimEnabled) { mutableStateOf(wallpaperScrimEnabled) }
     var showUrlInputDialog by remember { mutableStateOf(false) }
     var urlInput by remember { mutableStateOf("") }
+    LaunchedEffect(show) {
+        if (show) {
+            draftQuote.setTextAndPlaceCursorAtEnd(quote)
+            draftQuoteAuthor.setTextAndPlaceCursorAtEnd(quoteAuthor)
+        }
+    }
+    LaunchedEffect(quote, quoteAuthor) {
+        if (show && draftQuote.text.toString() != quote) {
+            draftQuote.setTextAndPlaceCursorAtEnd(quote)
+        }
+        if (show && draftQuoteAuthor.text.toString() != quoteAuthor) {
+            draftQuoteAuthor.setTextAndPlaceCursorAtEnd(quoteAuthor)
+        }
+    }
     val saveSettings = {
-        onQuoteChange(draftQuote)
-        onQuoteAuthorChange(draftQuoteAuthor)
+        onQuoteChange(draftQuote.text.toString())
+        onQuoteAuthorChange(draftQuoteAuthor.text.toString())
         onClassicHomeEnabledChange(draftClassicHomeEnabled)
         onHomeHitokotoEnabledChange(draftHomeHitokotoEnabled)
         onSidebarExpandedChange(draftSidebarExpanded)
@@ -93,8 +111,8 @@ internal fun MoeHomeSettingsSheet(
             }
             val showQuoteFields = !draftClassicHomeEnabled || draftHomeHitokotoEnabled
             if (showQuoteFields) {
-                item { GlassTextField(value = draftQuote, onValueChange = { draftQuote = it }, label = FlyTxt.AppSettings.Interface.HomeQuoteTitle, useLabelAsPlaceholder = true, maxLines = 2, modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) }
-                item { GlassTextField(value = draftQuoteAuthor, onValueChange = { draftQuoteAuthor = it }, label = FlyTxt.AppSettings.Interface.HomeQuoteAuthorTitle, useLabelAsPlaceholder = true, maxLines = 1, modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) }
+                item { GlassTextField(state = draftQuote, label = FlyTxt.AppSettings.Interface.HomeQuoteTitle, useLabelAsPlaceholder = true, lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 2), modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) }
+                item { GlassTextField(state = draftQuoteAuthor, label = FlyTxt.AppSettings.Interface.HomeQuoteAuthorTitle, useLabelAsPlaceholder = true, lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 1), modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12)) }
                 if (!draftClassicHomeEnabled) {
                     item {
                         Card(modifier = Modifier.fillMaxWidth().padding(bottom = spacing.space12), applyHorizontalPadding = false) {
@@ -136,8 +154,9 @@ internal fun MoeHomeSettingsSheet(
 
 @Composable
 private fun MoeHomeRemoteWallpaperUrlDialog(show: Boolean, initialUrl: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var url by remember { mutableStateOf(initialUrl) }
-    AppFormDialog(show = show, title = FlyTxt.AppSettings.Interface.HomeWallpaperUrlDialogTitle, onDismissRequest = onDismiss, onConfirm = { val trimmed = url.trim(); if (trimmed.isNotEmpty()) onConfirm(trimmed) }, scrollable = false) {
-        GlassTextField(value = url, onValueChange = { url = it }, label = "https://example.com/image.jpg", useLabelAsPlaceholder = true, singleLine = true, modifier = Modifier.fillMaxWidth())
+    val url = rememberTextFieldState(initialUrl)
+    LaunchedEffect(initialUrl) { if (url.text.toString() != initialUrl) { url.setTextAndPlaceCursorAtEnd(initialUrl) } }
+    AppFormDialog(show = show, title = FlyTxt.AppSettings.Interface.HomeWallpaperUrlDialogTitle, onDismissRequest = onDismiss, onConfirm = { val trimmed = url.text.toString().trim(); if (trimmed.isNotEmpty()) onConfirm(trimmed) }, scrollable = false) {
+        GlassTextField(state = url, label = "https://example.com/image.jpg", useLabelAsPlaceholder = true, lineLimits = TextFieldLineLimits.SingleLine, modifier = Modifier.fillMaxWidth())
     }
 }

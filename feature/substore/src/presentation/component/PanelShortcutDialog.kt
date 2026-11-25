@@ -35,7 +35,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,23 +79,22 @@ fun PanelShortcutDialog(
 ) {
     val context = LocalContext.current
     val spacing = AppTheme.spacing
-
-    var name by remember(url, defaultLabel) { mutableStateOf(defaultLabel) }
+    val nameState = rememberTextFieldState(defaultLabel)
     var customIconUri by remember(url) { mutableStateOf<Uri?>(null) }
-
+    LaunchedEffect(show, url, defaultLabel) {
+        if (show) nameState.setTextAndPlaceCursorAtEnd(defaultLabel)
+    }
     val pickIconLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) customIconUri = uri
     }
-
     val faviconUrl = remember(url) { faviconUrlOf(url) }
     val iconModel: String = customIconUri?.toString() ?: faviconUrl
-    val canConfirm = name.isNotBlank() && url.isNotBlank()
-
+    val canConfirm = nameState.text.isNotBlank() && url.isNotBlank()
     AppFormDialog(
         show = show,
         title = FlyTxt.Feature.Panel.ShortcutTitle,
         onDismissRequest = onDismiss,
-        onConfirm = { if (canConfirm) onConfirm(name.trim(), customIconUri) },
+        onConfirm = { if (canConfirm) onConfirm(nameState.text.toString().trim(), customIconUri) },
         confirmEnabled = canConfirm,
         scrollable = false,
         onDismissFinished = onDismissFinished,
@@ -117,7 +120,6 @@ fun PanelShortcutDialog(
                     modifier = Modifier.size(100.dp),
                 )
             }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -144,12 +146,10 @@ fun PanelShortcutDialog(
                     }
                 }
             }
-
             GlassTextField(
-                value = name,
-                onValueChange = { name = it },
+                state = nameState,
                 label = FlyTxt.Feature.Panel.ShortcutName,
-                singleLine = true,
+                lineLimits = TextFieldLineLimits.SingleLine,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

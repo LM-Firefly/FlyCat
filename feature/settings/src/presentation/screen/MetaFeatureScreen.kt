@@ -31,7 +31,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -39,12 +42,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.core.contract.StoreSynchronizer
 import com.github.lmfirefly.flycat.core.model.GeoFileType
@@ -91,7 +93,6 @@ fun MetaFeatureScreen(navigator: Navigator) {
     val scope = rememberCoroutineScope()
     val viewModel: MetaFeatureViewModel = koinViewModel()
     val storeSynchronizer = koinInject<StoreSynchronizer>()
-
     val showGeoXDownloadSheet = remember { mutableStateOf(false) }
     var showWebDavRestoreConfirmDialog by remember { mutableStateOf(false) }
     var showWebDavConfigDialog by remember { mutableStateOf(false) }
@@ -101,41 +102,46 @@ fun MetaFeatureScreen(navigator: Navigator) {
     var loadingTitle by remember { mutableStateOf("") }
     var loadingMessage by remember { mutableStateOf("") }
     var webDavError by remember { mutableStateOf<String?>(null) }
-    var webDavUrlField by remember { mutableStateOf(TextFieldValue("")) }
-    var webDavDirField by remember { mutableStateOf(TextFieldValue("")) }
-    var webDavAccountField by remember { mutableStateOf(TextFieldValue("")) }
-    var webDavPasswordField by remember { mutableStateOf(TextFieldValue("")) }
-
+    val webDavUrlState = rememberTextFieldState()
+    val webDavDirState = rememberTextFieldState()
+    val webDavAccountState = rememberTextFieldState()
+    val webDavPasswordState = rememberTextFieldState()
     val ageKeyHybrid = remember { mutableStateOf(false) }
     val ageKeyDialogVisible = remember { mutableStateOf(false) }
-
+    LaunchedEffect(webDavUrlState) {
+        snapshotFlow { webDavUrlState.text.toString() }.collect { webDavError = null }
+    }
+    LaunchedEffect(webDavDirState) {
+        snapshotFlow { webDavDirState.text.toString() }.collect { webDavError = null }
+    }
+    LaunchedEffect(webDavAccountState) {
+        snapshotFlow { webDavAccountState.text.toString() }.collect { webDavError = null }
+    }
+    LaunchedEffect(webDavPasswordState) {
+        snapshotFlow { webDavPasswordState.text.toString() }.collect { webDavError = null }
+    }
     fun openWebDavDialog() {
         val config = viewModel.getWebDavConfig()
-        webDavUrlField = TextFieldValue(config.url, TextRange(config.url.length))
-        webDavDirField = TextFieldValue(config.directory, TextRange(config.directory.length))
-        webDavAccountField = TextFieldValue(config.account, TextRange(config.account.length))
-        webDavPasswordField = TextFieldValue(config.password, TextRange(config.password.length))
+        webDavUrlState.setTextAndPlaceCursorAtEnd(config.url)
+        webDavDirState.setTextAndPlaceCursorAtEnd(config.directory)
+        webDavAccountState.setTextAndPlaceCursorAtEnd(config.account)
+        webDavPasswordState.setTextAndPlaceCursorAtEnd(config.password)
         webDavError = null
         showWebDavConfigDialog = true
     }
-
     fun currentDraftConfig(): MetaWebDavConfig {
         return MetaWebDavConfig(
-            url = webDavUrlField.text.trim(),
-            directory = webDavDirField.text.trim(),
-            account = webDavAccountField.text.trim(),
-            password = webDavPasswordField.text,
+            url = webDavUrlState.text.toString().trim(),
+            directory = webDavDirState.text.toString().trim(),
+            account = webDavAccountState.text.toString().trim(),
+            password = webDavPasswordState.text.toString(),
         )
     }
-
     GlassScaffold(
         topBar = { TopBar(title = FlyTxt.MetaFeature.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
         val mainLikePadding = rememberStandalonePageMainPadding()
-        ScreenLazyColumn(
-            scrollBehavior = scrollBehavior,
-            innerPadding = combinePaddingValues(innerPadding, mainLikePadding),
-        ) {
+        ScreenLazyColumn(scrollBehavior = scrollBehavior, innerPadding = combinePaddingValues(innerPadding, mainLikePadding)) {
             item {
                 Title(FlyTxt.MetaFeature.Section.ConnectionAndTraffic)
                 Card {
@@ -258,12 +264,7 @@ fun MetaFeatureScreen(navigator: Navigator) {
                 }
             }
         }
-
-        GeoXDownloadDialog(
-            show = showGeoXDownloadSheet,
-            context = context,
-            viewModel = viewModel,
-        )
+        GeoXDownloadDialog(show = showGeoXDownloadSheet, context = context, viewModel = viewModel)
         AppConfirmDialog(
             show = showWebDavRestoreConfirmDialog,
             title = FlyTxt.MetaFeature.WebDav.RestoreConfirmTitle,
@@ -276,14 +277,12 @@ fun MetaFeatureScreen(navigator: Navigator) {
                     loadingTitle = FlyTxt.MetaFeature.WebDav.RestoreLoadingTitle
                     loadingMessage = FlyTxt.MetaFeature.WebDav.RestoreLoadingMessage
                     try {
-                        viewModel.restoreLatestFromWebDav(context)
-                            .onSuccess { remoteName ->
-                                restartMessage = FlyTxt.MetaFeature.Backup.WebDavRestoreSuccess.format(remoteName)
-                                showRestartDialog = true
-                            }
-                            .onFailure { error ->
-                                context.toast(FlyTxt.MetaFeature.WebDav.RestoreFailed.format(error.localizedMessage ?: FlyTxt.Util.Error.UnknownError))
-                            }
+                        viewModel.restoreLatestFromWebDav(context).onSuccess { remoteName ->
+                            restartMessage = FlyTxt.MetaFeature.Backup.WebDavRestoreSuccess.format(remoteName)
+                            showRestartDialog = true
+                        }.onFailure { error ->
+                            context.toast(FlyTxt.MetaFeature.WebDav.RestoreFailed.format(error.localizedMessage ?: FlyTxt.Util.Error.UnknownError))
+                        }
                     } finally {
                         showLoadingDialog = false
                     }
@@ -312,47 +311,27 @@ fun MetaFeatureScreen(navigator: Navigator) {
             error = webDavError,
         ) {
             GlassTextField(
-                value = webDavUrlField,
-                onValueChange = {
-                    webDavUrlField = it
-                    webDavError = null
-                },
+                state = webDavUrlState,
                 label = FlyTxt.MetaFeature.WebDav.LabelUrl,
                 modifier = Modifier.fillMaxWidth(),
             )
             GlassTextField(
-                value = webDavDirField,
-                onValueChange = {
-                    webDavDirField = it
-                    webDavError = null
-                },
+                state = webDavDirState,
                 label = FlyTxt.MetaFeature.WebDav.LabelDir,
                 modifier = Modifier.fillMaxWidth(),
             )
             GlassTextField(
-                value = webDavAccountField,
-                onValueChange = {
-                    webDavAccountField = it
-                    webDavError = null
-                },
+                state = webDavAccountState,
                 label = FlyTxt.MetaFeature.WebDav.LabelAccount,
                 modifier = Modifier.fillMaxWidth(),
             )
             GlassTextField(
-                value = webDavPasswordField,
-                onValueChange = {
-                    webDavPasswordField = it
-                    webDavError = null
-                },
+                state = webDavPasswordState,
                 label = FlyTxt.MetaFeature.WebDav.LabelPassword,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        AppDialog(
-            show = showLoadingDialog,
-            title = loadingTitle,
-            onDismissRequest = {},
-        ) {
+        AppDialog(show = showLoadingDialog, title = loadingTitle, onDismissRequest = {}) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -362,7 +341,6 @@ fun MetaFeatureScreen(navigator: Navigator) {
                 Text(text = loadingMessage)
             }
         }
-
         AppConfirmDialog(
             show = showRestartDialog,
             title = FlyTxt.MetaFeature.Backup.RestoreSuccessTitle,
@@ -374,7 +352,6 @@ fun MetaFeatureScreen(navigator: Navigator) {
             },
             confirmText = FlyTxt.MetaFeature.Backup.RestartNow,
         )
-
         AgeKeyGeneratorDialog(
             show = ageKeyDialogVisible.value,
             hybrid = ageKeyHybrid.value,
@@ -385,21 +362,12 @@ fun MetaFeatureScreen(navigator: Navigator) {
 }
 
 @Composable
-private fun GeoXDownloadDialog(
-    show: MutableState<Boolean>,
-    context: android.content.Context,
-    viewModel: MetaFeatureViewModel,
-) {
+private fun GeoXDownloadDialog(show: MutableState<Boolean>, context: android.content.Context, viewModel: MetaFeatureViewModel) {
     val spacing = AppTheme.spacing
     val scope = rememberCoroutineScope()
     val selectedItems = remember { mutableStateMapOf<GeoFileType, Boolean>() }
     val canConfirm = selectedItems.values.any { it }
-
-    AppDialog(
-        show = show.value,
-        title = FlyTxt.MetaFeature.Download.DialogTitle,
-        onDismissRequest = { show.value = false },
-    ) {
+    AppDialog(show = show.value, title = FlyTxt.MetaFeature.Download.DialogTitle, onDismissRequest = { show.value = false }) {
         Column {
             geoXItems.forEach { item ->
                 BasicComponent(
@@ -413,11 +381,7 @@ private fun GeoXDownloadDialog(
                     onClick = { selectedItems[item.type] = !(selectedItems[item.type] ?: false) },
                 )
             }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(spacing.space16),
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.space16)) {
                 GlassTextButton(
                     text = FlyTxt.Component.Button.Cancel,
                     onClick = { show.value = false },
@@ -446,11 +410,9 @@ private fun GeoXDownloadDialog(
 }
 
 private fun restartApplication(context: android.content.Context, storeSynchronizer: StoreSynchronizer) {
-    val launchIntent = context.packageManager
-        .getLaunchIntentForPackage(context.packageName)
-        ?.apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        }
+    val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName) ?.apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    }
     if (launchIntent == null) {
         context.toast(FlyTxt.MetaFeature.Backup.RestartLaunchNotFound)
         return

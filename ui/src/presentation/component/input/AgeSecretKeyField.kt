@@ -22,28 +22,26 @@
 package com.github.lmfirefly.flycat.presentation.component.input
 
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
-import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 
 @Composable
 fun AgeSecretKeyField(
-    value: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
+    state: TextFieldState,
     label: String,
     modifier: Modifier = Modifier,
+    secure: Boolean = true,
 ) {
     GlassTextField(
-        value = value,
-        onValueChange = onValueChange,
+        state = state,
         label = label,
         useLabelAsPlaceholder = true,
-        singleLine = true,
+        lineLimits = TextFieldLineLimits.SingleLine,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        visualTransformation = PasswordVisualTransformation(),
+        secure = secure,
         modifier = modifier,
     )
 }

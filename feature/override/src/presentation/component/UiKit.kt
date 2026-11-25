@@ -46,7 +46,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.github.lmfirefly.flycat.presentation.component.card.Card
-import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.misc.Title
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.chevron
@@ -119,36 +118,6 @@ fun OverrideFormFieldColumn(modifier: Modifier = Modifier, content: @Composable 
         verticalArrangement = Arrangement.spacedBy(spacing.space12),
     ) {
         content()
-    }
-}
-
-@Composable
-fun OverrideFormField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    modifier: Modifier = Modifier,
-    supportText: String? = null,
-    errorText: String? = null,
-    maxLines: Int = 1,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        GlassTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = label,
-            modifier = Modifier.fillMaxWidth(),
-            maxLines = maxLines,
-        )
-        supportText?.takeIf(String::isNotBlank)?.let { support ->
-            OverrideFieldAssistText(
-                text = support,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-        }
-        errorText?.takeIf(String::isNotBlank)?.let { message ->
-            OverrideFieldAssistText(text = message, color = MiuixTheme.colorScheme.error)
-        }
     }
 }
 

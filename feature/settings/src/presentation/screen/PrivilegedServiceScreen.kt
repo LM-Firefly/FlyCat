@@ -41,6 +41,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,9 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -103,8 +103,8 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
     var showPairDialog by remember { mutableStateOf(false) }
-    var pairCode by remember { mutableStateOf(TextFieldValue()) }
-    var pairPort by remember { mutableStateOf(TextFieldValue()) }
+    val pairCodeState = rememberTextFieldState()
+    val pairPortState = rememberTextFieldState()
     var pendingLocalNetworkAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val localNetworkLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         /** 无论授权与否都继续执行：部分系统（如 HyperOS）权限状态与实际 mDNS 能力不一致，拦截只会误伤正常流程；真正缺权限时由发现失败的精准提示兜底。 */
@@ -289,18 +289,16 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
                     color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 )
                 GlassTextField(
-                    value = pairCode,
-                    onValueChange = { pairCode = it },
+                    state = pairCodeState,
                     label = FlyTxt.AppSettings.ServiceSection.PrivilegePairCodeHint,
                     useLabelAsPlaceholder = true,
-                    singleLine = true,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                 )
                 GlassTextField(
-                    value = pairPort,
-                    onValueChange = { pairPort = it },
+                    state = pairPortState,
                     label = FlyTxt.AppSettings.ServiceSection.PrivilegePairPortHint,
                     useLabelAsPlaceholder = true,
-                    singleLine = true,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     GlassTextButton(
@@ -317,9 +315,14 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
                         text = FlyTxt.AppSettings.ServiceSection.PrivilegePairButton,
                         onClick = {
                             showPairDialog = false
-                            withLocalNetwork { viewModel.pairAndStart(pairCode.text, pairPort.text) }
+                            withLocalNetwork {
+                                viewModel.pairAndStart(
+                                    pairingCode = pairCodeState.text.toString(),
+                                    pairingPort = pairPortState.text.toString(),
+                                )
+                            }
                         },
-                        enabled = pairCode.text.isNotBlank(),
+                        enabled = pairCodeState.text.isNotBlank(),
                         modifier = Modifier.weight(1f),
                     )
                 }

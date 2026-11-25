@@ -40,21 +40,25 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.KeyboardActionHandler
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.lmfirefly.flycat.core.kernel.KernelManager
@@ -114,7 +118,6 @@ fun NetworkSettingsScreen(navigator: Navigator) {
     val viewModel = koinViewModel<NetworkSettingsViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val accessControlMode by viewModel.accessControlMode.state.collectAsStateWithLifecycle()
-
     GlassScaffold(
         topBar = { TopBar(title = FlyTxt.NetworkSettings.Title, scrollBehavior = scrollBehavior, navigationIconPadding = 0.dp, navigationIcon = { NavigationBackIcon(navigator = navigator) }) }
     ) { innerPadding ->
@@ -627,8 +630,8 @@ private fun RootTunEditDialogs(
         RootTunEditDialogState.IfName ->
             RootTunTextEditDialog(
                 title = FlyTxt.NetworkSettings.RootTun.IfNameTitle,
-                value = state.tunIfNameDraft,
-                onValueChange = actions.ontunIfNameDraftChange,
+                initialValue = state.tunIfNameDraft,
+                onTextChange = actions.ontunIfNameDraftChange,
                 onDismiss = onDismiss,
                 onCommit = actions.committunIfName,
             )
@@ -636,8 +639,8 @@ private fun RootTunEditDialogs(
         RootTunEditDialogState.Mtu ->
             RootTunTextEditDialog(
                 title = FlyTxt.NetworkSettings.RootTun.MtuTitle,
-                value = state.tunMtuDraft,
-                onValueChange = actions.ontunMtuDraftChange,
+                initialValue = state.tunMtuDraft,
+                onTextChange = actions.ontunMtuDraftChange,
                 onDismiss = onDismiss,
                 onCommit = actions.committunMtu,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
@@ -646,8 +649,8 @@ private fun RootTunEditDialogs(
         RootTunEditDialogState.FakeIpRange ->
             RootTunTextEditDialog(
                 title = FlyTxt.NetworkSettings.RootTun.FakeIpRangeTitle,
-                value = state.tunFakeIpRangeDraft,
-                onValueChange = actions.ontunFakeIpRangeDraftChange,
+                initialValue = state.tunFakeIpRangeDraft,
+                onTextChange = actions.ontunFakeIpRangeDraftChange,
                 onDismiss = onDismiss,
                 onCommit = actions.committunFakeIpRange,
             )
@@ -655,8 +658,8 @@ private fun RootTunEditDialogs(
         RootTunEditDialogState.FakeIpRange6 ->
             RootTunTextEditDialog(
                 title = FlyTxt.NetworkSettings.RootTun.FakeIpRange6Title,
-                value = state.tunFakeIpRange6Draft,
-                onValueChange = actions.ontunFakeIpRange6DraftChange,
+                initialValue = state.tunFakeIpRange6Draft,
+                onTextChange = actions.ontunFakeIpRange6DraftChange,
                 onDismiss = onDismiss,
                 onCommit = actions.committunFakeIpRange6,
             )
@@ -668,37 +671,39 @@ private fun RootTunEditDialogs(
 @Composable
 private fun RootTunTextEditDialog(
     title: String,
-    value: String,
-    onValueChange: (String) -> Unit,
+    initialValue: String,
+    onTextChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onCommit: () -> Unit,
     keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
 ) {
     val focusManager = LocalFocusManager.current
-
+    val textFieldState = rememberTextFieldState(initialText = initialValue)
+    val currentOnTextChange by rememberUpdatedState(onTextChange)
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }.collect { currentOnTextChange(it) }
+    }
+    fun commit() {
+        currentOnTextChange(textFieldState.text.toString())
+        onCommit()
+        onDismiss()
+        focusManager.clearFocus()
+    }
     AppTextFieldDialog(
         show = true,
         title = title,
-        value = value,
-        onValueChange = onValueChange,
+        state = textFieldState,
         onDismissRequest = {
+            currentOnTextChange(textFieldState.text.toString())
             onDismiss()
             focusManager.clearFocus()
         },
         onConfirm = {
-            onCommit()
-            onDismiss()
-            focusManager.clearFocus()
+            commit()
         },
-        singleLine = true,
+        lineLimits = TextFieldLineLimits.SingleLine,
         keyboardOptions = keyboardOptions,
-        keyboardActions = KeyboardActions(
-            onDone = {
-                onCommit()
-                onDismiss()
-                focusManager.clearFocus()
-            }
-        ),
+        onKeyboardAction = KeyboardActionHandler { commit() },
     )
 }
 
@@ -714,12 +719,16 @@ private fun CustomKernelSheet(
     onDismiss: () -> Unit,
 ) {
     var mode by remember(show) { mutableStateOf(0) }
-    var url by remember(show) { mutableStateOf("") }
+    val urlState = rememberTextFieldState()
     var showFormatHint by remember(show) { mutableStateOf(false) }
     val pluginMimeTypes = remember { arrayOf("application/zip", "application/octet-stream") }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         onInstallFile(uri)
+    }
+    val url = urlState.text.toString()
+    LaunchedEffect(show) {
+        if (!show) urlState.setTextAndPlaceCursorAtEnd("")
     }
     AppActionBottomSheet(
         show = show,
@@ -765,12 +774,11 @@ private fun CustomKernelSheet(
             ) { selectedMode ->
                 if (selectedMode == 0) {
                     GlassTextField(
-                        value = url,
-                        onValueChange = { url = it },
+                        state = urlState,
                         label = FlyTxt.NetworkSettings.Kernel.CustomUrlLabel,
                         useLabelAsPlaceholder = true,
                         enabled = !busy,
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
                             top.yukonga.miuix.kmp.basic.IconButton(

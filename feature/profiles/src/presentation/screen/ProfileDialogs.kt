@@ -42,6 +42,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,11 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.VisualTransformation
 import com.github.lmfirefly.flycat.core.model.override.OverrideConfig
 import com.github.lmfirefly.flycat.core.model.override.OverrideInternalConstants
 import com.github.lmfirefly.flycat.core.model.profile.Profile
@@ -87,7 +88,9 @@ import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.util.toast
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.snapshotFlow
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -124,12 +127,17 @@ internal fun ProfileSettingsDialog(
     val componentSizes = AppTheme.sizes
     val selectableConfigs = remember(builtInConfigs, userConfigs) { builtInConfigs + userConfigs }
     val sectionOptions = remember { listOf(ProfileSettingsSection.Subscription, ProfileSettingsSection.Override) }
-
     var selectedSection by remember { mutableStateOf(ProfileSettingsSection.Subscription) }
-    var editName by remember { mutableStateOf(TextFieldValue(profile.name, TextRange(profile.name.length))) }
-    var editSource by remember { mutableStateOf(TextFieldValue(profile.source, TextRange(profile.source.length))) }
-    var editAgeSecretKey by remember { mutableStateOf(TextFieldValue()) }
-    var editInterval by remember { mutableStateOf("") }
+    val editNameState = rememberTextFieldState(profile.name)
+    val editSourceState = rememberTextFieldState(profile.source)
+    val editAgeSecretKeyState = rememberTextFieldState()
+    val editIntervalState = rememberTextFieldState()
+    val intervalInputTransformation = remember {
+        InputTransformation {
+            val filtered = toString().filter(Char::isDigit).take(6)
+            if (filtered != toString()) replace(0, length, filtered)
+        }
+    }
     var ageSecretKeyEdited by remember { mutableStateOf(false) }
     var customRoutingSelected by remember { mutableStateOf(false) }
     var pendingSelectedOverrideIds by remember { mutableStateOf(emptyList<String>()) }
@@ -156,17 +164,21 @@ internal fun ProfileSettingsDialog(
     LaunchedEffect(show, profile.uuid) {
         if (show) {
             selectedSection = ProfileSettingsSection.Subscription
-            editName = TextFieldValue(profile.name, TextRange(profile.name.length))
-            editSource = TextFieldValue(profile.source, TextRange(profile.source.length))
-            editAgeSecretKey = TextFieldValue()
-            editInterval = if (profile.interval > 0) profile.interval.toString() else ""
+            editNameState.setTextAndPlaceCursorAtEnd(profile.name)
+            editSourceState.setTextAndPlaceCursorAtEnd(profile.source)
+            editAgeSecretKeyState.setTextAndPlaceCursorAtEnd("")
+            editIntervalState.setTextAndPlaceCursorAtEnd(if (profile.interval > 0) profile.interval.toString() else "")
             ageSecretKeyEdited = false
             overrideSelectionInitialized = false
             customRoutingSelected = false
             pendingSelectedOverrideIds = emptyList()
         }
     }
-
+    LaunchedEffect(show, profile.uuid, editAgeSecretKeyState) {
+        if (show) {
+            snapshotFlow { editAgeSecretKeyState.text.toString() }.drop(1).collect { ageSecretKeyEdited = true }
+        }
+    }
     // 一旦绑定变得可用，就立即将其作为覆盖选择的种子值，且仅执行一次。
     LaunchedEffect(show, profile.uuid, binding) {
         if (show && !overrideSelectionInitialized && binding != null) {
@@ -176,7 +188,6 @@ internal fun ProfileSettingsDialog(
             overrideSelectionInitialized = true
         }
     }
-
     val toggleUserOverrideSelection: (String) -> Unit = { overrideId ->
         overrideSelectionInitialized = true
         pendingSelectedOverrideIds = if (overrideId in pendingSelectedOverrideIds) { pendingSelectedOverrideIds - overrideId } else { (pendingSelectedOverrideIds + overrideId).distinct() }
@@ -186,10 +197,10 @@ internal fun ProfileSettingsDialog(
             scope.launch {
                 isSaving = true
                 runCatching {
-                    val trimmedName = editName.text.trim()
-                    val trimmedSource = editSource.text.trim()
-                    val trimmedAgeSecretKey = editAgeSecretKey.text.trim()
-                    val newInterval = editInterval.toLongOrNull() ?: 0L
+                    val trimmedName = editNameState.text.toString().trim()
+                    val trimmedSource = editSourceState.text.toString().trim()
+                    val trimmedAgeSecretKey = editAgeSecretKeyState.text.toString().trim()
+                    val newInterval = editIntervalState.text.toString().toLongOrNull() ?: 0L
                     val targetSource = if (profile.type == Profile.Type.Url && trimmedSource.isNotEmpty()) { trimmedSource } else { profile.source }
                     val hasMetaChanges = trimmedName != profile.name || targetSource != profile.source || ageSecretKeyEdited || newInterval != profile.interval
                     if (trimmedName.isNotEmpty() && targetSource.isNotEmpty() && hasMetaChanges) {
@@ -212,7 +223,6 @@ internal fun ProfileSettingsDialog(
             }
         }
     }
-
     AppActionBottomSheet(
         show = show,
         modifier = Modifier,
@@ -257,27 +267,25 @@ internal fun ProfileSettingsDialog(
                     ProfileSettingsSection.Subscription -> {
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.space16)) {
                             GlassTextField(
-                                value = editName,
-                                onValueChange = { editName = it },
+                                state = editNameState,
                                 label = FlyTxt.ProfilesPage.Input.ProfileName,
                                 useLabelAsPlaceholder = true,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             if (profile.type == Profile.Type.Url) {
                                 GlassTextField(
-                                    value = editSource,
-                                    onValueChange = { editSource = it },
+                                    state = editSourceState,
                                     label = FlyTxt.ProfilesPage.SettingsDialog.ChangeLink,
                                     useLabelAsPlaceholder = true,
                                     modifier = Modifier.fillMaxWidth(),
-                                    maxLines = 2,
+                                    lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 2),
                                 )
                                 GlassTextField(
-                                    value = editInterval,
-                                    onValueChange = { editInterval = it.filter(Char::isDigit).take(6) },
+                                    state = editIntervalState,
+                                    inputTransformation = intervalInputTransformation,
                                     label = FlyTxt.ProfilesPage.Input.AutoUpdateInterval,
                                     useLabelAsPlaceholder = true,
-                                    singleLine = true,
+                                    lineLimits = TextFieldLineLimits.SingleLine,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.fillMaxWidth(),
                                 )
@@ -291,7 +299,7 @@ internal fun ProfileSettingsDialog(
                             val ageKeyContext = LocalContext.current
                             val ageScope = rememberCoroutineScope()
                             var ageKeyVisible by remember { mutableStateOf(false) }
-                            var agePublicKey by remember { mutableStateOf("") }
+                            val agePublicKeyState = rememberTextFieldState()
                             // Age public key
                             Column(verticalArrangement = Arrangement.spacedBy(spacing.space4)) {
                                 Text(
@@ -305,22 +313,21 @@ internal fun ProfileSettingsDialog(
                                     horizontalArrangement = Arrangement.spacedBy(spacing.space8),
                                 ) {
                                     GlassTextField(
-                                        value = agePublicKey,
-                                        onValueChange = { agePublicKey = it },
+                                        state = agePublicKeyState,
                                         label = FlyTxt.ProfilesPage.AgeKey.PublicKeyPlaceholder,
                                         useLabelAsPlaceholder = true,
                                         readOnly = true,
                                         modifier = Modifier.weight(1f),
-                                        singleLine = true,
+                                        lineLimits = TextFieldLineLimits.SingleLine,
                                     )
                                     SheetHeaderIconButton(
                                         icon = FlyCat.ArrowRight,
                                         contentDescription = FlyTxt.ProfilesPage.AgeKey.DerivePublicKey,
                                         onClick = {
                                             ageScope.launch {
-                                                val key = AgeKeyCrypto.agePublicKey(editAgeSecretKey.text)
+                                                val key = AgeKeyCrypto.agePublicKey(editAgeSecretKeyState.text.toString())
                                                 if (key != null) {
-                                                    agePublicKey = key
+                                                    agePublicKeyState.setTextAndPlaceCursorAtEnd(key)
                                                     val clipboard = ageKeyContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                                     clipboard.setPrimaryClip(ClipData.newPlainText("age_key", key))
                                                     Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.GeneratedPublicKey.format(key), Toast.LENGTH_SHORT).show()
@@ -335,9 +342,9 @@ internal fun ProfileSettingsDialog(
                                         contentDescription = FlyTxt.ProfilesPage.AgeKey.CopyPublicKey,
                                         onClick = {
                                             val clipboard = ageKeyContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                            val clip = ClipData.newPlainText("age_key", agePublicKey)
+                                            val clip = ClipData.newPlainText("age_key", agePublicKeyState.text.toString())
                                             clipboard.setPrimaryClip(clip)
-                                            Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedPublicKey.format(agePublicKey), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedPublicKey.format(agePublicKeyState.text), Toast.LENGTH_SHORT).show()
                                         },
                                     )
                                 }
@@ -355,12 +362,10 @@ internal fun ProfileSettingsDialog(
                                     horizontalArrangement = Arrangement.spacedBy(spacing.space8),
                                 ) {
                                     GlassTextField(
-                                        value = editAgeSecretKey,
-                                        onValueChange = { editAgeSecretKey = it },
-                                        singleLine = true,
+                                        state = editAgeSecretKeyState,
+                                        lineLimits = TextFieldLineLimits.SingleLine,
                                         modifier = Modifier.weight(1f),
-                                        visualTransformation = if (ageKeyVisible) VisualTransformation.None
-                                            else PasswordVisualTransformation(),
+                                        secure = !ageKeyVisible,
                                     )
                                     SheetHeaderIconButton(
                                         icon = FlyCat.Sparkles,
@@ -369,7 +374,8 @@ internal fun ProfileSettingsDialog(
                                             ageScope.launch {
                                                 val result = AgeKeyCrypto.genAgeKey()
                                                 if (result != null) {
-                                                    editAgeSecretKey = TextFieldValue(result.secretKey, TextRange(result.secretKey.length))
+                                                    editAgeSecretKeyState.setTextAndPlaceCursorAtEnd(result.secretKey)
+                                                    ageSecretKeyEdited = true
                                                     val clipboard = ageKeyContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                                     clipboard.setPrimaryClip(ClipData.newPlainText("age_key", result.secretKey))
                                                     Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.GeneratedSecretKey.format(result.secretKey), Toast.LENGTH_SHORT).show()
@@ -384,9 +390,10 @@ internal fun ProfileSettingsDialog(
                                         contentDescription = FlyTxt.ProfilesPage.AgeKey.CopySecretKey,
                                         onClick = {
                                             val clipboard = ageKeyContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                            val clip = ClipData.newPlainText("age_key", editAgeSecretKey.text)
+                                            val secretKey = editAgeSecretKeyState.text.toString()
+                                            val clip = ClipData.newPlainText("age_key", secretKey)
                                             clipboard.setPrimaryClip(clip)
-                                            Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedSecretKey.format(editAgeSecretKey.text), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, FlyTxt.ProfilesPage.AgeKey.CopiedSecretKey.format(secretKey), Toast.LENGTH_SHORT).show()
                                         },
                                     )
                                     SheetHeaderIconButton(

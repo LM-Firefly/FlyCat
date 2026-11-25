@@ -26,15 +26,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import com.github.lmfirefly.flycat.core.model.ThemeMode
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
@@ -153,9 +156,23 @@ internal fun ThemeColorPickerSheet(
             runCatching { colorFromArgb(initialSeedColorArgb) }.getOrDefault(Color.White)
         )
     }
-    val hexField = remember(show, initialSeedColorArgb) {
-        val hex = formatThemeSeedHex(initialSeedColorArgb)
-        mutableStateOf(TextFieldValue(hex, TextRange(hex.length)))
+    val hexState = rememberTextFieldState()
+    val hexInputTransformation = remember {
+        InputTransformation {
+            val upper = toString().uppercase()
+            if (upper != toString()) {
+                replace(0, length, upper)
+            }
+        }
+    }
+
+    LaunchedEffect(show, initialSeedColorArgb) {
+        if (show) hexState.setTextAndPlaceCursorAtEnd(formatThemeSeedHex(initialSeedColorArgb))
+    }
+    LaunchedEffect(hexState) {
+        snapshotFlow { hexState.text.toString() }.collect { input ->
+            parseThemeHexColorOrNull(input)?.let { pickerColor.value = it }
+        }
     }
 
     AppActionBottomSheet(
@@ -168,7 +185,10 @@ internal fun ThemeColorPickerSheet(
         defaultWindowInsetsPadding = false,
         startAction = { AppBottomSheetCloseAction(onClick = onDismissRequest) },
         endAction = {
-            AppBottomSheetConfirmAction(onClick = { onConfirm(colorToArgbLong(pickerColor.value)) })
+            AppBottomSheetConfirmAction(onClick = {
+                val color = parseThemeHexColorOrNull(hexState.text.toString()) ?: pickerColor.value
+                onConfirm(colorToArgbLong(color))
+            })
         },
         content = {
             Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding().imePadding()) {
@@ -176,18 +196,13 @@ internal fun ThemeColorPickerSheet(
                     color = pickerColor.value,
                     onColorChanged = { color ->
                         pickerColor.value = color
-                        val hex = formatThemeSeedHex(colorToArgbLong(color))
-                        hexField.value = TextFieldValue(hex, TextRange(hex.length))
+                        hexState.setTextAndPlaceCursorAtEnd(formatThemeSeedHex(colorToArgbLong(color)))
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 GlassTextField(
-                    value = hexField.value,
-                    onValueChange = { updated ->
-                        val upper = updated.copy(text = updated.text.uppercase())
-                        hexField.value = upper
-                        parseThemeHexColorOrNull(upper.text)?.let { pickerColor.value = it }
-                    },
+                    state = hexState,
+                    inputTransformation = hexInputTransformation,
                     label = FlyTxt.AppSettings.Interface.ColorThemeCodeLabel,
                     modifier = Modifier.fillMaxWidth().padding(top = UiDp.dp8),
                 )

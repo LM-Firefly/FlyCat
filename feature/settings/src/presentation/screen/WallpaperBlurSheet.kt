@@ -29,6 +29,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -99,7 +101,6 @@ fun WallpaperBlurSheet(show: Boolean, onDismiss: () -> Unit, navigator: Navigato
         )
     }
     val update: (BlurThemeSettings) -> Unit = remember(viewModel) { { next -> viewModel.blurTheme.set(serializeBlurTheme(next)) } }
-
     AppActionBottomSheet(
         show = show,
         title = FlyTxt.AppSettings.Interface.AppBackgroundTitle,
@@ -219,23 +220,22 @@ fun WallpaperBlurSheet(show: Boolean, onDismiss: () -> Unit, navigator: Navigato
 
 @Composable
 private fun RemoteWallpaperUrlDialog(show: Boolean, initialUrl: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var url by remember { mutableStateOf(initialUrl) }
+    val urlState = rememberTextFieldState(initialText = initialUrl)
     AppFormDialog(
         show = show,
         title = FlyTxt.AppSettings.Interface.HomeWallpaperUrlDialogTitle,
         onDismissRequest = onDismiss,
         onConfirm = {
-            val trimmed = url.trim()
+            val trimmed = urlState.text.toString().trim()
             if (trimmed.isNotEmpty()) onConfirm(trimmed)
         },
         scrollable = false,
     ) {
         GlassTextField(
-            value = url,
-            onValueChange = { url = it },
+            state = urlState,
             label = "https://example.com/image.jpg",
             useLabelAsPlaceholder = true,
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier.fillMaxWidth(),
         )
     }

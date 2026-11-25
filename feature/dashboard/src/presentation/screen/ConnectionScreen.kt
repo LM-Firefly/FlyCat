@@ -47,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
@@ -88,6 +89,9 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
@@ -120,7 +124,7 @@ fun ConnectionScreen(navigator: Navigator) {
     val spacing = AppTheme.spacing
     val scrollBehavior = MiuixScrollBehavior()
     var showSearchBar by remember { mutableStateOf(false) }
-    var searchText by remember { mutableStateOf(state.searchQuery) }
+    val searchState = rememberTextFieldState(state.searchQuery)
     var showSortPopup by remember { mutableStateOf(false) }
     var selectedConnection by remember { mutableStateOf<com.github.lmfirefly.flycat.core.model.ConnectionInfo?>(null) }
     var showDetailSheet by remember { mutableStateOf(false) }
@@ -143,14 +147,13 @@ fun ConnectionScreen(navigator: Navigator) {
         val tab = if (selectedTabIndex == 0) ConnectionTab.ACTIVE else ConnectionTab.CLOSED
         viewModel.setTab(tab)
     }
-    LaunchedEffect(searchText) {
-        if (searchText != state.searchQuery) {
-            viewModel.setSearchQuery(searchText)
-        }
+    LaunchedEffect(searchState, viewModel) {
+        snapshotFlow { searchState.text.toString() }.collect(viewModel::setSearchQuery)
     }
-    LaunchedEffect(state.searchQuery) {
-        if (searchText != state.searchQuery) {
-            searchText = state.searchQuery
+    LaunchedEffect(state.searchQuery, searchState) {
+        val query = state.searchQuery
+        if (searchState.text.toString() != query) {
+            searchState.setTextAndPlaceCursorAtEnd(query)
         }
     }
     LaunchedEffect(showDetailSheet, selectedConnection) {
@@ -301,11 +304,10 @@ fun ConnectionScreen(navigator: Navigator) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     GlassTextField(
-                        value = searchText,
-                        onValueChange = { searchText = it },
+                        state = searchState,
                         modifier = Modifier.weight(1f),
                         label = FlyTxt.Connection.SearchHint,
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
                     )
                 }
             }

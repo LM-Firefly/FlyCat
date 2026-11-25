@@ -24,14 +24,16 @@ package com.github.lmfirefly.flycat.feature.profiles.presentation.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import com.github.lmfirefly.flycat.core.model.profile.Profile
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
@@ -52,21 +54,19 @@ internal fun EditProfileNameDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var editName by
-        remember(show, currentName) {
-            mutableStateOf(TextFieldValue(currentName, TextRange(currentName.length)))
-        }
-
+    val editNameState = rememberTextFieldState(currentName)
+    LaunchedEffect(show, currentName) {
+        if (show) editNameState.setTextAndPlaceCursorAtEnd(currentName)
+    }
     AppTextFieldDialog(
         show = show,
         title = FlyTxt.ProfilesPage.EditDialog.Title,
-        textFieldValue = editName,
-        onTextFieldValueChange = { editName = it },
+        state = editNameState,
         onDismissRequest = onDismiss,
-        onConfirm = { onConfirm(editName.text) },
+        onConfirm = { onConfirm(editNameState.text.toString()) },
         label = FlyTxt.ProfilesPage.Input.ProfileName,
         useLabelAsPlaceholder = true,
-        singleLine = true,
+        lineLimits = TextFieldLineLimits.SingleLine,
     )
 }
 

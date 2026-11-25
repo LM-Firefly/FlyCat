@@ -30,11 +30,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -269,18 +275,29 @@ internal fun notificationLineLabel(content: NotificationLineContent): String = w
 @Composable
 private fun NotificationCustomTextRow(text: String, onTextChange: (String) -> Unit) {
     var editing by remember { mutableStateOf(false) }
+    val textFieldState = rememberTextFieldState(initialText = text)
+    val currentOnTextChange by rememberUpdatedState(onTextChange)
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }.collect { currentOnTextChange(it) }
+    }
+    fun close() {
+        currentOnTextChange(textFieldState.text.toString())
+        editing = false
+    }
     PreferenceArrowItem(
         title = FlyTxt.AppSettings.Notification.CustomTextTitle,
         summary = text.ifBlank { FlyTxt.AppSettings.Notification.CustomTextEmpty },
-        onClick = { editing = true },
+        onClick = {
+            textFieldState.setTextAndPlaceCursorAtEnd(text)
+            editing = true
+        },
     )
     AppTextFieldDialog(
         show = editing,
         title = FlyTxt.AppSettings.Notification.CustomTextTitle,
-        value = text,
-        onValueChange = onTextChange,
-        onDismissRequest = { editing = false },
-        onConfirm = { editing = false },
-        singleLine = true,
+        state = textFieldState,
+        onDismissRequest = { close() },
+        onConfirm = { close() },
+        lineLimits = TextFieldLineLimits.SingleLine,
     )
 }
