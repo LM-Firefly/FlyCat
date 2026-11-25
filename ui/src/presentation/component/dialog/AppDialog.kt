@@ -33,29 +33,20 @@ import top.yukonga.miuix.kmp.glass.glassDialogSurface
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
-
-object AppDialogDefaults {
-    @Composable fun titleColor(): Color = DialogDefaults.titleColor()
-    @Composable fun summaryColor(): Color = DialogDefaults.summaryColor()
-    @Composable fun backgroundColor(): Color = AppBottomSheetDefaults.backgroundColor()
-    val outsideMargin: DpSize get() = DialogDefaults.outsideMargin
-    val insideMargin: DpSize get() = DialogDefaults.insideMargin
-}
-
 @Composable
 fun AppDialog(
     show: Boolean,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     title: String = "",
-    titleColor: Color = AppDialogDefaults.titleColor(),
+    titleColor: Color = DialogDefaults.titleColor(),
     summary: String? = null,
-    summaryColor: Color = AppDialogDefaults.summaryColor(),
-    backgroundColor: Color = AppDialogDefaults.backgroundColor(),
+    summaryColor: Color = DialogDefaults.summaryColor(),
+    backgroundColor: Color = AppBottomSheetDefaults.backgroundColor(),
     enableWindowDim: Boolean = true,
     onDismissFinished: (() -> Unit)? = null,
-    outsideMargin: DpSize = AppDialogDefaults.outsideMargin,
-    insideMargin: DpSize = AppDialogDefaults.insideMargin,
+    outsideMargin: DpSize = DialogDefaults.outsideMargin,
+    insideMargin: DpSize = DialogDefaults.insideMargin,
     cornerRadius: Dp = themeCardCornerRadius(),
     defaultWindowInsetsPadding: Boolean = true,
     renderInRootScaffold: Boolean = false,

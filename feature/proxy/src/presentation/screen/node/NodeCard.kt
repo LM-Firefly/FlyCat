@@ -164,7 +164,7 @@ internal fun NodeSelectableCard(
     val cornerRadius = themeCardCornerRadius()
     val shape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
     val primary = MiuixTheme.colorScheme.primary
-    val selectedTint = if (isSelected) primary.copy(alpha = 0.22f) else Color.Transparent
+    val selectedTint = if (isSelected) primary.copy(alpha = AppTheme.opacity.selectedSurface) else Color.Transparent
     Box(
         modifier = modifier.fillMaxWidth().let {
             if (onClick != null) {

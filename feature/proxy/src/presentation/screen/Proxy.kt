@@ -269,6 +269,7 @@ private fun ProxyPagerContent(
         topBar = {
             PagerTopBar(
                 scrollBehavior = groupScrollBehavior,
+                isContentScrolled = if (inSplitShell) groupListState.isScrolledFromTop() else null,
                 onNavigateToProviders = if (inSplitShell) null else onNavigateToProviders,
                 onTestAllDelay = { proxyViewModel.testDelay() },
                 locateCurrentProxy = if (inSplitShell) null else locateCurrentProxy,
@@ -525,6 +526,7 @@ private fun ProxyCrumbText(label: String, onClick: (() -> Unit)?, modifier: Modi
 @Composable
 private fun PagerTopBar(
     scrollBehavior: ScrollBehavior,
+    isContentScrolled: Boolean? = null,
     onNavigateToProviders: (() -> Unit)?,
     onTestAllDelay: () -> Unit,
     locateCurrentProxy: (() -> Unit)?,
@@ -550,6 +552,7 @@ private fun PagerTopBar(
         onTitleRootClick = { if (selectedGroupName == null) onTitleScrollTop() else onBackToGroups() },
         onTitleGroupClick = onTitleScrollTop,
         scrollBehavior = scrollBehavior,
+        isContentScrolled = isContentScrolled,
         showBack = false,
         onBack = {},
         onNavigateToProviders = onNavigateToProviders,
@@ -578,6 +581,7 @@ internal fun ProxyTopBar(
     onTitleRootClick: (() -> Unit)? = null,
     onTitleGroupClick: (() -> Unit)? = null,
     scrollBehavior: ScrollBehavior,
+    isContentScrolled: Boolean? = null,
     showBack: Boolean,
     onBack: () -> Unit,
     onNavigateToProviders: (() -> Unit)?,
@@ -612,6 +616,7 @@ internal fun ProxyTopBar(
         title = title,
         titleContent = titleContent,
         scrollBehavior = scrollBehavior,
+        isContentScrolled = isContentScrolled,
         navigationIconPadding = UiDp.dp24,
         actionIconPadding = UiDp.dp24,
         navigationIcon = {

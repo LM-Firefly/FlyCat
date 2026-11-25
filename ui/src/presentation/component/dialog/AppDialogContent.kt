@@ -45,16 +45,6 @@ internal fun AppDialogColumn(
 }
 
 @Composable
-internal fun AppDialogMessage(message: String, modifier: Modifier = Modifier) {
-    Text(
-        text = message,
-        modifier = modifier,
-        style = MiuixTheme.textStyles.body1,
-        color = MiuixTheme.colorScheme.onSurface,
-    )
-}
-
-@Composable
 internal fun AppConfirmDialogContent(
     message: String,
     onCancel: () -> Unit,
@@ -64,7 +54,11 @@ internal fun AppConfirmDialogContent(
     confirmEnabled: Boolean = true,
 ) {
     AppDialogColumn {
-        AppDialogMessage(message = message)
+        Text(
+            text = message,
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurface,
+        )
         DialogButtonRow(
             onCancel = onCancel,
             onConfirm = onConfirm,

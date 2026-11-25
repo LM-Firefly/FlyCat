@@ -32,21 +32,7 @@ data class SearchStatus(
     val current: Status = Status.COLLAPSED,
     val offsetY: Dp = UiDp.dp0,
 ) {
-    fun isExpanded() = current == Status.EXPANDED
-
-    fun isCollapsed() = current == Status.COLLAPSED
-
-    fun shouldExpand() = current == Status.EXPANDED || current == Status.EXPANDING
-
     fun shouldCollapse() = current == Status.COLLAPSED || current == Status.COLLAPSING
-
-    fun isExpanding() = current == Status.EXPANDING
-
-    fun onAnimationComplete(): SearchStatus = when (current) {
-        Status.EXPANDING -> copy(current = Status.EXPANDED)
-        Status.COLLAPSING -> copy(searchText = "", current = Status.COLLAPSED)
-        else -> this
-    }
 
     enum class Status {
         EXPANDED,

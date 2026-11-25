@@ -62,6 +62,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
@@ -838,11 +840,7 @@ private fun ImportOverrideFileContent(
     onPickFile: () -> Unit,
 ) {
     Box(
-        modifier = modifier.clickable(
-            indication = null,
-            interactionSource = remember { MutableInteractionSource() },
-            onClick = onPickFile,
-        )
+        modifier = modifier,
     ) {
         GlassTextField(
             state = fileNameState,
@@ -852,6 +850,19 @@ private fun ImportOverrideFileContent(
             readOnly = true,
             enabled = false,
             modifier = Modifier.fillMaxWidth(),
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    role = Role.Button,
+                    onClick = onPickFile,
+                )
+                .semantics {
+                    contentDescription = FlyTxt.ProfilesPage.Input.SelectFile
+                },
         )
     }
 }

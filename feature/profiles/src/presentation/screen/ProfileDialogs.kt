@@ -75,7 +75,6 @@ import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetConfirmAction
-import com.github.lmfirefly.flycat.presentation.component.input.AgeSecretKeyField
 import com.github.lmfirefly.flycat.presentation.component.input.GlassCheckbox
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceSwitchItem

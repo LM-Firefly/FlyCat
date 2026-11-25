@@ -23,25 +23,18 @@ package com.github.lmfirefly.flycat.presentation.component.dialog
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.FloatingSheetHeader
-import com.github.lmfirefly.flycat.presentation.component.FloatingSheetHeaderDefaults
 import com.github.lmfirefly.flycat.presentation.component.SheetHeaderIconButton
 import com.github.lmfirefly.flycat.presentation.component.card.glassCardMaterial
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -50,17 +43,15 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.Close
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.glass.GlassBottomSheetDefaults
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 object AppBottomSheetDefaults {
-    /** 水平内缩只作用于内容列（标题带/按钮贴卡片边，见 [AppActionBottomSheet] 的实现注释）；12dp 与各弹窗显式取值一致，勿再叠一层卡片 screenHorizontal。 */
+    /** 官方悬浮标题带与正文共用的水平内缩；12dp 与各弹窗显式取值一致，勿再叠一层卡片 screenHorizontal。 */
     val insideMargin = DpSize(UiDp.dp12, UiDp.dp16)
     @Composable fun backgroundColor(): Color = MiuixTheme.colorScheme.surface
     @Composable fun material(): GlassMaterial = glassCardMaterial()
@@ -89,35 +80,13 @@ fun AppBottomSheetIconAction(action: AppBottomSheetAction) {
 }
 
 @Composable
-fun AppBottomSheetCloseAction(
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-    contentDescription: String = FlyTxt.Component.Button.Cancel,
-) {
-    AppBottomSheetIconAction(
-        action = AppBottomSheetAction(
-            icon = FlyCat.Close,
-            contentDescription = contentDescription,
-            enabled = enabled,
-            onClick = onClick,
-        )
-    )
+fun AppBottomSheetCloseAction(onClick: () -> Unit, enabled: Boolean = true, contentDescription: String = FlyTxt.Component.Button.Cancel) {
+    AppBottomSheetIconAction(action = AppBottomSheetAction(icon = FlyCat.Close, contentDescription = contentDescription, enabled = enabled, onClick = onClick))
 }
 
 @Composable
-fun AppBottomSheetConfirmAction(
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-    contentDescription: String = FlyTxt.Component.Button.Confirm,
-) {
-    AppBottomSheetIconAction(
-        action = AppBottomSheetAction(
-            icon = FlyCat.Check,
-            contentDescription = contentDescription,
-            enabled = enabled,
-            onClick = onClick,
-        )
-    )
+fun AppBottomSheetConfirmAction(onClick: () -> Unit, enabled: Boolean = true, contentDescription: String = FlyTxt.Component.Button.Confirm) {
+    AppBottomSheetIconAction(action = AppBottomSheetAction(icon = FlyCat.Check, contentDescription = contentDescription, enabled = enabled, tint = MiuixTheme.colorScheme.primary, onClick = onClick))
 }
 
 @Composable
@@ -159,43 +128,30 @@ fun AppActionBottomSheet(
         allowDismiss = allowDismiss,
         enableNestedScroll = enableNestedScroll,
         renderInRootScaffold = renderInRootScaffold,
-        title = null,
-        startAction = null,
-        endAction = null,
+        progressiveBlur = true,
+        title = title,
+        startAction = startAction?.let { action -> { CompositionLocalProvider(LocalGlassBackdrop provides pageWallpaperBackdrop) { action() } } },
+        endAction = endAction?.let { action -> { CompositionLocalProvider(LocalGlassBackdrop provides pageWallpaperBackdrop) { action() } } },
         cornerRadius = cornerRadius,
         sheetMaxWidth = sheetMaxWidth,
         outsideMargin = outsideMargin,
-        // 库的水平内缩会作用于拖拽条和正文；标题带/按钮由 FloatingSheetHeader 单独布局。清零水平分量，避免与下方内容列的 padding 重复。
-        insideMargin = DpSize(0.dp, insideMargin.height),
+        insideMargin = insideMargin,
         dragHandleColor = resolvedDragHandleColor,
         material = material,
         stroke = stroke,
         containerColor = resolvedBackgroundColor,
         onDismissFinished = onDismissFinished,
-        content = {
-            val density = LocalDensity.current
+        content = { headerPadding ->
             val view = LocalView.current
             Box(modifier = Modifier.fillMaxWidth().onGloballyPositioned { coordinates ->
-                // 弹层经 Dialog 窗口渲染，窗口坐标≠屏幕坐标：须叠加窗口屏幕位置；标题带自卡片顶边(-ChromeAboveContent)起画，故卡片顶边 = 内容盒顶 - 42dp。
+                // 弹层经 Dialog 窗口渲染，窗口坐标≠屏幕坐标；内容盒起点即卡片顶边，叠加窗口位置后供壁纸衬层对齐。
                 val windowLocation = IntArray(2)
                 view.getLocationOnScreen(windowLocation)
-                val cardTopPx = windowLocation[1] + coordinates.positionInWindow().y - with(density) { FloatingSheetHeaderDefaults.ChromeAboveContent.toPx() }
-                onSheetTopPositioned?.invoke(cardTopPx)
+                onSheetTopPositioned?.invoke(windowLocation[1] + coordinates.positionInWindow().y)
             }) {
                 CompositionLocalProvider(LocalGlassBackdrop provides pageWallpaperBackdrop) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = insideMargin.width)) {
-                        // 浮动标题带自卡片顶边（-ChromeAboveContent）起画并压入内容顶部，内容让位 ContentTopInset。
-                        Spacer(modifier = Modifier.height(FloatingSheetHeaderDefaults.ContentTopInset))
-                        content()
-                    }
+                    Column(modifier = Modifier.fillMaxWidth().padding(top = headerPadding.calculateTopPadding())) { content() }
                 }
-                FloatingSheetHeader(
-                    title = title,
-                    sheetColor = resolvedBackgroundColor,
-                    startAction = startAction,
-                    endAction = endAction,
-                    pageBackdrop = pageWallpaperBackdrop,
-                )
             }
         },
     )

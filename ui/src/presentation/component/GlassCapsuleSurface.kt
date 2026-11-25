@@ -49,15 +49,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 传入 [anchor] 即可挂接 [GlassPopupHost] 玻璃菜单：胶囊上报边界并隐藏自身、把玻璃材质发布为弹窗变换的折叠端点（关闭动画落点即胶囊本体，不闪无玻璃样式）；内容区已标注为弹窗拷贝来源， `GlassPopupHost` 的 `anchorContent` 传与 [content] 相同的组合即可。
  */
 @Composable
-fun GlassCapsuleSurface(
-    cornerRadius: Dp,
-    modifier: Modifier = Modifier,
-    fallbackColor: Color = MiuixTheme.colorScheme.surfaceContainer,
-    contentAlignment: Alignment = Alignment.Center,
-    anchor: GlassPopupAnchor? = null,
-    content: @Composable () -> Unit,
-) {
-    val glass = rememberGlassTopActionStyle()
+fun GlassCapsuleSurface(cornerRadius: Dp, modifier: Modifier = Modifier, fallbackColor: Color = MiuixTheme.colorScheme.surfaceContainer, contentAlignment: Alignment = Alignment.Center, anchor: GlassPopupAnchor? = null, content: @Composable () -> Unit) {
     val capsuleShape = remember { Capsule() }
     val glassShape = remember(cornerRadius) { GlassShape(cornerRadius) }
     // 锚点只负责发布弹窗折叠端点，不应改变采样源；否则带菜单的胶囊会被不透明正文底色染成白面。
@@ -79,14 +71,7 @@ fun GlassCapsuleSurface(
                         shading = false,
                         fallback = Modifier.background(fallbackColor),
                     )
-                } else {
-                    // 无 RuntimeShader 时按库语义纯色回退。
-                    Modifier.background(fallbackColor, capsuleShape)
-                    .edgeStroke(
-                        shape = capsuleShape,
-                        stroke = GlassTopAppBarDefaults.buttonStroke(),
-                    )
-                },
+                } else { Modifier.background(fallbackColor, capsuleShape).edgeStroke(shape = capsuleShape, stroke = GlassTopAppBarDefaults.buttonStroke()) },
             ),
         )
         Box(modifier = Modifier.clip(capsuleShape).then(if (anchor != null) Modifier.glassPopupAnchorContent(anchor) else Modifier), content = { content() })

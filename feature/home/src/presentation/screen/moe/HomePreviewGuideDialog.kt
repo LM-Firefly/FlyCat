@@ -154,5 +154,5 @@ fun HomePreviewGuideDialog(show: Boolean, onDismissRequest: () -> Unit) {
 
 @Composable
 private fun GuideButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    GlassTextButton(text = text, onClick = onClick, modifier = modifier)
+    GlassTextButton(text = text, onClick = onClick, modifier = modifier, primary = true)
 }

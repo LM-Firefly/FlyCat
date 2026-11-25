@@ -21,39 +21,61 @@
 
 package com.github.lmfirefly.flycat.presentation.component.navigation
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastCoerceAtLeast
+import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.fastRoundToInt
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.BlurDefaults
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 路由顶栏：委托库 [GlassTopAppBar]，对齐 miuix 示例 app 的渐进模糊（AdaptiveTopAppBar 的玻璃路径）。
- * 内容滚入顶栏下方时，顶栏背景对正文录制层做渐进模糊，色带随折叠渐显，槽位按钮采样同一渲染场景。
- * 滚动状态由库从 scrollBehavior.state 的 contentOffset/overscrollOffset 推导，渐进模糊与折叠动画由库内部处理。
+ * 路由顶栏：前景委托库 [GlassTopAppBar]，背景使用无染色的渐进模糊。
+ * 内容滚入顶栏下方时，顶栏对正文录制层做渐进模糊，槽位按钮仍采样同一渲染场景。
+ * rc01 的库内渐进通道会固定叠加表面色与遮罩，因此只替换背景绘制，折叠与交互仍由库处理。
  *
  * @param title 标题，顶栏折叠时居中显示。
  * @param scrollBehavior 驱动折叠与材质渐显的滚动行为。
+ * @param isContentScrolled 页面内容是否已滚入顶栏下方；传入列表实际位置时可避免累计滚动偏移造成顶部残留材质。
  * @param modifier 应用于顶栏的修饰符。
  * @param navigationIconPadding 首端控件的起始内缩。
  * @param actionIconPadding 末端控件的末端内缩。
@@ -68,6 +90,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun TopBar(
     title: String,
     scrollBehavior: ScrollBehavior,
+    isContentScrolled: Boolean? = null,
     modifier: Modifier = Modifier,
     navigationIconPadding: Dp = UiDp.dp24,
     actionIconPadding: Dp = UiDp.dp24,
@@ -79,10 +102,15 @@ fun TopBar(
     backdrop: Backdrop? = LocalTopBarBackdrop.current ?: LocalGlassBackdrop.current,
     transparent: Boolean = false,
 ) {
+    val contentScrolled = isContentScrolled ?: run {
+        val state = scrollBehavior.state
+        state.contentOffset < -1f || state.overscrollOffset < -1f
+    }
     if (titleContent != null) {
         SmallTopBar(
             title = " ",
             scrollBehavior = scrollBehavior,
+            isContentScrolled = contentScrolled,
             modifier = modifier,
             navigationIconPadding = navigationIconPadding,
             actionIconPadding = actionIconPadding,
@@ -126,14 +154,14 @@ fun TopBar(
         )
         return
     }
-    GlassTopAppBar(
+    PureBlurTopAppBar(
         title = title,
+        isContentScrolled = contentScrolled,
         modifier = modifier,
-        progressiveBlur = !transparent,
+        expandable = true,
         scrollBehavior = scrollBehavior,
         backdrop = backdrop,
-        bandBrush = GlassTopAppBarDefaults.bandBrush(barBandColor(transparent)),
-        backgroundAlpha = { if (transparent) 0f else 1f },
+        transparent = transparent,
         navigationIcon = { Box(Modifier.offset(x = navigationIconPadding - GlassTopAppBarDefaults.HorizontalPadding)) { navigationIcon() } },
         actions = { Row(Modifier.offset(x = GlassTopAppBarDefaults.HorizontalPadding - actionIconPadding)) { actions() } },
         bottomContent = bottomContent,
@@ -148,6 +176,7 @@ fun TopBar(
 fun SmallTopBar(
     title: String,
     scrollBehavior: ScrollBehavior,
+    isContentScrolled: Boolean? = null,
     modifier: Modifier = Modifier,
     navigationIconPadding: Dp = UiDp.dp24,
     actionIconPadding: Dp = UiDp.dp24,
@@ -158,20 +187,159 @@ fun SmallTopBar(
     backdrop: Backdrop? = LocalTopBarBackdrop.current ?: LocalGlassBackdrop.current,
     transparent: Boolean = false,
 ) {
-    GlassTopAppBar(
+    val contentScrolled = isContentScrolled ?: run {
+        val state = scrollBehavior.state
+        state.contentOffset < -1f || state.overscrollOffset < -1f
+    }
+    PureBlurTopAppBar(
         title = title,
+        isContentScrolled = contentScrolled,
         modifier = modifier,
         expandable = false,
-        progressiveBlur = !transparent,
         scrollBehavior = scrollBehavior,
         backdrop = backdrop,
-        bandBrush = GlassTopAppBarDefaults.bandBrush(barBandColor(transparent)),
-        backgroundAlpha = { if (transparent) 0f else 1f },
+        transparent = transparent,
         navigationIcon = { Box(Modifier.offset(x = navigationIconPadding - GlassTopAppBarDefaults.HorizontalPadding)) { navigationIcon() } },
         actions = { Row(Modifier.offset(x = GlassTopAppBarDefaults.HorizontalPadding - actionIconPadding)) { actions() } },
         bottomContent = bottomContent,
     )
 }
+
+@Composable
+private fun PureBlurTopAppBar(
+    title: String,
+    isContentScrolled: Boolean,
+    modifier: Modifier,
+    expandable: Boolean,
+    scrollBehavior: ScrollBehavior,
+    backdrop: Backdrop?,
+    transparent: Boolean,
+    navigationIcon: @Composable () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
+    bottomContent: @Composable () -> Unit,
+) {
+    val rawBackdrop = backdrop?.takeIf { !transparent && isRuntimeShaderSupported() }
+    if (rawBackdrop == null) {
+        GlassTopAppBar(
+            title = title,
+            isContentScrolled = isContentScrolled,
+            modifier = modifier,
+            expandable = expandable,
+            scrollBehavior = scrollBehavior,
+            backdrop = backdrop,
+            bandBrush = GlassTopAppBarDefaults.bandBrush(barBandColor(transparent)),
+            backgroundAlpha = { if (transparent) 0f else 1f },
+            navigationIcon = navigationIcon,
+            actions = actions,
+            bottomContent = bottomContent,
+        )
+        return
+    }
+
+    val contentScrolled by remember(isContentScrolled, scrollBehavior) {
+        computedStateOf {
+            isContentScrolled || scrollBehavior.state.overscrollOffset < -1f
+        }
+    }
+    val transition = updateTransition(contentScrolled, label = "pureBlurTopBarFloat")
+    val maskProgress = transition.animateFloat(
+        transitionSpec = { tween(durationMillis = 100, easing = LinearEasing) },
+        label = "pureBlurTopBarMask",
+    ) { if (it) 1f else 0f }
+    val useCollapseProgress = expandable
+    val bandProgress: () -> Float = remember(useCollapseProgress, scrollBehavior, maskProgress) {
+        if (useCollapseProgress) {
+            { scrollBehavior.state.collapsedFraction.coerceIn(0f, 1f) }
+        } else {
+            { maskProgress.value }
+        }
+    }
+    val bandActive by remember(useCollapseProgress, scrollBehavior, maskProgress) {
+        computedStateOf { bandProgress() > 0.001f }
+    }
+    val blurColors = BlurDefaults.blurColors()
+    val systemBarInsets = WindowInsets.systemBars
+    val measurements = remember { TopBarMeasurements() }
+
+    Layout(
+        modifier = modifier,
+        content = {
+            Box(
+                Modifier
+                    .graphicsLayer { alpha = bandProgress() }
+                    .progressiveTextureBlur(
+                        backdrop = rawBackdrop,
+                        shape = RectangleShape,
+                        gradient = TopBarProgressiveGradient,
+                        blurRadius = GlassTopAppBarDefaults.ProgressiveBlurRadius.value,
+                        colors = blurColors,
+                        enabled = bandActive,
+                    ),
+            )
+            GlassTopAppBar(
+                title = title,
+                isContentScrolled = contentScrolled,
+                expandable = expandable,
+                scrollBehavior = scrollBehavior,
+                backdrop = rawBackdrop,
+                bandBrush = GlassTopAppBarDefaults.bandBrush(Color.Transparent),
+                backgroundAlpha = { 0f },
+                navigationIcon = navigationIcon,
+                actions = actions,
+                bottomContent = {
+                    Box(
+                        Modifier.layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            measurements.bottomContentHeight = placeable.height
+                            layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+                        },
+                    ) {
+                        bottomContent()
+                    }
+                },
+            )
+        },
+    ) { measurables, constraints ->
+        val foreground = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
+        val width = constraints.constrainWidth(foreground.width)
+        val height = constraints.constrainHeight(foreground.height)
+        val bandHeight = if (useCollapseProgress) {
+            val state = scrollBehavior.state
+            val limit = state.heightOffsetLimit
+            val coveredHeight = if (limit <= 0f && limit >= -height.toFloat()) {
+                val offset = state.heightOffset
+                val boundedOffset = if (offset.isNaN()) 0f else offset.fastCoerceIn(limit, 0f)
+                (height.toFloat() + limit - boundedOffset).fastCoerceAtLeast(
+                    TopAppBarDefaults.CollapsedHeight.toPx() + measurements.bottomContentHeight,
+                )
+            } else {
+                maxOf(
+                    height.toFloat(),
+                    systemBarInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx() + measurements.bottomContentHeight,
+                )
+            }
+            coveredHeight
+        } else {
+            maxOf(
+                height.toFloat(),
+                systemBarInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx() + measurements.bottomContentHeight,
+            )
+        }
+        val background = measurables[0].measure(
+            Constraints.fixed(width, (bandHeight + GlassTopAppBarDefaults.BandOverhang.toPx()).fastRoundToInt()),
+        )
+        layout(width, height) {
+            background.placeRelative(0, 0)
+            foreground.placeRelative(0, 0)
+        }
+    }
+}
+
+private class TopBarMeasurements {
+    var bottomContentHeight: Int = 0
+}
+
+private val TopBarProgressiveGradient = ProgressiveBlur.Top.copy(curve = 0.25f)
 
 /** 顶栏色带的基色：透明顶栏不画色带，否则用表面色（内容滚入时压暗，同 miuix 液态玻璃语义）。 */
 @Composable

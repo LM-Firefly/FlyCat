@@ -324,6 +324,7 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
                         },
                         enabled = pairCodeState.text.isNotBlank(),
                         modifier = Modifier.weight(1f),
+                        primary = true,
                     )
                 }
             }

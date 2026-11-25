@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -43,6 +44,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.pager.HorizontalPager
@@ -282,29 +284,27 @@ fun MainScreen(navigator: Navigator, initialPage: Int = 0, pendingDetailRoute: R
                 DualPaneLayout(
                     left = {
                         Scaffold(containerColor = mainScaffoldContainerColor) { leftPadding ->
-                            // 仅对顶部施加内边距（左右显式置 0）；底部内边距交给 mainPagerContent 处理，使其 Box 延伸到手势条区域后面实现沉浸效果。
-                            val splitPadding = PaddingValues(
-                                top = leftPadding.calculateTopPadding(),
-                                start = UiDp.dp0,
-                                end = UiDp.dp0,
-                            )
                             val bottomPadding = PaddingValues(bottom = leftPadding.calculateBottomPadding())
-                            // 消费全部 systemBars 和 displayCutout，防止内部子 Scaffold 和 TopAppBar 在已由 splitPadding 处理的各侧重复叠加内边距。
-                            Box(Modifier.fillMaxSize().padding(splitPadding).consumeWindowInsets(WindowInsets.systemBars).consumeWindowInsets(WindowInsets.displayCutout)) {
+                            // 顶部与横向安全区留给页面自身处理；仅消费底部，避免正文和浮动底栏重复留白。
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .consumeWindowInsets(WindowInsets.systemBars.only(WindowInsetsSides.Bottom))
+                                    .consumeWindowInsets(WindowInsets.displayCutout.only(WindowInsetsSides.Bottom)),
+                            ) {
                                 mainPagerContent(bottomPadding, reserveBottomBar = true)
                             }
                         }
                     },
                     right = {
-                        Scaffold(containerColor = mainScaffoldContainerColor) { rightPadding ->
-                            // 顶部和右侧施加内边距；底部交给内部内容处理，保持手势条区域沉浸。
-                            val splitPadding = PaddingValues(
-                                top = rightPadding.calculateTopPadding(),
-                                start = UiDp.dp0, // 分隔线在左侧，不是屏幕边缘
-                                end = rightPadding.calculateEndPadding(layoutDirection),
-                            )
-                            // 消费全部 systemBars 和 displayCutout，防止内部子 Scaffold 和 TopAppBar 在已由 splitPadding 处理的各侧重复叠加内边距。
-                            Box(Modifier.fillMaxSize().padding(splitPadding).consumeWindowInsets(WindowInsets.systemBars).consumeWindowInsets(WindowInsets.displayCutout)) {
+                        Scaffold(containerColor = mainScaffoldContainerColor) {
+                            // 与左栏一致：顶栏从窗口顶部起绘制并自行处理状态栏，底部保持内容沉浸。
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .consumeWindowInsets(WindowInsets.systemBars.only(WindowInsetsSides.Bottom))
+                                    .consumeWindowInsets(WindowInsets.displayCutout.only(WindowInsetsSides.Bottom)),
+                            ) {
                                 SecondaryDetailHost(
                                     navigator = detailNavigator,
                                     placeholderContent = if (settledMainPage == 1) {

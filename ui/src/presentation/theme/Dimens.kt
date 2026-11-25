@@ -208,6 +208,7 @@ data class Opacity(
     val mediumOverlay: Float = 0.20f,
     val softOverlay: Float = 0.16f,
     val surfaceSoft: Float = 0.24f,
+    val selectedSurface: Float = 0.22f,
     val outline: Float = 0.30f,
     val muted: Float = 0.35f,
     val disabledSecondary: Float = 0.40f,

@@ -127,6 +127,7 @@ private fun ProxyShellNodeDetailContent(
             DetailTopBar(
                 title = currentGroupName ?: FlyTxt.Proxy.Title,
                 scrollBehavior = scrollBehavior,
+                isContentScrolled = nodeListState.isScrolledFromTop(),
                 onNavigateToProviders = onNavigateToProviders,
                 onOpenPanel = onOpenPanel,
                 locateCurrentProxy = locateCurrentProxy,
@@ -204,6 +205,7 @@ private fun DetailFab(visible: Boolean, onClick: () -> Unit) {
 private fun DetailTopBar(
     title: String,
     scrollBehavior: top.yukonga.miuix.kmp.basic.ScrollBehavior,
+    isContentScrolled: Boolean,
     onNavigateToProviders: (() -> Unit)?,
     onOpenPanel: (() -> Unit)?,
     locateCurrentProxy: (() -> Unit)?,
@@ -224,6 +226,7 @@ private fun DetailTopBar(
         titleRootLabel = title,
         onTitleRootClick = onTitleScrollTop,
         scrollBehavior = scrollBehavior,
+        isContentScrolled = isContentScrolled,
         showBack = false,
         onBack = {},
         onNavigateToProviders = onNavigateToProviders,

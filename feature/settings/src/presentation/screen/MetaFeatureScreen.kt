@@ -25,12 +25,11 @@ import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
@@ -45,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
@@ -60,6 +60,7 @@ import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppConfirmDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppDialog
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppFormDialog
+import com.github.lmfirefly.flycat.presentation.component.dialog.DialogButtonRow
 import com.github.lmfirefly.flycat.presentation.component.input.GlassCheckbox
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -70,7 +71,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationB
 import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
-import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
 import com.github.lmfirefly.flycat.presentation.util.toast
 import kotlin.system.exitProcess
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -78,12 +79,10 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
-import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 @Composable
@@ -363,7 +362,6 @@ fun MetaFeatureScreen(navigator: Navigator) {
 
 @Composable
 private fun GeoXDownloadDialog(show: MutableState<Boolean>, context: android.content.Context, viewModel: MetaFeatureViewModel) {
-    val spacing = AppTheme.spacing
     val scope = rememberCoroutineScope()
     val selectedItems = remember { mutableStateMapOf<GeoFileType, Boolean>() }
     val canConfirm = selectedItems.values.any { it }
@@ -371,6 +369,7 @@ private fun GeoXDownloadDialog(show: MutableState<Boolean>, context: android.con
         Column {
             geoXItems.forEach { item ->
                 BasicComponent(
+                    modifier = Modifier.clip(RoundedCornerShape(themeCardCornerRadius())),
                     title = item.title,
                     endActions = {
                         GlassCheckbox(
@@ -381,30 +380,19 @@ private fun GeoXDownloadDialog(show: MutableState<Boolean>, context: android.con
                     onClick = { selectedItems[item.type] = !(selectedItems[item.type] ?: false) },
                 )
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.space16)) {
-                GlassTextButton(
-                    text = FlyTxt.Component.Button.Cancel,
-                    onClick = { show.value = false },
-                    modifier = Modifier.weight(1f),
-                )
-                GlassTextButton(
-                    text = FlyTxt.Component.Button.Confirm,
-                    onClick = {
-                        val itemsToDownload = geoXItems.filter { selectedItems[it.type] == true }
-                        if (itemsToDownload.isEmpty()) {
-                            return@GlassTextButton
-                        }
-                        show.value = false
-                        scope.launch(CoroutineExceptionHandler { _, throwable -> if (!throwable.isOkHttpCancellationBug()) { throw throwable } }) {
-                            val count = viewModel.downloadGeoXFiles(context, itemsToDownload)
-                            context.toast(FlyTxt.MetaFeature.Download.DownloadComplete.format(count, itemsToDownload.size))
-                        }
-                    },
-                    enabled = canConfirm,
-                    modifier = Modifier.weight(1f),
-                    primary = true,
-                )
-            }
+            DialogButtonRow(
+                onCancel = { show.value = false },
+                onConfirm = {
+                    val itemsToDownload = geoXItems.filter { selectedItems[it.type] == true }
+                    if (itemsToDownload.isEmpty()) { return@DialogButtonRow }
+                    show.value = false
+                    scope.launch(CoroutineExceptionHandler { _, throwable -> if (!throwable.isOkHttpCancellationBug()) { throw throwable } }) {
+                        val count = viewModel.downloadGeoXFiles(context, itemsToDownload)
+                        context.toast(FlyTxt.MetaFeature.Download.DownloadComplete.format(count, itemsToDownload.size))
+                    }
+                },
+                confirmEnabled = canConfirm,
+            )
         }
     }
 }
