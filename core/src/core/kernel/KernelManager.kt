@@ -184,8 +184,8 @@ object KernelManager {
     suspend fun install(context: Context, kernel: Kernel): File = installMutex.withLock {
         withContext(Dispatchers.IO) {
             validateKernel(kernel)
-            libraryDirectory(context).mkdirs()
-            val archive = File(libraryDirectory(context), "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
+            val directory = ensureLibraryDirectory(context)
+            val archive = File(directory, "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
             try {
                 download(kernel, archive)
                 installArchive(context, kernel, archive)
@@ -243,8 +243,8 @@ object KernelManager {
                 "Kernel plugin contains unexpected files"
             }
             val kernel = index.kernels.single()
-            libraryDirectory(context).mkdirs()
-            val archive = File(libraryDirectory(context), "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
+            val directory = ensureLibraryDirectory(context)
+            val archive = File(directory, "$CORE_FILE_PREFIX${kernel.id}.so.xz.download")
             try {
                 zip.getInputStream(zip.getEntry(kernel.asset)).use { input ->
                     archive.outputStream().buffered().use { output -> input.copyTo(output) }
@@ -261,7 +261,7 @@ object KernelManager {
     private fun installArchive(context: Context, kernel: Kernel, archive: File): File {
         validateKernel(kernel)
         check(sha256(archive) == kernel.sha256) { "Kernel archive checksum mismatch" }
-        val directory = libraryDirectory(context).apply { mkdirs() }
+        val directory = ensureLibraryDirectory(context)
         val expanded = File(directory, "$CORE_FILE_PREFIX${kernel.id}.so.expanded")
         val target = libraryFile(context, kernel.id)
         try {
@@ -295,7 +295,7 @@ object KernelManager {
         if (id != BUNDLED_ALPHA_ID) {
             check(libraryFile(context, id).isFile) { "Kernel is not downloaded" }
         }
-        val directory = libraryDirectory(context).apply { mkdirs() }
+        val directory = ensureLibraryDirectory(context)
         val marker = File(directory, ACTIVE_FILE)
         val pending = File(directory, "$ACTIVE_FILE.pending")
         pending.writeText(id)
@@ -426,6 +426,10 @@ object KernelManager {
         pending.writeText(json.encodeToString(metadata))
         if (target.exists()) check(target.delete()) { "Unable to replace kernel metadata" }
         check(pending.renameTo(target)) { "Unable to install kernel metadata" }
+    }
+
+    private fun ensureLibraryDirectory(context: Context): File = libraryDirectory(context).apply {
+        check(isDirectory || mkdirs()) { "Unable to create kernel directory: $this" }
     }
 
     private fun libraryDirectory(context: Context): File = context.filesDir.resolve("lib")
