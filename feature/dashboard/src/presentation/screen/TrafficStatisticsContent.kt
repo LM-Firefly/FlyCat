@@ -38,13 +38,13 @@ import com.github.lmfirefly.flycat.core.util.format.formatBytes
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.AppSortMode
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.TrafficStatisticsViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.AppSegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
 import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
 import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIcon
 import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
-import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.chart.TimeSlotBarChart
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
@@ -123,7 +123,7 @@ fun TrafficStatisticsContent(onBack: () -> Unit) {
                 layout(constraints.maxWidth, placeable.height + topPx) { placeable.place(0, topPx) }
             },
         ) {
-            SegmentedTabRow(
+            AppSegmentedTabRow(
                 tabs = tabLabels,
                 selectedTabIndex = selectedTabIndex,
                 onTabSelected = { index -> timeRanges.getOrNull(index)?.let(viewModel::setTimeRange) },

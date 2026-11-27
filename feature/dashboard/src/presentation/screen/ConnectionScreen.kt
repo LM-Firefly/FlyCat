@@ -57,19 +57,20 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.lmfirefly.flycat.core.contract.ProxyGroupRepository
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.component.ConnectionCard
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.component.ConnectionDetailSheet
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionSort
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionTab
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.AppSegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.GlassMenuItem
 import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
 import com.github.lmfirefly.flycat.presentation.component.GlassTopActionAnchorIcon
 import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
-import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.layout.ScreenLazyColumn
 import com.github.lmfirefly.flycat.presentation.component.layout.rememberStandalonePageMainPadding
 import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationBackIcon
@@ -80,6 +81,7 @@ import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.LocalTopBarBackdrop
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -106,12 +108,21 @@ import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val SortModes = listOf(ConnectionSort.Time, ConnectionSort.Upload, ConnectionSort.Download, ConnectionSort.Host)
+private val SortModes = listOf(
+    ConnectionSort.Time,
+    ConnectionSort.Upload,
+    ConnectionSort.Download,
+    ConnectionSort.UploadSpeed,
+    ConnectionSort.DownloadSpeed,
+    ConnectionSort.Host,
+)
 
 private fun ConnectionSort.getDisplayName(): String = when (this) {
     ConnectionSort.Time -> FlyTxt.Connection.Sort.Time
     ConnectionSort.Upload -> FlyTxt.Connection.Sort.Upload
     ConnectionSort.Download -> FlyTxt.Connection.Sort.Download
+    ConnectionSort.UploadSpeed -> FlyTxt.Connection.Sort.UploadSpeed
+    ConnectionSort.DownloadSpeed -> FlyTxt.Connection.Sort.DownloadSpeed
     ConnectionSort.Host -> FlyTxt.Connection.Sort.Host
 }
 
@@ -120,6 +131,10 @@ fun ConnectionScreen(navigator: Navigator) {
     val viewModel = koinViewModel<ConnectionViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val filteredConnections by viewModel.filteredConnections.collectAsStateWithLifecycle()
+    val proxyGroups by koinInject<ProxyGroupRepository>().proxyGroups.collectAsStateWithLifecycle()
+    val groupIcons = remember(proxyGroups) {
+        proxyGroups.mapNotNull { group -> group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let { group.name to it } }.toMap()
+    }
     val scope = rememberCoroutineScope()
     val spacing = AppTheme.spacing
     val scrollBehavior = MiuixScrollBehavior()
@@ -137,7 +152,6 @@ fun ConnectionScreen(navigator: Navigator) {
             }
         )
     }
-    val selectedSortIndex = remember(state.sortBy) { SortModes.indexOf(state.sortBy).coerceAtLeast(0) }
     val emptyStateText = when {
         state.isLoading -> FlyTxt.Connection.Loading
         state.searchQuery.isNotEmpty() -> FlyTxt.Connection.NoResults
@@ -226,16 +240,15 @@ fun ConnectionScreen(navigator: Navigator) {
                                         show = showSortPopup,
                                         onDismissRequest = { showSortPopup = false },
                                         anchor = sortMenuAnchor,
-                                        anchorContent = {
-                                            GlassTopActionAnchorIcon(MiuixIcons.Glass.Sort)
-                                        },
+                                        anchorContent = { GlassTopActionAnchorIcon(MiuixIcons.Glass.Sort) },
                                     ) {
-                                        SortModes.forEachIndexed { index, mode ->
+                                        SortModes.forEach { mode ->
+                                            val arrow = if (mode == state.sortBy) { if (state.sortAscending) " ↑" else " ↓" } else { "" }
                                             GlassMenuItem(
-                                                text = mode.getDisplayName(),
-                                                selected = selectedSortIndex == index,
+                                                text = mode.getDisplayName() + arrow,
+                                                selected = mode == state.sortBy,
                                                 onClick = {
-                                                    if (mode != state.sortBy) viewModel.setSortBy(mode)
+                                                    viewModel.setSortBy(mode)
                                                     showSortPopup = false
                                                 },
                                             )
@@ -280,11 +293,11 @@ fun ConnectionScreen(navigator: Navigator) {
                 layout(constraints.maxWidth, placeable.height + topPx) { placeable.place(0, topPx) }
             },
         ) {
-            SegmentedTabRow(
-                modifier = Modifier.padding(top = spacing.space20, start = spacing.screenHorizontal, end = spacing.screenHorizontal),
+            AppSegmentedTabRow(
                 tabs = tabs,
                 selectedTabIndex = selectedTabIndex,
                 onTabSelected = { selectedTabIndex = it },
+                modifier = Modifier.padding(top = spacing.space20, start = spacing.screenHorizontal, end = spacing.screenHorizontal),
             )
             AnimatedVisibility(
                 visible = showSearchBar,
@@ -298,9 +311,7 @@ fun ConnectionScreen(navigator: Navigator) {
                 ) + fadeOut(animationSpec = tween(AnimationSpecs.DURATION_CROSSFADE, easing = AnimationSpecs.StandardEasing)),
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = spacing.screenHorizontal, vertical = spacing.space8),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.screenHorizontal, vertical = spacing.space8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     GlassTextField(
@@ -342,6 +353,7 @@ fun ConnectionScreen(navigator: Navigator) {
                     ) { connection ->
                         ConnectionCard(
                             item = connection,
+                            groupIcons = groupIcons,
                             showCloseAction = state.selectedTab == ConnectionTab.ACTIVE,
                             onClick = {
                                 val isSameConnection = selectedConnection?.id == connection.connectionInfo.id
@@ -368,6 +380,7 @@ fun ConnectionScreen(navigator: Navigator) {
         ConnectionDetailSheet(
             show = showDetailSheet,
             connectionInfo = selectedConnection,
+            groupIcons = groupIcons,
             canInterrupt = state.selectedTab == ConnectionTab.ACTIVE,
             onInterruptConnection = { id -> viewModel.closeConnection(id) },
             onDismiss = { showDetailSheet = false },

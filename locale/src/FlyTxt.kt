@@ -1135,6 +1135,12 @@ public object FlyTxt {
             public val Download: String get() = FlyLocaleManager.activeStrings.Connection.Sort.Download
             @androidx.compose.runtime.Composable
             public fun Download(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Connection.Sort.Download else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Connection.Sort.Download, *args)
+            public val UploadSpeed: String get() = FlyLocaleManager.activeStrings.Connection.Sort.UploadSpeed
+            @androidx.compose.runtime.Composable
+            public fun UploadSpeed(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Connection.Sort.UploadSpeed else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Connection.Sort.UploadSpeed, *args)
+            public val DownloadSpeed: String get() = FlyLocaleManager.activeStrings.Connection.Sort.DownloadSpeed
+            @androidx.compose.runtime.Composable
+            public fun DownloadSpeed(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Connection.Sort.DownloadSpeed else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Connection.Sort.DownloadSpeed, *args)
             public val Host: String get() = FlyLocaleManager.activeStrings.Connection.Sort.Host
             @androidx.compose.runtime.Composable
             public fun Host(vararg args: Any?): String = if (args.isEmpty()) FlyLocaleManager.activeStrings.Connection.Sort.Host else String.format(java.util.Locale.getDefault(), FlyLocaleManager.activeStrings.Connection.Sort.Host, *args)

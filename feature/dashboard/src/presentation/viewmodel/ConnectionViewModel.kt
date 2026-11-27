@@ -65,6 +65,7 @@ data class ConnectionState(
     val isRefreshing: Boolean = false,
     val searchQuery: String = "",
     val sortBy: ConnectionSortMode = ConnectionSortMode.Time,
+    val sortAscending: Boolean = ConnectionSortMode.Time.defaultAscending,
     val selectedTab: ConnectionTab = ConnectionTab.ACTIVE,
     val error: String? = null,
 ) {
@@ -103,6 +104,7 @@ class ConnectionViewModel(
                 connections = connections,
                 searchQuery = currentState.searchQuery,
                 sortBy = currentState.sortBy,
+                sortAscending = currentState.sortAscending,
                 connectionSpeeds = currentState.connectionSpeeds.mapValues { Pair(it.value.uploadPerSecond, it.value.downloadPerSecond) },
                 showSpeeds = currentState.selectedTab == ConnectionTab.ACTIVE,
             )
@@ -176,7 +178,13 @@ class ConnectionViewModel(
     }
 
     fun setSortBy(sort: ConnectionSort) {
-        updateState { it.copy(sortBy = sort) }
+        updateState { current ->
+            if (current.sortBy == sort) {
+                current.copy(sortAscending = !current.sortAscending)
+            } else {
+                current.copy(sortBy = sort, sortAscending = sort.defaultAscending)
+            }
+        }
     }
 
     fun setTab(tab: ConnectionTab) {

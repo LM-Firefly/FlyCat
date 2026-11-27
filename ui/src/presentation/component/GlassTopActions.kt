@@ -83,6 +83,8 @@ data class GlassTopAction(
     val iconModifier: Modifier = Modifier,
     /** 图标颜色覆盖；[Color.Unspecified] 表示保持 chrome 自身的 on-surface 颜色。 */
     val tint: Color = Color.Unspecified,
+    /** 无实时 backdrop 时的按钮兜底色；[Color.Unspecified] 使用顶栏按钮默认色。 */
+    val fallbackFill: Color = Color.Unspecified,
     /** 由此按钮托管的菜单。在此处声明可以将菜单保持在触发它的操作旁边，这样就不需要猜测哪个覆盖层插槽属于哪个图标。 */
     val popup: (@Composable () -> Unit)? = null,
     /** [popup] 锚定的位置。按钮会自动绑定到该锚点，因此调用方无需再手动在 [modifier] 上设置 `glassPopupAnchor` 和在 [iconModifier] 上设置 `glassPopupAnchorContent`。 */
@@ -181,7 +183,7 @@ fun GlassTopIconButton(action: GlassTopAction, backdrop: Backdrop?, modifier: Mo
             backdrop = backdrop,
             material = GlassTopAppBarDefaults.buttonMaterial(),
             size = GlassTopActionDefaults.ContainerSize,
-            fill = GlassTopAppBarDefaults.buttonFill(),
+            fill = action.fallbackFill.takeOr(GlassTopAppBarDefaults.buttonFill()),
             stroke = GlassTopAppBarDefaults.buttonStroke(),
         ) {
             GlassTopActionIcon(action, MiuixTheme.colorScheme.onSurface)

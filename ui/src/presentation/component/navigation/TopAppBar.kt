@@ -38,7 +38,9 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -71,7 +73,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /**
  * 路由顶栏：前景委托库 [GlassTopAppBar]，背景使用无染色的渐进模糊。
  * 内容滚入顶栏下方时，顶栏对正文录制层做渐进模糊，槽位按钮仍采样同一渲染场景。
- * rc01 的库内渐进通道会固定叠加表面色与遮罩，因此只替换背景绘制，折叠与交互仍由库处理。
+ * rc02 的库内渐进通道会固定叠加表面色与遮罩，因此只替换背景绘制，折叠与交互仍由库处理。
  *
  * @param title 标题，顶栏折叠时居中显示。
  * @param scrollBehavior 驱动折叠与材质渐显的滚动行为。
@@ -228,6 +230,7 @@ private fun PureBlurTopAppBar(
             scrollBehavior = scrollBehavior,
             backdrop = backdrop,
             bandBrush = GlassTopAppBarDefaults.bandBrush(barBandColor(transparent)),
+            bandOverhang = TopBarBandOverhang,
             backgroundAlpha = { if (transparent) 0f else 1f },
             navigationIcon = navigationIcon,
             actions = actions,
@@ -260,6 +263,7 @@ private fun PureBlurTopAppBar(
     val blurColors = BlurDefaults.blurColors()
     val systemBarInsets = WindowInsets.systemBars
     val measurements = remember { TopBarMeasurements() }
+    val progressiveGradient = remember(measurements.progressiveStartFraction) { ProgressiveBlur.Top.copy(startFraction = measurements.progressiveStartFraction) }
 
     Layout(
         modifier = modifier,
@@ -270,7 +274,7 @@ private fun PureBlurTopAppBar(
                     .progressiveTextureBlur(
                         backdrop = rawBackdrop,
                         shape = RectangleShape,
-                        gradient = TopBarProgressiveGradient,
+                        gradient = progressiveGradient,
                         blurRadius = GlassTopAppBarDefaults.ProgressiveBlurRadius.value,
                         colors = blurColors,
                         enabled = bandActive,
@@ -303,7 +307,7 @@ private fun PureBlurTopAppBar(
         val foreground = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
         val width = constraints.constrainWidth(foreground.width)
         val height = constraints.constrainHeight(foreground.height)
-        val bandHeight = if (useCollapseProgress) {
+        val bandHeight = (if (useCollapseProgress) {
             val state = scrollBehavior.state
             val limit = state.heightOffsetLimit
             val coveredHeight = if (limit <= 0f && limit >= -height.toFloat()) {
@@ -324,10 +328,11 @@ private fun PureBlurTopAppBar(
                 height.toFloat(),
                 systemBarInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx() + measurements.bottomContentHeight,
             )
-        }
-        val background = measurables[0].measure(
-            Constraints.fixed(width, (bandHeight + GlassTopAppBarDefaults.BandOverhang.toPx()).fastRoundToInt()),
-        )
+        } + TopBarBandOverhang.toPx()).fastRoundToInt()
+        measurements.progressiveStartFraction = if (bandHeight > 0 && measurements.bottomContentHeight > 0) {
+            (measurements.bottomContentHeight.toFloat() / bandHeight.toFloat()).fastCoerceIn(0f, 0.95f)
+        } else { 0f }
+        val background = measurables[0].measure(Constraints.fixed(width, bandHeight))
         layout(width, height) {
             background.placeRelative(0, 0)
             foreground.placeRelative(0, 0)
@@ -335,11 +340,12 @@ private fun PureBlurTopAppBar(
     }
 }
 
+private val TopBarBandOverhang = 32.dp
+
 private class TopBarMeasurements {
     var bottomContentHeight: Int = 0
+    var progressiveStartFraction: Float by mutableFloatStateOf(0f)
 }
-
-private val TopBarProgressiveGradient = ProgressiveBlur.Top.copy(curve = 0.25f)
 
 /** 顶栏色带的基色：透明顶栏不画色带，否则用表面色（内容滚入时压暗，同 miuix 液态玻璃语义）。 */
 @Composable

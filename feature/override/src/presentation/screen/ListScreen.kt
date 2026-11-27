@@ -80,6 +80,7 @@ import com.github.lmfirefly.flycat.core.model.override.OverrideConfig
 import com.github.lmfirefly.flycat.core.model.override.OverrideContentType
 import com.github.lmfirefly.flycat.feature.override.presentation.viewmodel.OverrideConfigViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
+import com.github.lmfirefly.flycat.presentation.component.AppSegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.GlassCapsuleSurface
 import com.github.lmfirefly.flycat.presentation.component.GlassDropdownOption
 import com.github.lmfirefly.flycat.presentation.component.GlassDropdownPreference
@@ -88,7 +89,6 @@ import com.github.lmfirefly.flycat.presentation.component.GlassPopupHost
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
 import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
-import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.card.Card
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppBottomSheetCloseAction
@@ -811,7 +811,7 @@ private fun OverrideInputModeSelector(
 ) {
     val inputModeOptions = OverrideConfigInputMode.entries
     val selectedModeIndex = inputModeOptions.indexOf(selectedMode).coerceAtLeast(0)
-    SegmentedTabRow(
+    AppSegmentedTabRow(
         tabs = inputModeOptions.map(OverrideConfigInputMode::label),
         selectedTabIndex = selectedModeIndex,
         onTabSelected = { index -> inputModeOptions.getOrNull(index)?.let(onSelectedModeChange) },

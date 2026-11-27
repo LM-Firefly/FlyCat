@@ -25,15 +25,12 @@ package com.github.lmfirefly.flycat.presentation.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -45,7 +42,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,17 +58,16 @@ import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
+import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.glass.glass
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
@@ -82,143 +78,80 @@ private const val SegmentedTabTextAnimationDurationMillis = 220
 private const val SegmentedTabIndicatorAnimationDurationMillis = 280
 
 private val SegmentedTabTextAnimationSpec = tween<Color>(durationMillis = SegmentedTabTextAnimationDurationMillis, easing = FastOutSlowInEasing)
-private val SegmentedTabIndicatorAnimationSpec = tween<Dp>(durationMillis = SegmentedTabIndicatorAnimationDurationMillis, easing = FastOutSlowInEasing)
 private val ScrollableSegmentedTabIndicatorAnimationSpec = tween<Float>(durationMillis = SegmentedTabIndicatorAnimationDurationMillis, easing = FastOutSlowInEasing)
 
-/** zashboard 风格的分段标签页：40dp 高，13sp 字体，配色沿用底部栏——选中时主标签显示在半透明主色胶囊上，未选中时使用 onSurface 颜色，在 surfaceVariant 轨道上滑动。 */
+private data class SegmentedTabStyle(val backdrop: Backdrop, val surfaceAlpha: Float, val trackColor: Color, val selectedPillColor: Color, val selectedTextColor: Color, val unselectedTextColor: Color)
+
 @Composable
-fun SegmentedTabRow(
-    tabs: List<String>,
-    selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    // 默认为 [40.dp]；传入相同的高度值可与兄弟元素对齐（例如 42dp 的玻璃顶部栏）。
-    tabHeight: Dp = 40.dp,
-    // 默认采样全局壁纸层：有壁纸+shader 时渲染液态玻璃轨道，否则实色回退。
-    backdrop: LayerBackdrop? = LocalGlassBackdrop.current,
-    scrollable: Boolean = false,
-    scrollState: ScrollState? = null,
-    // 每个 tab 文字前拼接的图标插槽（如策略组图标），下标与 [tabs] 对应；不传时保持纯文字。
-    tabIcon: (@Composable (Int) -> Unit)? = null,
-) {
-    if (tabs.isEmpty()) return
-    if (scrollable) {
-        ScrollableSegmentedTabRow(
-            tabs = tabs,
-            selectedTabIndex = selectedTabIndex,
-            onTabSelected = onTabSelected,
-            modifier = modifier,
-            tabHeight = tabHeight,
-            backdrop = backdrop,
-            scrollState = scrollState,
-            tabIcon = tabIcon,
+private fun rememberSegmentedTabStyle(): SegmentedTabStyle {
+    val backdrop = LocalGlassBackdrop.current
+    val fallbackBackdrop = rememberLayerBackdrop()
+    val colorScheme = MiuixTheme.colorScheme
+    val opacity = AppTheme.opacity
+    return remember(backdrop, fallbackBackdrop, colorScheme, opacity) {
+        SegmentedTabStyle(
+            backdrop = backdrop ?: fallbackBackdrop,
+            surfaceAlpha = if (backdrop != null) 1f else 0f,
+            trackColor = colorScheme.surfaceVariant,
+            selectedPillColor = colorScheme.primary.copy(alpha = opacity.subtle),
+            selectedTextColor = colorScheme.primary,
+            unselectedTextColor = colorScheme.onSurface.copy(alpha = opacity.prominentText),
         )
-        return
-    }
-    if (backdrop != null && isRuntimeShaderSupported()) {
-        val colors = segmentedTabColors()
-        GlassSegmentedTabRow(
-            tabs = tabs,
-            selectedIndex = selectedTabIndex,
-            onSelect = onTabSelected,
-            backdrop = backdrop,
-            modifier = modifier,
-            height = tabHeight,
-            shadow = null,
-            trackColor = colors.trackColor,
-            indicatorColor = colors.selectedPillColor,
-            selectedContentColor = colors.selectedTextColor,
-            contentColor = colors.unselectedTextColor,
-        )
-        return
-    }
-    val colors = segmentedTabColors()
-    val shape = RoundedCornerShape(100.dp)
-    val indicatorInset = 4.dp
-    val indicatorGap = 4.dp
-    val textStyle = MiuixTheme.textStyles.main.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium)
-    BoxWithConstraints(modifier = modifier.fillMaxWidth().height(tabHeight).clip(shape).background(colors.trackColor).padding(indicatorInset)) {
-        val clampedSelectedTabIndex = selectedTabIndex.coerceIn(0, tabs.lastIndex)
-        val tabCount = tabs.size
-        val tabWidth = remember(maxWidth, tabCount) { ((maxWidth - indicatorGap * (tabCount - 1)) / tabCount).coerceAtLeast(0.dp) }
-        val targetOffset = remember(tabWidth, clampedSelectedTabIndex) { (tabWidth + indicatorGap) * clampedSelectedTabIndex }
-        val indicatorOffset by animateDpAsState(
-            targetValue = targetOffset,
-            animationSpec = SegmentedTabIndicatorAnimationSpec,
-            label = "segmented_tab_indicator_offset",
-        )
-        Box(modifier = Modifier.offset(x = indicatorOffset).width(tabWidth).fillMaxHeight().clip(shape).background(colors.selectedPillColor))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(indicatorGap)) {
-            tabs.forEachIndexed { index, tab ->
-                SegmentedTabItem(
-                    text = tab,
-                    selected = clampedSelectedTabIndex == index,
-                    colors = colors,
-                    selectedTextStyle = textStyle,
-                    unselectedTextStyle = textStyle,
-                    shape = shape,
-                    onClick = { onTabSelected(index) },
-                    icon = { tabIcon?.invoke(index) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
     }
 }
 
 @Composable
-private fun ScrollableSegmentedTabRow(
-    tabs: List<String>,
-    selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit,
-    modifier: Modifier,
-    tabHeight: Dp,
-    backdrop: LayerBackdrop?,
-    scrollState: ScrollState?,
-    tabIcon: (@Composable (Int) -> Unit)? = null,
-) {
-    val colors = segmentedTabColors()
+fun AppSegmentedTabRow(tabs: List<String>, selectedTabIndex: Int, onTabSelected: (Int) -> Unit, modifier: Modifier = Modifier, tabHeight: Dp = 40.dp) {
+    val style = rememberSegmentedTabStyle()
+    GlassSegmentedTabRow(
+        tabs = tabs,
+        selectedIndex = selectedTabIndex,
+        onSelect = onTabSelected,
+        backdrop = style.backdrop,
+        surfaceAlpha = style.surfaceAlpha,
+        height = tabHeight,
+        shadow = null,
+        trackColor = style.trackColor,
+        indicatorColor = style.selectedPillColor,
+        selectedContentColor = style.selectedTextColor,
+        contentColor = style.unselectedTextColor,
+        modifier = modifier,
+    )
+}
+
+/** 可横滑的图标标签页；官方滚动标签不提供图标插槽，因此保留此实现。 */
+@Composable
+fun ScrollableSegmentedTabRow(tabs: List<String>, selectedTabIndex: Int, onTabSelected: (Int) -> Unit, tabIcon: @Composable (Int) -> Unit, modifier: Modifier = Modifier, tabHeight: Dp = 40.dp) {
+    if (tabs.isEmpty()) return
+    val style = rememberSegmentedTabStyle()
     val shape = GlassSegmentedTabRowDefaults.shape(tabHeight)
     val indicatorShape = GlassSegmentedTabRowDefaults.shape(tabHeight - GlassSegmentedTabRowDefaults.TrackPadding * 2)
     val selectedTextStyle = MiuixTheme.textStyles.subtitle
     val unselectedTextStyle = MiuixTheme.textStyles.body2
     val density = LocalDensity.current
-    val resolvedScrollState = scrollState ?: rememberScrollState()
+    val resolvedScrollState = rememberScrollState()
     val tabBounds = remember { mutableStateMapOf<Int, Rect>() }
     val clampedSelectedTabIndex = selectedTabIndex.coerceIn(0, tabs.lastIndex)
     val selectedBounds = tabBounds[clampedSelectedTabIndex]
-    val indicatorLeft by animateFloatAsState(
-        targetValue = selectedBounds?.left ?: 0f,
-        animationSpec = ScrollableSegmentedTabIndicatorAnimationSpec,
-        label = "scrollable_segmented_tab_indicator_left",
-    )
-    val indicatorWidth by animateFloatAsState(
-        targetValue = selectedBounds?.width ?: 0f,
-        animationSpec = ScrollableSegmentedTabIndicatorAnimationSpec,
-        label = "scrollable_segmented_tab_indicator_width",
-    )
+    val indicatorLeft by animateFloatAsState(targetValue = selectedBounds?.left ?: 0f, animationSpec = ScrollableSegmentedTabIndicatorAnimationSpec, label = "scrollable_segmented_tab_indicator_left")
+    val indicatorWidth by animateFloatAsState(targetValue = selectedBounds?.width ?: 0f, animationSpec = ScrollableSegmentedTabIndicatorAnimationSpec, label = "scrollable_segmented_tab_indicator_width")
     LaunchedEffect(tabs) { tabBounds.clear() }
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth().height(tabHeight).clip(shape).then(
-            if (backdrop != null && isRuntimeShaderSupported()) {
+            if (style.surfaceAlpha > 0f && isRuntimeShaderSupported()) {
                 Modifier.glass(
-                    backdrop = backdrop,
+                    backdrop = style.backdrop,
                     shape = shape,
                     style = GlassDefaults.Style,
                     material = GlassSegmentedTabRowDefaults.material(),
                     stroke = GlassSegmentedTabRowDefaults.stroke(),
                     shading = false,
                 )
-            } else { Modifier.background(colors.trackColor) }
+            } else { Modifier.background(style.trackColor) }
         ).padding(GlassSegmentedTabRowDefaults.TrackPadding),
     ) {
         val viewportWidthPx = with(density) { maxWidth.toPx() }
-        LaunchedEffect(
-            clampedSelectedTabIndex,
-            selectedBounds,
-            resolvedScrollState.maxValue,
-            viewportWidthPx,
-        ) {
+        LaunchedEffect(clampedSelectedTabIndex, selectedBounds, resolvedScrollState.maxValue, viewportWidthPx) {
             if (selectedBounds != null) {
                 val target = (selectedBounds.center.x - viewportWidthPx / 2f).roundToInt().coerceIn(0, resolvedScrollState.maxValue)
                 resolvedScrollState.animateScrollTo(target)
@@ -227,23 +160,19 @@ private fun ScrollableSegmentedTabRow(
         Box(modifier = Modifier.fillMaxWidth().fillMaxHeight().horizontalScroll(resolvedScrollState)) {
             Box(modifier = Modifier.fillMaxHeight()) {
                 if (indicatorWidth > 0f) {
-                    Box(modifier = Modifier.offset { IntOffset(indicatorLeft.roundToInt(), 0) }.width(with(density) { indicatorWidth.toDp() }).fillMaxHeight().clip(indicatorShape).background(colors.selectedPillColor))
+                    Box(modifier = Modifier.offset { IntOffset(indicatorLeft.roundToInt(), 0) }.width(with(density) { indicatorWidth.toDp() }).fillMaxHeight().clip(indicatorShape).background(style.selectedPillColor))
                 }
-                Row(
-                    modifier = Modifier.fillMaxHeight(),
-                    horizontalArrangement = Arrangement.spacedBy(GlassSegmentedTabRowDefaults.TabGap),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Row(modifier = Modifier.fillMaxHeight(), horizontalArrangement = Arrangement.spacedBy(GlassSegmentedTabRowDefaults.TabGap), verticalAlignment = Alignment.CenterVertically) {
                     tabs.forEachIndexed { index, tab ->
                         SegmentedTabItem(
                             text = tab,
                             selected = clampedSelectedTabIndex == index,
-                            colors = colors,
+                            style = style,
                             selectedTextStyle = selectedTextStyle,
                             unselectedTextStyle = unselectedTextStyle,
                             shape = indicatorShape,
                             onClick = { onTabSelected(index) },
-                            icon = { tabIcon?.invoke(index) },
+                            icon = { tabIcon(index) },
                             horizontalPadding = GlassSegmentedTabRowDefaults.TabPaddingHorizontal,
                             onBoundsChanged = { bounds -> tabBounds[index] = bounds },
                         )
@@ -254,31 +183,11 @@ private fun ScrollableSegmentedTabRow(
     }
 }
 
-private data class SegmentedTabColors(
-    val trackColor: Color,
-    val selectedPillColor: Color,
-    val selectedTextColor: Color,
-    val unselectedTextColor: Color,
-)
-
-@Composable
-private fun segmentedTabColors(): SegmentedTabColors {
-    val colorScheme = MiuixTheme.colorScheme
-    val opacity = AppTheme.opacity
-    return SegmentedTabColors(
-        trackColor = colorScheme.surfaceVariant,
-        selectedPillColor = colorScheme.primary.copy(alpha = opacity.subtle),
-        selectedTextColor = colorScheme.primary,
-        // 未选中的标签使用突出的层级，而不是次要的层级。
-        unselectedTextColor = colorScheme.onSurface.copy(alpha = opacity.prominentText),
-    )
-}
-
 @Composable
 private fun SegmentedTabItem(
     text: String,
     selected: Boolean,
-    colors: SegmentedTabColors,
+    style: SegmentedTabStyle,
     selectedTextStyle: TextStyle,
     unselectedTextStyle: TextStyle,
     shape: Shape,
@@ -288,59 +197,24 @@ private fun SegmentedTabItem(
     horizontalPadding: Dp = 0.dp,
     onBoundsChanged: ((Rect) -> Unit)? = null,
 ) {
-    val textColor by animateColorAsState(
-        targetValue = if (selected) colors.selectedTextColor else colors.unselectedTextColor,
-        animationSpec = SegmentedTabTextAnimationSpec,
-        label = "segmented_tab_text_$text",
-    )
-    val boundsModifier = onBoundsChanged?.let { callback ->
-        Modifier.onGloballyPositioned { coordinates ->
-            callback(coordinates.boundsInParent())
-        }
-    } ?: Modifier
+    val textColor by animateColorAsState(targetValue = if (selected) style.selectedTextColor else style.unselectedTextColor, animationSpec = SegmentedTabTextAnimationSpec, label = "segmented_tab_text_$text")
+    val boundsModifier = onBoundsChanged?.let { callback -> Modifier.onGloballyPositioned { coordinates -> callback(coordinates.boundsInParent()) } } ?: Modifier
     Box(
-        modifier = modifier.fillMaxHeight().then(boundsModifier).clip(shape).clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = onClick,
-        ).padding(horizontal = horizontalPadding),
+        modifier = modifier.fillMaxHeight().then(boundsModifier).clip(shape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick).padding(horizontal = horizontalPadding),
         contentAlignment = Alignment.Center,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             icon()
-            Text(
-                text = text,
-                style = if (selected) selectedTextStyle else unselectedTextStyle,
-                color = textColor,
-                maxLines = 1,
-            )
+            Text(text = text, style = if (selected) selectedTextStyle else unselectedTextStyle, color = textColor, maxLines = 1)
         }
     }
 }
 
-/** 将分段的行固定在惰性列表的顶部。标签行的槽隙是透明的，在其下方滚动的行会透过来（玻璃语境下不再以实色条带遮挡，见下）。 */
-fun LazyListScope.stickySegmentedTabs(
-    key: Any,
-    tabs: List<String>,
-    selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit,
-    tabHeight: Dp = 40.dp,
-    // 行本身的水平内边距；传入 [0.dp] 可使行满宽显示。
-    tabRowPadding: Dp = 12.dp,
-) {
+/** 将分段标签行固定在惰性列表顶部；槽隙保持透明，供下方内容透出。 */
+fun LazyListScope.stickySegmentedTabs(key: Any, tabs: List<String>, selectedTabIndex: Int, onTabSelected: (Int) -> Unit, tabHeight: Dp = 40.dp, tabRowPadding: Dp = 12.dp) {
     stickyHeader(key = key) {
-        // 玻璃语境下不再用实色 surface 遮挡（否则挡住壁纸），吸顶时由玻璃 tab 条自身浮显。
         Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-            SegmentedTabRow(
-                tabs = tabs,
-                selectedTabIndex = selectedTabIndex,
-                onTabSelected = onTabSelected,
-                modifier = Modifier.padding(horizontal = tabRowPadding),
-                tabHeight = tabHeight,
-            )
+            AppSegmentedTabRow(tabs = tabs, selectedTabIndex = selectedTabIndex, onTabSelected = onTabSelected, tabHeight = tabHeight, modifier = Modifier.padding(horizontal = tabRowPadding))
         }
     }
 }

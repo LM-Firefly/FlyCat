@@ -556,6 +556,8 @@ public data class FlyStrings_Connection_Sort(
     public val Time: String,
     public val Upload: String,
     public val Download: String,
+    public val UploadSpeed: String,
+    public val DownloadSpeed: String,
     public val Host: String,
 )
 

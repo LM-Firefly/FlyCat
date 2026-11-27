@@ -35,22 +35,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionCardItem
+import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.component.card.Card
-import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
+import com.github.lmfirefly.flycat.presentation.component.misc.GroupIcon
+import com.github.lmfirefly.flycat.presentation.component.misc.normalizeGroupIconUri
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
+import com.github.lmfirefly.flycat.presentation.theme.glassSurfaceBackdrop
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Delete
@@ -59,58 +66,29 @@ import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
 @Composable
-fun ConnectionCard(
-    item: ConnectionCardItem,
-    showCloseAction: Boolean,
-    onClick: () -> Unit,
-    onClose: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun ConnectionCard(item: ConnectionCardItem, groupIcons: Map<String, String>, showCloseAction: Boolean, onClick: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
     val interactionSource = remember { MutableInteractionSource() }
     val network = item.network
     val chainText = item.ruleChain
-
+    val chainNodes = remember(item.connectionInfo.rule, item.connectionInfo.chains) { ProxyChainResolver.buildRuleChain(rule = item.connectionInfo.rule, chain = item.connectionInfo.chains) }
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .pressable(interactionSource = interactionSource, indication = SinkFeedback())
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-            ),
+        modifier = modifier.fillMaxWidth().pressable(interactionSource = interactionSource, indication = SinkFeedback()).clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         insideMargin = PaddingValues(horizontal = spacing.space16, vertical = spacing.space12),
         applyHorizontalPadding = false,
     ) {
-        Row(
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(spacing.space16),
-        ) {
-            ConnectionLeadingIcon(
-                metadata = item.connectionInfo.metadata,
-                network = network,
-                modifier = Modifier.padding(top = spacing.space2),
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(spacing.space4),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(spacing.space8),
-                ) {
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(spacing.space16)) {
+            ConnectionLeadingIcon(metadata = item.connectionInfo.metadata, network = network, modifier = Modifier.padding(top = spacing.space2))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.space4)) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.space8)) {
                     Text(
                         text = item.displayHost,
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .weight(1f)
-                            .basicMarquee(),
+                        modifier = Modifier.weight(1f).basicMarquee(),
                     )
                     Text(
                         text = item.relativeTime,
@@ -120,11 +98,7 @@ fun ConnectionCard(
                         maxLines = 1,
                     )
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(spacing.space4),
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.space4)) {
                     Text(
                         text = item.protocolAndNetwork,
                         style = MiuixTheme.textStyles.footnote1,
@@ -141,35 +115,37 @@ fun ConnectionCard(
                             textAlign = TextAlign.End,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .weight(1f)
-                                .basicMarquee(),
+                            modifier = Modifier.weight(1f).basicMarquee(),
                         )
                     }
                 }
-
-                Text(
-                    text = chainText,
-                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(),
-                )
+                if (chainNodes.isNotEmpty()) {
+                    Row(modifier = Modifier.fillMaxWidth().basicMarquee().clearAndSetSemantics { contentDescription = chainText }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.space4)) {
+                        chainNodes.forEachIndexed { index, name ->
+                            ConnectionChainIcon(name = name, groupIcons = groupIcons, width = 12.dp)
+                            Text(
+                                text = name,
+                                style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                            if (index != chainNodes.lastIndex) {
+                                Text(
+                                    text = "->",
+                                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    softWrap = false,
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
         Spacer(modifier = Modifier.height(spacing.space12))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.space12),
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(spacing.space6),
-            ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.space12)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.space6)) {
                 TrafficMetricRow(
                     label = "↓",
                     speedText = item.downloadSpeedText,
@@ -184,24 +160,15 @@ fun ConnectionCard(
                 )
             }
             if (showCloseAction) {
-                Box(
-                    modifier = Modifier.heightIn(min = sizes.connectionLeadingIconSize),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val closeShape = RoundedCornerShape(50)
-                    Icon(
-                        imageVector = MiuixIcons.Glass.Delete,
-                        contentDescription = FlyTxt.Connection.Detail.Action.Interrupt,
-                        tint = MiuixTheme.colorScheme.error,
-                        modifier = Modifier
-                            .clip(closeShape)
-                            .glassCardSurface(
-                                shape = closeShape,
-                                fallbackColor = MiuixTheme.colorScheme.secondaryContainer,
-                                glassTint = MiuixTheme.colorScheme.error.copy(alpha = 0.10f),
-                            )
-                            .clickable(onClick = onClose)
-                            .padding(horizontal = spacing.space12, vertical = spacing.space8),
+                Box(modifier = Modifier.heightIn(min = sizes.connectionLeadingIconSize), contentAlignment = Alignment.Center) {
+                    GlassTopIconButton(
+                        action = GlassTopAction(
+                            icon = MiuixIcons.Glass.Delete,
+                            contentDescription = FlyTxt.Connection.Detail.Action.Interrupt,
+                            tint = MiuixTheme.colorScheme.error,
+                            onClick = onClose,
+                        ),
+                        backdrop = LocalGlassBackdrop.current ?: glassSurfaceBackdrop(),
                     )
                 }
             }
@@ -210,18 +177,15 @@ fun ConnectionCard(
 }
 
 @Composable
-private fun TrafficMetricRow(
-    label: String,
-    speedText: String,
-    totalText: String,
-    accentColor: Color,
-) {
+internal fun ConnectionChainIcon(name: String, groupIcons: Map<String, String>, width: Dp) {
+    val iconUri = remember(name, groupIcons) { groupIcons[name]?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri) }
+    if (iconUri != null) { GroupIcon(iconUri = iconUri, width = width) }
+}
+
+@Composable
+private fun TrafficMetricRow(label: String, speedText: String, totalText: String, accentColor: Color) {
     val spacing = AppTheme.spacing
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.space6),
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.space6)) {
         Text(
             text = label,
             style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),

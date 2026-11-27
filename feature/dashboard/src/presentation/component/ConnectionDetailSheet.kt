@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.lmfirefly.flycat.core.model.ConnectionInfo
 import com.github.lmfirefly.flycat.core.util.ProxyChainResolver
@@ -54,8 +55,10 @@ import com.github.lmfirefly.flycat.core.util.format.formatBytes
 import com.github.lmfirefly.flycat.feature.dashboard.presentation.viewmodel.ConnectionViewModel
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
+import com.github.lmfirefly.flycat.presentation.component.card.glassCardSurface
 import com.github.lmfirefly.flycat.presentation.component.dialog.AppActionBottomSheet
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.themeEdgeStroke
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -71,6 +74,7 @@ private const val CONNECTION_LEADING_ICON_BITMAP_SIZE = 96
 fun ConnectionDetailSheet(
     show: Boolean,
     connectionInfo: ConnectionInfo?,
+    groupIcons: Map<String, String>,
     canInterrupt: Boolean,
     onInterruptConnection: suspend (String) -> Boolean,
     onDismiss: () -> Unit,
@@ -89,10 +93,7 @@ fun ConnectionDetailSheet(
         val info = connectionInfo
         val state = detailState
         if (info != null && state != null) {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(spacing.space16),
-            ) {
+            LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.space16)) {
                 item {
                     ConnectionInfoSection(
                         state = state,
@@ -100,11 +101,10 @@ fun ConnectionDetailSheet(
                         download = info.download,
                         rule = info.rule,
                         chains = info.chains,
+                        groupIcons = groupIcons,
                     )
                 }
-                if (info.rule.isNotEmpty()) {
-                    item { RuleInfoSection(rule = info.rule, rulePayload = info.rulePayload) }
-                }
+                if (info.rule.isNotEmpty()) { item { RuleInfoSection(rule = info.rule, rulePayload = info.rulePayload) } }
                 if (canInterrupt) {
                     item {
                         InterruptConnectionButton(
@@ -136,6 +136,7 @@ private fun ConnectionInfoSection(
     download: Long,
     rule: String,
     chains: List<String>,
+    groupIcons: Map<String, String>,
 ) {
     val spacing = AppTheme.spacing
     val sizes = AppTheme.sizes
@@ -189,13 +190,13 @@ private fun ConnectionInfoSection(
         )
         if (rule.isNotEmpty() || chains.isNotEmpty()) {
             Spacer(modifier = Modifier.height(spacing.space4))
-            ProxyChainRow(rule = rule, chains = chains)
+            ProxyChainRow(rule = rule, chains = chains, groupIcons = groupIcons)
         }
     }
 }
 
 @Composable
-private fun ProxyChainRow(rule: String, chains: List<String>) {
+private fun ProxyChainRow(rule: String, chains: List<String>, groupIcons: Map<String, String>) {
     val spacing = AppTheme.spacing
     val appColors = AppTheme.colors
     val displayChains = ProxyChainResolver.buildRuleChain(rule = rule, chain = chains)
@@ -209,7 +210,7 @@ private fun ProxyChainRow(rule: String, chains: List<String>) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(spacing.space2),
             ) {
-                ChainNode(name = chain, isActive = isLast)
+                ChainNode(name = chain, isActive = isLast, groupIcons = groupIcons)
                 if (!isLast) {
                     Text(
                         text = "->",
@@ -239,33 +240,26 @@ private fun InterruptConnectionButton(isInterrupting: Boolean, onInterrupt: () -
 }
 
 @Composable
-private fun ChainNode(name: String, isActive: Boolean) {
+private fun ChainNode(name: String, isActive: Boolean, groupIcons: Map<String, String>) {
     val spacing = AppTheme.spacing
     val radii = AppTheme.radii
     val opacity = AppTheme.opacity
     val sizes = AppTheme.sizes
     val appColors = AppTheme.colors
-    val backgroundColor = if (isActive) {
-        appColors.connection.chainActive.copy(alpha = opacity.subtleStrong)
-    } else {
-        MiuixTheme.colorScheme.surfaceVariant
-    }
-    val textColor = if (isActive) {
-        appColors.connection.chainActive
-    } else {
-        appColors.connection.chainInactiveText
-    }
+    val fallbackColor = if (isActive) MiuixTheme.colorScheme.background else MiuixTheme.colorScheme.surfaceVariant
+    val glassTint = if (isActive) appColors.connection.chainActive.copy(alpha = opacity.subtleStrong) else Color.Transparent
+    val textColor = if (isActive) { appColors.connection.chainActive } else { appColors.connection.chainInactiveText }
+    val shape = RoundedCornerShape(radii.radius8)
     Row(
-        modifier = Modifier.clip(RoundedCornerShape(radii.radius8)).background(backgroundColor).padding(
-            horizontal = sizes.nodeChainNodeHorizontalPadding,
-            vertical = sizes.nodeChainNodeVerticalPadding,
-        ),
+        modifier = Modifier.clip(shape)
+            .glassCardSurface(shape = shape, fallbackColor = fallbackColor, glassTint = glassTint)
+            .themeEdgeStroke(shape = shape, tint = appColors.connection.chainActive.takeIf { isActive }, emphasized = isActive)
+            .padding(horizontal = sizes.nodeChainNodeHorizontalPadding, vertical = sizes.nodeChainNodeVerticalPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.space4),
     ) {
-        if (isActive) {
-            Box(modifier = Modifier.size(sizes.nodeChainIndicatorSize).clip(CircleShape).background(appColors.connection.chainActive))
-        }
+        if (isActive) { Box(modifier = Modifier.size(sizes.nodeChainIndicatorSize).clip(CircleShape).background(appColors.connection.chainActive)) }
+        ConnectionChainIcon(name = name, groupIcons = groupIcons, width = 12.dp)
         Text(
             text = name,
             style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),

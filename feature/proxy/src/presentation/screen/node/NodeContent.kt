@@ -43,7 +43,7 @@ import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.normalizeProxySheetHeightFraction
 import com.github.lmfirefly.flycat.locale.FlyTxt
-import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
+import com.github.lmfirefly.flycat.presentation.component.ScrollableSegmentedTabRow
 import com.github.lmfirefly.flycat.presentation.component.misc.GroupIcon
 import com.github.lmfirefly.flycat.presentation.component.misc.normalizeGroupIconUri
 import com.github.lmfirefly.flycat.presentation.theme.SheetLeadMillis
@@ -56,7 +56,7 @@ val NodeSheetContentPadding = PaddingValues(start = UiDp.dp0, end = UiDp.dp0, to
 
 private fun LazyListState.isScrolledFromTop(): Boolean = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
 
-/** 「标签页模式」组名 tab 条：玻璃分段轨道 + 滑动指示器（[SegmentedTabRow] 的 scrollable 形态），组多时轨道内横滑，选中组自动居中；tab 文字前拼接策略组图标（[GroupIcon]，加载成功才渲染）。 */
+/** 「标签页模式」组名 tab 条：玻璃分段轨道 + 滑动指示器（[ScrollableSegmentedTabRow] 的 scrollable 形态），组多时轨道内横滑，选中组自动居中；tab 文字前拼接策略组图标（[GroupIcon]，加载成功才渲染）。 */
 @Composable
 internal fun NodeTabs(
     groups: List<ProxyGroupInfo>,
@@ -66,12 +66,11 @@ internal fun NodeTabs(
 ) {
     val tabs = remember(groups) { groups.map { it.name } }
     val tabIconUris = remember(groups) { groups.map { group -> group.icon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri) } }
-    SegmentedTabRow(
+    ScrollableSegmentedTabRow(
         tabs = tabs,
         selectedTabIndex = selectedIndex,
         onTabSelected = onSelect,
         modifier = modifier,
-        scrollable = true,
         tabIcon = { index ->
             val iconUri = tabIconUris.getOrNull(index)
             if (iconUri != null) {

@@ -122,6 +122,7 @@ class ConnectionPollingUseCase(
         connections: List<ConnectionInfo>,
         searchQuery: String,
         sortBy: ConnectionSortMode,
+        sortAscending: Boolean,
         connectionSpeeds: Map<String, Pair<Long, Long>>,
         showSpeeds: Boolean,
     ): List<ConnectionCardData> {
@@ -138,12 +139,15 @@ class ConnectionPollingUseCase(
             }
         }
 
-        val sorted = when (sortBy) {
-            ConnectionSortMode.Time -> filtered.sortedByDescending { it.start }
-            ConnectionSortMode.Upload -> filtered.sortedByDescending { it.upload }
-            ConnectionSortMode.Download -> filtered.sortedByDescending { it.download }
-            ConnectionSortMode.Host -> filtered.sortedBy { connectionDisplayTarget(it) }
+        val comparator = when (sortBy) {
+            ConnectionSortMode.Time -> compareBy<ConnectionInfo> { it.start }
+            ConnectionSortMode.Upload -> compareBy<ConnectionInfo> { it.upload }
+            ConnectionSortMode.Download -> compareBy<ConnectionInfo> { it.download }
+            ConnectionSortMode.UploadSpeed -> compareBy<ConnectionInfo> { connectionSpeeds[it.id]?.first ?: 0L }
+            ConnectionSortMode.DownloadSpeed -> compareBy<ConnectionInfo> { connectionSpeeds[it.id]?.second ?: 0L }
+            ConnectionSortMode.Host -> compareBy<ConnectionInfo> { connectionDisplayTarget(it) }
         }
+        val sorted = filtered.sortedWith(if (sortAscending) comparator else comparator.reversed())
 
         return sorted.map { conn ->
             val metadata = conn.metadata
@@ -219,7 +223,14 @@ class ConnectionPollingUseCase(
 
 // ── Data classes for domain layer ────────────────────────────────────────────
 
-enum class ConnectionSortMode { Time, Upload, Download, Host }
+enum class ConnectionSortMode(val defaultAscending: Boolean) {
+    Time(defaultAscending = false),
+    Upload(defaultAscending = false),
+    Download(defaultAscending = false),
+    UploadSpeed(defaultAscending = false),
+    DownloadSpeed(defaultAscending = false),
+    Host(defaultAscending = true),
+}
 
 data class ConnectionCardData(
     val connectionInfo: ConnectionInfo,

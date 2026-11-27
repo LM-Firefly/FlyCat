@@ -78,6 +78,9 @@ import com.github.lmfirefly.flycat.presentation.icon.flycat.Copy
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Play
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Square
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
+import com.github.lmfirefly.flycat.presentation.theme.AppTheme
+import com.github.lmfirefly.flycat.presentation.theme.LocalGlassBackdrop
+import com.github.lmfirefly.flycat.presentation.theme.glassSurfaceBackdrop
 import com.github.lmfirefly.flycat.presentation.theme.horizontalPadding
 import com.github.lmfirefly.flycat.presentation.util.toast
 import org.koin.androidx.compose.koinViewModel
@@ -85,7 +88,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import com.github.lmfirefly.flycat.presentation.component.SegmentedTabRow
+import com.github.lmfirefly.flycat.presentation.component.AppSegmentedTabRow
 import top.yukonga.miuix.kmp.basic.Text
 import com.github.lmfirefly.flycat.presentation.component.GlassTextButton
 import com.github.lmfirefly.flycat.presentation.component.input.GlassTextField
@@ -191,6 +194,7 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
                                 } else {
                                     MiuixTheme.colorScheme.primary
                                 },
+                                fallbackFill = MiuixTheme.colorScheme.secondaryVariant.copy(alpha = AppTheme.opacity.surfaceVariant),
                                 onClick = {
                                     if (!uiState.busy && (uiState.running || selectedTab != 2)) {
                                         if (uiState.running) {
@@ -206,14 +210,14 @@ fun PrivilegedServiceScreen(navigator: Navigator) {
                                     }
                                 },
                             ),
-                            backdrop = null,
+                            backdrop = LocalGlassBackdrop.current ?: glassSurfaceBackdrop(),
                         )
                     }
                 }
             }
             item {
                 val tabs = listOf("Root", "ADB", FlyTxt.AppSettings.ServiceSection.PrivilegeTabManual, FlyTxt.AppSettings.ServiceSection.PrivilegeTabExternal)
-                SegmentedTabRow(
+                AppSegmentedTabRow(
                     tabs = tabs,
                     selectedTabIndex = selectedTab,
                     onTabSelected = { selectedTab = it },
