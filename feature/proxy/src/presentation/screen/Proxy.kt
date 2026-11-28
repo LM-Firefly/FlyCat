@@ -40,15 +40,21 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -68,6 +74,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,6 +84,7 @@ import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeSortPopup
+import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTabs
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTestPullToRefresh
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.ProvideProxyDelayFlows
 import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.nodeGridItems
@@ -85,6 +94,7 @@ import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyVie
 import com.github.lmfirefly.flycat.locale.FlyTxt
 import com.github.lmfirefly.flycat.presentation.component.GlassScaffold
 import com.github.lmfirefly.flycat.presentation.component.GlassTopAction
+import com.github.lmfirefly.flycat.presentation.component.GlassTopActionDefaults
 import com.github.lmfirefly.flycat.presentation.component.GlassTopActionPill
 import com.github.lmfirefly.flycat.presentation.component.GlassTopIconButton
 import com.github.lmfirefly.flycat.presentation.component.SearchInputToolbar
@@ -129,9 +139,9 @@ import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
 internal fun LazyListState.isScrolledFromTop(): Boolean = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+internal fun LazyListState.isProxyTitleCollapsed(): Boolean = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset >= 80
 
-// animateScrollToItem 会以全速跨越任意距离，因此定位一个较远的节点看起来就像闪现。
-// 将动画跨越的距离限制在大约一个视口大小：先静默跳转到视口外侧附近，然后用固定时长的减速缓动将剩余距离平滑滚动到位。
+// animateScrollToItem 会以全速跨越任意距离，因此定位一个较远的节点看起来就像闪现。将动画跨越的距离限制在大约一个视口大小：先静默跳转到视口外侧附近，然后用固定时长的减速缓动将剩余距离平滑滚动到位。
 internal suspend fun LazyListState.animateLocateToItem(targetIndex: Int) {
     if (layoutInfo.visibleItemsInfo.isEmpty()) {
         scrollToItem(targetIndex)
@@ -146,13 +156,9 @@ internal suspend fun LazyListState.animateLocateToItem(targetIndex: Int) {
         val preIndex = if (distanceItems > 0) targetIndex - approachItems else targetIndex + approachItems
         scrollToItem(preIndex.coerceAtLeast(0))
     }
-    val remaining = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.toFloat()
-        ?: ((targetIndex - firstVisibleItemIndex) * avgItemSize.toFloat() - firstVisibleItemScrollOffset)
-    animateScrollBy(
-        value = remaining,
-        animationSpec = tween(durationMillis = 650, easing = AnimationSpecs.EmphasizedDecelerate),
-    )
-    // 节点卡片是统一的，因此估算结果精确落位；如有残余偏差，请悄悄处理掉。
+    val remaining = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset?.toFloat() ?: ((targetIndex - firstVisibleItemIndex) * avgItemSize.toFloat() - firstVisibleItemScrollOffset)
+    animateScrollBy(value = remaining, animationSpec = tween(durationMillis = 650, easing = AnimationSpecs.EmphasizedDecelerate))
+    // 节点卡片尺寸统一，估算通常已接近目标；仍按实际布局修正残余偏差。
     val residual = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }?.offset
     when {
         residual == null -> scrollToItem(targetIndex)
@@ -161,22 +167,13 @@ internal suspend fun LazyListState.animateLocateToItem(targetIndex: Int) {
 }
 
 @Composable
-fun ProxyPager(
-    mainInnerPadding: PaddingValues,
-    onNavigateToProviders: (() -> Unit)?,
-    isActive: Boolean,
-) {
+fun ProxyPager(mainInnerPadding: PaddingValues, onNavigateToProviders: (() -> Unit)?, isActive: Boolean) {
     val proxyViewModel = koinViewModel<ProxyViewModel>()
     ProvideProxyDelayFlows(proxyViewModel) { ProxyPagerContent(mainInnerPadding, onNavigateToProviders, isActive, proxyViewModel) }
 }
 
 @Composable
-private fun ProxyPagerContent(
-    mainInnerPadding: PaddingValues,
-    onNavigateToProviders: (() -> Unit)?,
-    isActive: Boolean,
-    proxyViewModel: ProxyViewModel,
-) {
+private fun ProxyPagerContent(mainInnerPadding: PaddingValues, onNavigateToProviders: (() -> Unit)?, isActive: Boolean, proxyViewModel: ProxyViewModel) {
     val proxyGroups by proxyViewModel.sortedProxyGroups.collectAsStateWithLifecycle()
     val testingGroupNames by proxyViewModel.testingGroupNames.collectAsStateWithLifecycle()
     val testingProxyNames by proxyViewModel.testingProxyNames.collectAsStateWithLifecycle()
@@ -186,8 +183,7 @@ private fun ProxyPagerContent(
     val groupScrollBehavior = MiuixScrollBehavior(snapAnimationSpec = null)
     val pagerState = LocalPagerState.current
     var showSortPopup by rememberSaveable { mutableStateOf(false) }
-    // 「标签页模式」：组名 tab 条 + 每组一页横向翻页，与钻取式分组列表互斥。
-    // 状态存于 ProxyDisplaySettingsStore：与通知栏节点面板（ProxySheetActivity）跨界面双向同步。
+    // 「标签页模式」：组名 tab 条 + 每组一页横向翻页，与钻取式分组列表互斥。状态存于 ProxyDisplaySettingsStore：与通知栏节点面板（ProxySheetActivity）跨界面双向同步。
     val groupTabsMode by proxyViewModel.groupTabsMode.collectAsStateWithLifecycle()
     val inSplitShell = LocalDetailNavigator.current.isSplitShell
     val uiSelectedGroupName by proxyViewModel.uiSelectedGroupName.collectAsStateWithLifecycle()
@@ -203,6 +199,7 @@ private fun ProxyPagerContent(
     val coroutineScope = rememberCoroutineScope()
     // 标签页模式下顶栏动作（回顶/定位）对当前 tab 页滚动面的寻址句柄。
     val tabsActions = remember { ProxyTabsPageActions() }
+    val groupPagerState = rememberPagerState { proxyGroups.size }
     val groupListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val nodeListState = rememberSaveable(selectedGroupName, saver = LazyListState.Saver) { LazyListState() }
     var nodeSearchQuery by rememberSaveable(selectedGroupName) { mutableStateOf("") }
@@ -231,14 +228,14 @@ private fun ProxyPagerContent(
                     val proxyIndex = group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
                     if (proxyIndex < 0) return
                     // 搜索栏固定在滚动列表外，列表无头部偏移。
-                    // 在双栏模式中，每行容纳 2 个代理，因此除以 2。
+                    // 双列显示时每行容纳 2 个代理，因此除以 2。
                     val listItemIndex = if (displayMode.isSingleColumn) proxyIndex else proxyIndex / 2
                     coroutineScope.launch { nodeListState.animateLocateToItem(listItemIndex) }
                 }
             }
         }
     }
-    // 返回优先级：后注册者优先——先退搜索，再退标签页模式/钻取。
+    // 返回键按注册逆序处理：搜索优先关闭；其余返回根据当前模式退出标签页或节点页（两种模式互斥）。
     BackHandler(enabled = groupTabsMode && !inSplitShell) { proxyViewModel.setGroupTabsMode(false) }
     BackHandler(enabled = selectedGroupName != null && !inSplitShell) { groupSelection.clearSelection() }
     BackHandler(enabled = nodeSearchVisible) {
@@ -247,29 +244,41 @@ private fun ProxyPagerContent(
     }
     // 标签页模式开启（含通知栏面板远程切换）时退出钻取选中，保证两个宿主行为一致。
     LaunchedEffect(groupTabsMode) { if (groupTabsMode && !inSplitShell) groupSelection.clearSelection() }
-    // 平板模式：自动选择第一个组，以确保右侧窗格始终不为空。
+    // 平板双栏：左栏没有有效选中组时自动选择首组，供右栏展示。
     LaunchedEffect(inSplitShell, proxyGroups, selectedGroupName) {
         if (!inSplitShell || proxyGroups.isEmpty()) return@LaunchedEffect
         if (selectedGroupName == null || proxyGroups.none { it.name == selectedGroupName }) { groupSelection.selectGroup(proxyGroups.first()) }
     }
-
     LaunchedEffect(isActive) { proxyViewModel.ensureCoreLoaded(isActive, source = "proxy_page") }
     LaunchedEffect(isActive, inSplitShell) { if (!isActive && !inSplitShell) nodeSearchQuery = "" }
-
-    // 应用在长时间后台运行后返回前台时强制刷新，因为WhileSubscribed(5000)会停止上游收集，且同步循环可能已被限流或阻塞在旧互斥锁后面。
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        if (isActive) proxyViewModel.onForegroundResume()
+    val titleCollapsed = when {
+        inSplitShell -> groupListState.isProxyTitleCollapsed()
+        groupTabsMode && proxyGroups.isNotEmpty() -> tabsActions.titleCollapsed
+        selectedGroupName == null -> groupListState.isProxyTitleCollapsed()
+        else -> nodeListState.isProxyTitleCollapsed()
     }
-
-    DisposableEffect(proxyViewModel) {
-        onDispose { proxyViewModel.ensureCoreLoaded(false, source = "proxy_page") }
+    // 各页共享 ScrollBehavior，残留偏移不代表当前页位置；按当前可见列表驱动顶栏模糊。
+    val contentScrolled = when {
+        inSplitShell -> groupListState.isScrolledFromTop()
+        groupTabsMode && proxyGroups.isNotEmpty() -> tabsActions.activeListState?.isScrolledFromTop() == true
+        selectedGroupName == null -> groupListState.isScrolledFromTop()
+        else -> nodeListState.isScrolledFromTop()
     }
-
+    val proxyGroupMap = remember(proxyGroups) { proxyGroups.associateBy { it.name } }
+    val topBarChainGroup = when {
+        groupTabsMode -> proxyGroupMap[tabsActions.activeGroupName]
+        !inSplitShell && selectedGroupName != null -> displayGroup
+        else -> null
+    }
+    // 前台恢复时强制刷新，补上 WhileSubscribed(5000) 暂停收集期间错过的状态；强刷受 30 秒冷却和 800ms 超时约束。
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { if (isActive) proxyViewModel.onForegroundResume() }
+    DisposableEffect(proxyViewModel) { onDispose { proxyViewModel.ensureCoreLoaded(false, source = "proxy_page") } }
     GlassScaffold(
         topBar = {
             PagerTopBar(
                 scrollBehavior = groupScrollBehavior,
-                isContentScrolled = if (inSplitShell) groupListState.isScrolledFromTop() else null,
+                titleCollapsed = titleCollapsed,
+                isContentScrolled = contentScrolled,
                 onNavigateToProviders = if (inSplitShell) null else onNavigateToProviders,
                 onTestAllDelay = { proxyViewModel.testDelay() },
                 locateCurrentProxy = if (inSplitShell) null else locateCurrentProxy,
@@ -283,29 +292,28 @@ private fun ProxyPagerContent(
                 onTabsModeChange = { enabled -> proxyViewModel.setGroupTabsMode(enabled) },
                 selectedGroupName = if (inSplitShell) null else selectedGroupName,
                 selectedGroupIcon = if (inSplitShell) null else displayGroup?.icon,
+                chain = topBarChainGroup?.chainPath.orEmpty(),
+                groupIconLookup = { name -> proxyGroupMap[name]?.icon },
                 onBackToGroups = groupSelection.clearSelection,
                 searchVisible = nodeSearchVisible,
+                searchQuery = nodeSearchQuery,
+                onSearchQueryChange = { nodeSearchQuery = it },
+                tabContent = if (!inSplitShell && groupTabsMode && proxyGroups.isNotEmpty()) {
+                    { NodeTabs(groups = proxyGroups, selectedIndex = groupPagerState.currentPage, onSelect = { index -> coroutineScope.launch { groupPagerState.animateScrollToPage(index) } }) }
+                } else { null },
                 // 搜索挂在节点列表页与标签页模式：组列表/双栏左栏不放搜索入口。
-                onSearchToggle = if (inSplitShell || (selectedGroupName == null && !groupTabsMode)) {
-                    null
-                } else {
+                onSearchToggle = if (inSplitShell || (selectedGroupName == null && !groupTabsMode)) { null } else {
                     {
                         nodeSearchVisible = !nodeSearchVisible
                         if (!nodeSearchVisible) nodeSearchQuery = ""
                     }
                 },
                 onTitleScrollTop = {
-                    if (groupTabsMode && !inSplitShell) {
-                        // 标签页模式：回顶作用于当前 tab 页。
-                        tabsActions.scrollTop?.invoke()
-                    } else {
+                    // 标签页模式：回顶作用于当前 tab 页。
+                    if (groupTabsMode && !inSplitShell) { tabsActions.scrollTop?.invoke() } else {
                         // 双栏左栏只挂 groupListState（nodeListState 未上屏）；单栏在组列表/节点列表间切换。
                         val listState = if (inSplitShell || selectedGroupName == null) groupListState else nodeListState
-                        coroutineScope.launch {
-                            if (listState.isScrolledFromTop()) {
-                                listState.animateScrollToItem(0)
-                            }
-                        }
+                        coroutineScope.launch { if (listState.isScrolledFromTop()) { listState.animateScrollToItem(0) } }
                     }
                 },
             )
@@ -313,14 +321,8 @@ private fun ProxyPagerContent(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (inSplitShell) {
-                // Tablet: only show group list; node detail is in the right pane.
-                if (proxyGroups.isEmpty()) {
-                    CenteredText(
-                        firstLine = FlyTxt.Proxy.Empty.NoNodes,
-                        secondLine = FlyTxt.Proxy.Empty.Hint,
-                        showEmptyResourceIllustration = true,
-                    )
-                } else {
+                // 平板端：仅显示群组列表；节点详情在右侧面板中。
+                if (proxyGroups.isEmpty()) { CenteredText(firstLine = FlyTxt.Proxy.Empty.NoNodes, secondLine = FlyTxt.Proxy.Empty.Hint, showEmptyResourceIllustration = true) } else {
                     ProxyContent(
                         proxyGroups = proxyGroups,
                         displayMode = displayMode,
@@ -345,18 +347,12 @@ private fun ProxyPagerContent(
                     outerInnerPadding = it,
                     scrollBehavior = groupScrollBehavior,
                     onTestGroupDelay = { groupName -> proxyViewModel.testDelay(groupName) },
-                    onTestProxyDelay = { groupName, proxyName ->
-                        proxyViewModel.testProxyDelay(groupName, proxyName)
-                    },
-                    onSelectProxy = { groupName, proxyName ->
-                        proxyViewModel.selectProxy(groupName, proxyName)
-                    },
-                    onForceSelectProxy = { groupName, proxyName ->
-                        proxyViewModel.forceSelectProxy(groupName, proxyName)
-                    },
+                    onTestProxyDelay = { groupName, proxyName -> proxyViewModel.testProxyDelay(groupName, proxyName) },
+                    onSelectProxy = { groupName, proxyName -> proxyViewModel.selectProxy(groupName, proxyName) },
+                    onForceSelectProxy = { groupName, proxyName -> proxyViewModel.forceSelectProxy(groupName, proxyName) },
+                    pagerState = groupPagerState,
                     pageActions = tabsActions,
                     searchQuery = nodeSearchQuery,
-                    onSearchQueryChange = { nodeSearchQuery = it },
                     searchVisible = nodeSearchVisible,
                     onSearchVisibleChange = { nodeSearchVisible = it },
                     testProgress = delayTestProgress,
@@ -388,13 +384,7 @@ private fun ProxyPagerContent(
                     label = "proxy_content_slide",
                 ) { targetGroupName ->
                     if (targetGroupName == null) {
-                        if (proxyGroups.isEmpty()) {
-                            CenteredText(
-                                firstLine = FlyTxt.Proxy.Empty.NoNodes,
-                                secondLine = FlyTxt.Proxy.Empty.Hint,
-                                showEmptyResourceIllustration = true,
-                            )
-                        } else {
+                        if (proxyGroups.isEmpty()) { CenteredText(firstLine = FlyTxt.Proxy.Empty.NoNodes, secondLine = FlyTxt.Proxy.Empty.Hint, showEmptyResourceIllustration = true) } else {
                             ProxyContent(
                                 proxyGroups = proxyGroups,
                                 displayMode = displayMode,
@@ -427,7 +417,6 @@ private fun ProxyPagerContent(
                             onTestProxyDelay = { proxyName -> currentGroup?.name?.let { groupName -> proxyViewModel.testProxyDelay(groupName, proxyName) } },
                             onScrollDirectionChanged = {},
                             searchQuery = nodeSearchQuery,
-                            onSearchQueryChange = { nodeSearchQuery = it },
                             searchVisible = nodeSearchVisible,
                             onSearchVisibleChange = { nodeSearchVisible = it },
                             testProgress = delayTestProgress,
@@ -439,37 +428,27 @@ private fun ProxyPagerContent(
     }
 }
 
-/** 代理页大标题面包屑：根段“代理”可点，[segmentLabel] 非空时显示“代理 > 组名”分段。 */
+/** 代理页标题面包屑：展开态显示在标题区，收起态作为左侧导航槽的一部分与导航按钮同行。 */
 @Composable
-internal fun ProxyTitleBreadcrumb(rootLabel: String, onRootClick: () -> Unit, segmentLabel: String? = null, segmentIcon: String? = null, onSegmentClick: (() -> Unit)? = null) {
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = TopAppBarDefaults.TitlePadding), verticalAlignment = Alignment.CenterVertically) {
-        ProxyCrumbText(label = rootLabel, onClick = onRootClick)
+internal fun ProxyTitleBreadcrumb(rootLabel: String, onRootClick: () -> Unit, segmentLabel: String? = null, segmentIcon: String? = null, onSegmentClick: (() -> Unit)? = null, collapsed: Boolean = false, modifier: Modifier = Modifier) {
+    Row(modifier = modifier.then(if (collapsed) Modifier else Modifier.fillMaxWidth()).padding(horizontal = if (collapsed) 0.dp else TopAppBarDefaults.TitlePadding), verticalAlignment = Alignment.CenterVertically) {
+        ProxyCrumbButton(label = rootLabel, onClick = onRootClick, collapsed = collapsed)
         if (segmentLabel != null) {
-            Text(
-                text = " > ",
-                style = MiuixTheme.textStyles.title1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-            )
-            val segmentIconUri = segmentIcon?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeGroupIconUri)
-            if (segmentIconUri != null) { GroupIcon(iconUri = segmentIconUri, width = UiDp.dp32) }
-            ProxyCrumbText(
-                label = segmentLabel,
-                onClick = onSegmentClick,
-                modifier = Modifier.weight(1f, fill = false),
-            )
+            Text(text = if (collapsed) ">" else " > ", style = if (collapsed) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.title1, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1)
+            val segmentIconUri = segmentIcon ?.trim() ?.takeIf { it.isNotEmpty() } ?.let(::normalizeGroupIconUri)
+            ProxyCrumbButton(label = segmentLabel, onClick = onSegmentClick, iconUri = segmentIconUri, collapsed = collapsed, modifier = Modifier.weight(1f, fill = false))
         }
     }
 }
 
 /**
  * 面包屑可点段。
- * Press 时序是按压动效能被看见的前提：clickable 会把 Press/Release 折叠到同一拍，collectIsPressedAsState 观察不到 pressed=true，animate*AsState 就永远不会离开静止值。
+ * Press 时序是按压动效能被看见的前提：clickable 可能在同一帧完成 Press/Release，使 collectIsPressedAsState 错过按下态。
  * 这里用 pressable(delay=null) 在 down 瞬间 emit Press，短按也有完整的按压帧。
- * 缩放走 SinkFeedback 节点内 Animatable（不依赖 recomposition）；降透明/底色按下 snap、松手弹簧回弹。
+ * 缩放走 SinkFeedback 节点内 Animatable（不依赖 recomposition）；透明度与底色按下 snap，透明度松手弹簧回弹，底色松手以快速 tween 恢复。
  */
 @Composable
-private fun ProxyCrumbText(label: String, onClick: (() -> Unit)?, modifier: Modifier = Modifier) {
+private fun ProxyCrumbButton(label: String, onClick: (() -> Unit)?, modifier: Modifier = Modifier, collapsed: Boolean = false, iconUri: String? = null) {
     val pressSource = remember { MutableInteractionSource() }
     val clickSource = remember { MutableInteractionSource() }
     val sinkFeedback = remember { SinkFeedback(sinkAmount = 0.88f, animationSpec = AnimationSpecs.ButtonPressSpring) }
@@ -488,44 +467,32 @@ private fun ProxyCrumbText(label: String, onClick: (() -> Unit)?, modifier: Modi
             else tween(AnimationSpecs.DURATION_FAST)
         },
         label = "crumb_press_bg",
-    ) {
-        if (it) {
-            MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f)
-        } else {
-            Color.Transparent
-        }
-    }
+    ) { if (it) { MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f) } else { Color.Transparent } }
     Box(
-        modifier = modifier.clip(RoundedCornerShape(UiDp.dp8)).background(pressBg)
-        .pressable(
-            interactionSource = pressSource,
-            indication = sinkFeedback,
-            enabled = onClick != null,
-            delay = null,
-        )
-        .clickable(
-            interactionSource = clickSource,
-            indication = null,
-            enabled = onClick != null,
-            role = Role.Button,
-        ) { onClick?.invoke() },
+        modifier = modifier.heightIn(min = if (collapsed) GlassTopActionDefaults.ContainerSize else 0.dp).clip(RoundedCornerShape(UiDp.dp8)).background(pressBg)
+        .pressable(interactionSource = pressSource, indication = sinkFeedback, enabled = onClick != null, delay = null)
+        .clickable(interactionSource = clickSource, indication = null, enabled = onClick != null, role = Role.Button) { onClick?.invoke() },
         contentAlignment = Alignment.CenterStart,
     ) {
-        EmojiAwareText(
-            text = label,
-            style = MiuixTheme.textStyles.title1,
-            color = MiuixTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.graphicsLayer { this.alpha = textAlpha }.padding(horizontal = UiDp.dp8, vertical = UiDp.dp4),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (collapsed) UiDp.dp2 else 0.dp)) {
+            if (iconUri != null) { GroupIcon(iconUri = iconUri, width = if (collapsed) UiDp.dp16 else UiDp.dp32, modifier = Modifier.graphicsLayer { this.alpha = textAlpha }) }
+            EmojiAwareText(
+                text = label,
+                style = if (collapsed) MiuixTheme.textStyles.title4 else MiuixTheme.textStyles.title1,
+                color = MiuixTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.graphicsLayer { this.alpha = textAlpha }.padding(horizontal = if (collapsed) UiDp.dp4 else UiDp.dp8, vertical = if (collapsed) 0.dp else UiDp.dp4),
+            )
+        }
     }
 }
 
-/** Stable TopBar sub-composable for [ProxyPager] — only recomposes when sort/display params change. */
+/** 代理页 TopBar 参数适配，负责组选择状态、面包屑返回及搜索状态转发。 */
 @Composable
 private fun PagerTopBar(
     scrollBehavior: ScrollBehavior,
+    titleCollapsed: Boolean,
     isContentScrolled: Boolean? = null,
     onNavigateToProviders: (() -> Unit)?,
     onTestAllDelay: () -> Unit,
@@ -538,9 +505,14 @@ private fun PagerTopBar(
     onSortSelected: (ProxySortMode) -> Unit,
     selectedGroupName: String?,
     selectedGroupIcon: String? = null,
+    chain: List<String> = emptyList(),
+    groupIconLookup: ((String) -> String?)? = null,
     onBackToGroups: () -> Unit,
     onTitleScrollTop: () -> Unit,
     searchVisible: Boolean = false,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    tabContent: (@Composable () -> Unit)? = null,
     onSearchToggle: (() -> Unit)? = null,
     tabsMode: Boolean? = null,
     onTabsModeChange: ((Boolean) -> Unit)? = null,
@@ -549,9 +521,12 @@ private fun PagerTopBar(
         title = if (selectedGroupName == null) { FlyTxt.Component.BottomBar.Proxy } else { "${FlyTxt.Component.BottomBar.Proxy} > $selectedGroupName" },
         groupName = selectedGroupName,
         groupIcon = selectedGroupIcon,
+        chain = chain,
+        groupIconLookup = groupIconLookup,
         onTitleRootClick = { if (selectedGroupName == null) onTitleScrollTop() else onBackToGroups() },
         onTitleGroupClick = onTitleScrollTop,
         scrollBehavior = scrollBehavior,
+        titleCollapsed = titleCollapsed,
         isContentScrolled = isContentScrolled,
         showBack = false,
         onBack = {},
@@ -567,6 +542,9 @@ private fun PagerTopBar(
         tabsMode = tabsMode,
         onTabsModeChange = onTabsModeChange,
         searchVisible = searchVisible,
+        searchQuery = searchQuery,
+        onSearchQueryChange = onSearchQueryChange,
+        tabContent = tabContent,
         onSearchToggle = onSearchToggle,
     )
 }
@@ -576,11 +554,14 @@ internal fun ProxyTopBar(
     title: String,
     groupName: String? = null,
     groupIcon: String? = null,
+    chain: List<String> = emptyList(),
+    groupIconLookup: ((String) -> String?)? = null,
     /** 面包屑根段文案；双栏右栏用组名作单段可点标题时传入。 */
     titleRootLabel: String = FlyTxt.Component.BottomBar.Proxy,
     onTitleRootClick: (() -> Unit)? = null,
     onTitleGroupClick: (() -> Unit)? = null,
     scrollBehavior: ScrollBehavior,
+    titleCollapsed: Boolean = false,
     isContentScrolled: Boolean? = null,
     showBack: Boolean,
     onBack: () -> Unit,
@@ -594,114 +575,105 @@ internal fun ProxyTopBar(
     onDisplayModeSelected: (ProxyDisplayMode) -> Unit,
     onSortSelected: (ProxySortMode) -> Unit,
     searchVisible: Boolean = false,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    tabContent: (@Composable () -> Unit)? = null,
     onSearchToggle: (() -> Unit)? = null,
     tabsMode: Boolean? = null,
     onTabsModeChange: ((Boolean) -> Unit)? = null,
 ) {
-    val spacing = AppTheme.spacing
     val topBarBackdrop = LocalTopBarBackdrop.current
-    val titleContent: (@Composable () -> Unit)? = if (onTitleRootClick == null) { null } else {
-        {
-            ProxyTitleBreadcrumb(
-                rootLabel = titleRootLabel,
-                onRootClick = onTitleRootClick,
-                segmentLabel = groupName,
-                segmentIcon = groupIcon,
-                onSegmentClick = onTitleGroupClick,
-            )
+    val sortMenuAnchor = rememberGlassPopupAnchor()
+    val topActions = listOfNotNull(
+        onSearchToggle?.let { search -> GlassTopAction(icon = FlyCat.Search, contentDescription = FlyTxt.Component.Editor.Action.Search, onClick = search) },
+        onLocateCurrentProxy?.let { locate -> GlassTopAction(icon = FlyCat.Eye, contentDescription = "Eye current proxy", onClick = locate) },
+        GlassTopAction(icon = FlyCat.Speed, contentDescription = FlyTxt.Proxy.Action.Test, onClick = onTestAllDelay),
+        GlassTopAction(
+            icon = FlyCat.ListChevronsUpDown,
+            contentDescription = FlyTxt.Proxy.Action.Sort,
+            onClick = { onShowSortPopupChange(true) },
+            anchor = sortMenuAnchor,
+            popup = {
+                NodeSortPopup(
+                    show = showSortPopup,
+                    onDismiss = { onShowSortPopupChange(false) },
+                    anchor = sortMenuAnchor,
+                    displayMode = displayMode,
+                    sortMode = sortMode,
+                    onDisplayModeSelected = onDisplayModeSelected,
+                    onSortSelected = onSortSelected,
+                    tabsMode = tabsMode,
+                    onTabsModeChange = onTabsModeChange,
+                )
+            },
+        ),
+    )
+    val rootTitleClick = onTitleRootClick
+    val titleContent: (@Composable () -> Unit)? = if (rootTitleClick == null) { null } else {
+        { ProxyTitleBreadcrumb(rootLabel = titleRootLabel, onRootClick = rootTitleClick, segmentLabel = groupName, segmentIcon = groupIcon, onSegmentClick = onTitleGroupClick) }
+    }
+    val hasNavigationIcon = showBack || onNavigateToProviders != null
+    val collapsedInBar = titleCollapsed && titleContent != null
+    val navigationButton: @Composable () -> Unit = {
+        Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
+            if (showBack) {
+                GlassTopIconButton(action = GlassTopAction(icon = MiuixIcons.Glass.Back, contentDescription = FlyTxt.Component.Navigation.Back, onClick = onBack), backdrop = topBarBackdrop)
+            } else if (onNavigateToProviders != null) {
+                GlassTopIconButton(action = GlassTopAction(icon = FlyCat.Folders, contentDescription = FlyTxt.Providers.Title, onClick = onNavigateToProviders), backdrop = topBarBackdrop)
+            }
         }
     }
-
-    TopBar(
-        title = title,
-        titleContent = titleContent,
-        scrollBehavior = scrollBehavior,
-        isContentScrolled = isContentScrolled,
-        navigationIconPadding = UiDp.dp24,
-        actionIconPadding = UiDp.dp24,
-        navigationIcon = {
-            Row(horizontalArrangement = Arrangement.spacedBy(UiDp.dp12)) {
-                if (showBack) {
-                    GlassTopIconButton(
-                        action = GlassTopAction(
-                            icon = MiuixIcons.Glass.Back,
-                            contentDescription = FlyTxt.Component.Navigation.Back,
-                            onClick = onBack,
-                        ),
-                        backdrop = topBarBackdrop,
-                    )
-                } else {
-                    if (onNavigateToProviders != null) {
-                        GlassTopIconButton(
-                            action = GlassTopAction(
-                                icon = FlyCat.Folders,
-                                contentDescription = FlyTxt.Providers.Title,
-                                onClick = onNavigateToProviders,
-                            ),
-                            backdrop = topBarBackdrop,
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val collapsedNavigationWidth = if (collapsedInBar) { (maxWidth - UiDp.dp24 - UiDp.dp24 - glassTopActionsWidth(topActions.size) - UiDp.dp8 - if (hasNavigationIcon) GlassTopActionDefaults.ContainerSize else 0.dp).coerceAtLeast(GlassTopActionDefaults.ContainerSize) } else { GlassTopActionDefaults.ContainerSize }
+        val barTitleContent: (@Composable () -> Unit)? = if (collapsedInBar) { { } } else { titleContent }
+        TopBar(
+            title = title,
+            titleContent = barTitleContent,
+            scrollBehavior = scrollBehavior,
+            titleCollapsed = titleCollapsed,
+            isContentScrolled = isContentScrolled,
+            navigationIconPadding = UiDp.dp24,
+            actionIconPadding = UiDp.dp24,
+            navigationIcon = {
+                if (collapsedInBar) {
+                    Row(modifier = Modifier.width(collapsedNavigationWidth), verticalAlignment = Alignment.CenterVertically) {
+                        if (hasNavigationIcon) { Box(Modifier.size(GlassTopActionDefaults.ContainerSize)) { navigationButton() } }
+                        if (rootTitleClick != null) {
+                            ProxyTitleBreadcrumb(rootLabel = titleRootLabel, onRootClick = rootTitleClick, segmentLabel = groupName, segmentIcon = groupIcon, onSegmentClick = onTitleGroupClick, collapsed = true, modifier = Modifier.weight(1f).padding(start = UiDp.dp8))
+                        }
+                    }
+                } else { navigationButton() }
+            },
+            // 右侧动作合并为一枚玻璃胶囊，排序菜单挂在末位图标上；搜索与定位按当前界面启用。
+            actions = { GlassTopActionPill(actions = topActions, backdrop = topBarBackdrop) },
+            // 标签、链路与搜索属于顶栏前景层，避免被渐进模糊背景覆盖。
+            bottomContent = {
+                Column(Modifier.fillMaxWidth()) {
+                    tabContent?.invoke()
+                    if (chain.isNotEmpty()) { ProxyChainIndicator(chain = chain, modifier = Modifier.fillMaxWidth().padding(bottom = UiDp.dp7), groupIconLookup = groupIconLookup) }
+                    AnimatedVisibility(visible = searchVisible) {
+                        SearchInputToolbar(
+                            query = searchQuery,
+                            onQueryChange = onSearchQueryChange,
+                            modifier = Modifier.fillMaxWidth().padding(start = UiDp.dp12, end = UiDp.dp12, top = if (chain.isNotEmpty() || tabContent != null) UiDp.dp5 else UiDp.dp12, bottom = UiDp.dp8),
                         )
                     }
                 }
-            }
-        },
-        actions = {
-            val sortMenuAnchor = rememberGlassPopupAnchor()
-            // 右侧动作合并为一枚玻璃胶囊（组列表 2 图标 / 节点页 4 图标），排序菜单挂在末位图标上。
-            GlassTopActionPill(
-                actions = listOfNotNull(
-                    onSearchToggle?.let { search ->
-                        GlassTopAction(
-                            icon = FlyCat.Search,
-                            contentDescription = FlyTxt.Component.Editor.Action.Search,
-                            onClick = search,
-                        )
-                    },
-                    onLocateCurrentProxy?.let { locate ->
-                        GlassTopAction(
-                            icon = FlyCat.Eye,
-                            contentDescription = "Eye current proxy",
-                            onClick = locate,
-                        )
-                    },
-                    GlassTopAction(
-                        icon = FlyCat.Speed,
-                        contentDescription = FlyTxt.Proxy.Action.Test,
-                        onClick = onTestAllDelay,
-                    ),
-                    GlassTopAction(
-                        icon = FlyCat.ListChevronsUpDown,
-                        contentDescription = FlyTxt.Proxy.Action.Sort,
-                        onClick = { onShowSortPopupChange(true) },
-                        anchor = sortMenuAnchor,
-                        popup = {
-                            NodeSortPopup(
-                                show = showSortPopup,
-                                onDismiss = { onShowSortPopupChange(false) },
-                                anchor = sortMenuAnchor,
-                                displayMode = displayMode,
-                                sortMode = sortMode,
-                                onDisplayModeSelected = onDisplayModeSelected,
-                                onSortSelected = onSortSelected,
-                                tabsMode = tabsMode,
-                                onTabsModeChange = onTabsModeChange,
-                            )
-                        },
-                    ),
-                ),
-                backdrop = topBarBackdrop,
-            )
-        },
-    )
+            },
+        )
+    }
+}
+
+// 导航槽必须显式预留右侧胶囊宽度，折叠标题才会留在顶部控制行内而不是覆盖动作按钮。
+private fun glassTopActionsWidth(actionCount: Int): Dp {
+    if (actionCount < 2) return GlassTopActionDefaults.ContainerSize * actionCount
+    return with(GlassTopActionDefaults) { PillHorizontalPadding * 2 + (IconSize + PillIconHitInset) * actionCount + PillIconGap * (actionCount - 1) }
 }
 
 private fun ProxyGroupInfo.filterNodes(query: String): List<Proxy> {
     val normalizedQuery = query.trim()
     if (normalizedQuery.isEmpty()) return proxies
-    return proxies.filter { proxy ->
-        proxy.name.contains(normalizedQuery, ignoreCase = true) ||
-            proxy.title.contains(normalizedQuery, ignoreCase = true) ||
-            proxy.subtitle.contains(normalizedQuery, ignoreCase = true)
-    }
+    return proxies.filter { proxy -> proxy.name.contains(normalizedQuery, ignoreCase = true) || proxy.title.contains(normalizedQuery, ignoreCase = true) || proxy.subtitle.contains(normalizedQuery, ignoreCase = true) }
 }
 
 @Composable
@@ -722,17 +694,12 @@ internal fun NodeListPage(
     onTestProxyDelay: (proxyName: String) -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit,
     searchQuery: String = "",
-    onSearchQueryChange: (String) -> Unit = {},
     searchVisible: Boolean = false,
     onSearchVisibleChange: (Boolean) -> Unit = {},
     testProgress: ProxyViewModel.DelayTestProgress? = null,
 ) {
     if (group == null) {
-        CenteredText(
-            firstLine = FlyTxt.Proxy.Empty.NoNodes,
-            secondLine = FlyTxt.Proxy.Empty.Hint,
-            showEmptyResourceIllustration = true,
-        )
+        CenteredText(firstLine = FlyTxt.Proxy.Empty.NoNodes, secondLine = FlyTxt.Proxy.Empty.Hint, showEmptyResourceIllustration = true)
         return
     }
     val spacing = LocalSpacing.current
@@ -746,70 +713,18 @@ internal fun NodeListPage(
                 null
             } else {
                 val currentProxy = childGroup.proxies.firstOrNull { it.name == childGroup.now }
-                (currentProxy?.name ?: childGroup.now)
-                    .trim()
-                    .ifBlank { FlyTxt.Proxy.Mode.Direct }
-                    .takeIf { it.isNotBlank() && it != proxy.name.trim() }
+                (currentProxy?.name ?: childGroup.now).trim().ifBlank { FlyTxt.Proxy.Mode.Direct }.takeIf { it.isNotBlank() && it != proxy.name.trim() }
             }
         }
     }
-
     val visibleProxies = remember(group.proxies, searchQuery) { group.filterNodes(searchQuery) }
     val revealCount = rememberRowReveal(itemCount = visibleProxies.size, replayKey = group.name, listState = listState)
     // 滚动列表即收起搜索框：搜索是低频操作，避免常驻占位。
-    if (searchVisible) {
-        LaunchedEffect(listState) {
-            snapshotFlow { listState.isScrollInProgress }
-                .collect { scrolling -> if (scrolling) onSearchVisibleChange(false) }
-        }
-    }
-
-    KeepLazyListTopAnchorOnReorder(
-        listState = listState,
-        itemKeys = listItemKeys,
-        enabled = sortMode == ProxySortMode.BY_LATENCY,
-        scrollToTopOnEnabled = true,
-    )
-
-    LaunchedEffect(isTesting) {
-        if (isTesting && listState.isScrolledFromTop()) {
-            listState.animateScrollToItem(0)
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = outerInnerPadding.calculateTopPadding()),
-    ) {
-        if (group.chainPath.isNotEmpty()) {
-            ProxyChainIndicator(
-                chain = group.chainPath,
-                // 下缘外距补偿大标题行盒下落白，与列表首项间距对称于标题↔链路条间距。
-                modifier = Modifier.fillMaxWidth().padding(bottom = UiDp.dp7),
-                groupIconLookup = { name -> groupMap[name]?.icon },
-            )
-        }
-        AnimatedVisibility(visible = searchVisible) {
-            SearchInputToolbar(
-                query = searchQuery,
-                onQueryChange = onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(
-                    start = UiDp.dp12,
-                    end = UiDp.dp12,
-                    // Column 已扣除 topBar 高度，这里不要再加 outerInnerPadding.top。
-                    top = if (group.chainPath.isNotEmpty()) UiDp.dp5 else UiDp.dp12,
-                    bottom = UiDp.dp8,
-                ),
-            )
-        }
-        NodeTestPullToRefresh(
-            isRefreshing = isTesting,
-            onRefresh = onTestDelay,
-            tested = testProgress?.tested ?: 0,
-            total = testProgress?.total ?: 0,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-        ) {
+    if (searchVisible) { LaunchedEffect(listState) { snapshotFlow { listState.isScrollInProgress }.collect { scrolling -> if (scrolling) onSearchVisibleChange(false) } } }
+    KeepLazyListTopAnchorOnReorder(listState = listState, itemKeys = listItemKeys, enabled = sortMode == ProxySortMode.BY_LATENCY, scrollToTopOnEnabled = true)
+    LaunchedEffect(isTesting) { if (isTesting && listState.isScrolledFromTop()) { listState.animateScrollToItem(0) } }
+    Column(modifier = Modifier.fillMaxSize().padding(top = outerInnerPadding.calculateTopPadding())) {
+        NodeTestPullToRefresh(isRefreshing = isTesting, onRefresh = onTestDelay, tested = testProgress?.tested ?: 0, total = testProgress?.total ?: 0, modifier = Modifier.weight(1f).fillMaxWidth()) {
             ScreenLazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 lazyListState = listState,
@@ -817,11 +732,7 @@ internal fun NodeListPage(
                 innerPadding = outerInnerPadding,
                 enableGlobalScroll = true,
                 onScrollDirectionChanged = onScrollDirectionChanged,
-                contentPadding = PaddingValues(
-                    start = UiDp.dp12,
-                    end = UiDp.dp12,
-                    bottom = mainInnerPadding.calculateBottomPadding() + spacing.space12,
-                ),
+                contentPadding = PaddingValues(start = UiDp.dp12, end = UiDp.dp12, bottom = mainInnerPadding.calculateBottomPadding() + spacing.space12),
             ) {
                 nodeGridItems(
                     proxies = visibleProxies,
@@ -830,17 +741,10 @@ internal fun NodeListPage(
                     displayMode = displayMode,
                     groupIconLookup = { name -> groupMap[name]?.icon },
                     onProxyClick = { proxyName ->
-                        if (group.type == Proxy.Type.Selector) {
-                            onSelectProxy(group.name, proxyName)
-                        } else if (
-                            group.type == Proxy.Type.URLTest ||
-                            group.type == Proxy.Type.Fallback
-                        ) {
+                        if (group.type == Proxy.Type.Selector) { onSelectProxy(group.name, proxyName) } else if (group.type == Proxy.Type.URLTest || group.type == Proxy.Type.Fallback) {
                             val target = if (proxyName == group.fixed) "" else proxyName
                             onForceSelectProxy(group.name, target)
-                        } else {
-                            onTestDelay()
-                        }
+                        } else { onTestDelay() }
                     },
                     isDelayTesting = isTesting,
                     testingProxyNames = testingProxyNames,
@@ -874,12 +778,7 @@ private fun ProxyContent(
         lazyListState = listState,
         innerPadding = innerPadding,
         enableGlobalScroll = true,
-        contentPadding = PaddingValues(
-            start = UiDp.dp12,
-            end = UiDp.dp12,
-            top = innerPadding.calculateTopPadding() + UiDp.dp2,
-            bottom = mainInnerPadding.calculateBottomPadding() + spacing.space12,
-        ),
+        contentPadding = PaddingValues(start = UiDp.dp12, end = UiDp.dp12, top = innerPadding.calculateTopPadding() + UiDp.dp2, bottom = mainInnerPadding.calculateBottomPadding() + spacing.space12),
     ) {
         nodeGroupItems(
             groups = proxyGroups,

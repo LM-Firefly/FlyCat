@@ -23,6 +23,7 @@ package com.github.lmfirefly.flycat.presentation.component.misc
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import com.github.lmfirefly.flycat.presentation.component.input.EnumSelector
 import com.github.lmfirefly.flycat.presentation.component.input.GlassSwitch
@@ -76,10 +77,12 @@ fun PreferenceArrowItem(
 fun PreferenceValueItem(
     title: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     summary: String? = null,
     endActions: @Composable (RowScope.() -> Unit)? = null,
 ) {
     BasicComponent(
+        modifier = modifier,
         title = title,
         summary = summary,
         endActions = endActions,

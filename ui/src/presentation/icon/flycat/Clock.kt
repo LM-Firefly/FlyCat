@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -39,37 +40,39 @@ val FlyCat.clock: ImageVector
             name = "clock",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
+            viewportWidth = 26.0f,
+            viewportHeight = 26.0f
         ).apply {
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(12f, 6f)
-                verticalLineToRelative(6f)
-                lineToRelative(4f, 2f)
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(22f, 12f)
-                arcToRelative(10f, 10f, 0f, isMoreThanHalf = true, isPositiveArc = false, -11f, 9.95f)
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveToRelative(22f, 16f)
-                lineToRelative(-5.5f, 5.5f)
-                lineTo(14f, 19f)
+            group(translationX = 1f, translationY = 1f) {
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round
+                ) {
+                    moveTo(12f, 6f)
+                    verticalLineToRelative(6f)
+                    lineToRelative(4f, 2f)
+                }
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round
+                ) {
+                    moveTo(22f, 12f)
+                    arcToRelative(10f, 10f, 0f, isMoreThanHalf = true, isPositiveArc = false, -11f, 9.95f)
+                }
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round
+                ) {
+                    moveToRelative(22f, 16f)
+                    lineToRelative(-5.5f, 5.5f)
+                    lineTo(14f, 19f)
+                }
             }
         }.build()
 

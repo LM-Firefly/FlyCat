@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap.Companion.Round
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.ImageVector.Builder
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
@@ -41,54 +42,56 @@ val FlyCat.Atom: ImageVector
             name = "Atom",
             defaultWidth = 24.0.dp,
             defaultHeight = 24.0.dp,
-            viewportWidth = 24.0f,
-            viewportHeight = 24.0f,
+            viewportWidth = 26.0f,
+            viewportHeight = 26.0f,
         ).apply {
-            path(
-                fill = SolidColor(Color(0x00000000)),
-                stroke = SolidColor(Color(0xFF000000)),
-                strokeLineWidth = 2.0f,
-                strokeLineCap = Round,
-                strokeLineJoin = StrokeJoin.Round,
-                strokeLineMiter = 4.0f,
-                pathFillType = NonZero,
-            ) {
-                moveTo(12.0f, 12.0f)
-                moveToRelative(-1.0f, 0.0f)
-                arcToRelative(1.0f, 1.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, 2.0f, 0.0f)
-                arcToRelative(1.0f, 1.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, -2.0f, 0.0f)
-            }
-            path(
-                fill = SolidColor(Color(0x00000000)),
-                stroke = SolidColor(Color(0xFF000000)),
-                strokeLineWidth = 2.0f,
-                strokeLineCap = Round,
-                strokeLineJoin = StrokeJoin.Round,
-                strokeLineMiter = 4.0f,
-                pathFillType = NonZero,
-            ) {
-                moveTo(20.2f, 20.2f)
-                curveToRelative(2.04f, -2.03f, 0.02f, -7.36f, -4.5f, -11.9f)
-                curveToRelative(-4.54f, -4.52f, -9.87f, -6.54f, -11.9f, -4.5f)
-                curveToRelative(-2.04f, 2.03f, -0.02f, 7.36f, 4.5f, 11.9f)
-                curveToRelative(4.54f, 4.52f, 9.87f, 6.54f, 11.9f, 4.5f)
-                close()
-            }
-            path(
-                fill = SolidColor(Color(0x00000000)),
-                stroke = SolidColor(Color(0xFF000000)),
-                strokeLineWidth = 2.0f,
-                strokeLineCap = Round,
-                strokeLineJoin = StrokeJoin.Round,
-                strokeLineMiter = 4.0f,
-                pathFillType = NonZero,
-            ) {
-                moveTo(15.7f, 15.7f)
-                curveToRelative(4.52f, -4.54f, 6.54f, -9.87f, 4.5f, -11.9f)
-                curveToRelative(-2.03f, -2.04f, -7.36f, -0.02f, -11.9f, 4.5f)
-                curveToRelative(-4.52f, 4.54f, -6.54f, 9.87f, -4.5f, 11.9f)
-                curveToRelative(2.03f, 2.04f, 7.36f, 0.02f, 11.9f, -4.5f)
-                close()
+            group(translationX = 1f, translationY = 1f) {
+                path(
+                    fill = SolidColor(Color(0x00000000)),
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4.0f,
+                    pathFillType = NonZero,
+                ) {
+                    moveTo(12.0f, 12.0f)
+                    moveToRelative(-1.0f, 0.0f)
+                    arcToRelative(1.0f, 1.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, 2.0f, 0.0f)
+                    arcToRelative(1.0f, 1.0f, 0.0f, isMoreThanHalf = true, isPositiveArc = true, -2.0f, 0.0f)
+                }
+                path(
+                    fill = SolidColor(Color(0x00000000)),
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4.0f,
+                    pathFillType = NonZero,
+                ) {
+                    moveTo(20.2f, 20.2f)
+                    curveToRelative(2.04f, -2.03f, 0.02f, -7.36f, -4.5f, -11.9f)
+                    curveToRelative(-4.54f, -4.52f, -9.87f, -6.54f, -11.9f, -4.5f)
+                    curveToRelative(-2.04f, 2.03f, -0.02f, 7.36f, 4.5f, 11.9f)
+                    curveToRelative(4.54f, 4.52f, 9.87f, 6.54f, 11.9f, 4.5f)
+                    close()
+                }
+                path(
+                    fill = SolidColor(Color(0x00000000)),
+                    stroke = SolidColor(Color(0xFF000000)),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                    strokeLineMiter = 4.0f,
+                    pathFillType = NonZero,
+                ) {
+                    moveTo(15.7f, 15.7f)
+                    curveToRelative(4.52f, -4.54f, 6.54f, -9.87f, 4.5f, -11.9f)
+                    curveToRelative(-2.03f, -2.04f, -7.36f, -0.02f, -11.9f, 4.5f)
+                    curveToRelative(-4.52f, 4.54f, -6.54f, 9.87f, -4.5f, 11.9f)
+                    curveToRelative(2.03f, 2.04f, 7.36f, 0.02f, 11.9f, -4.5f)
+                    close()
+                }
             }
         }.build()
         return atomVector!!

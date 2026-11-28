@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -40,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.locale.FlyTxt
@@ -62,6 +64,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.NavigationB
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.BadgePlus
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
 import kotlinx.coroutines.flow.drop
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -558,6 +561,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
         ruleTypePresets.indexOfFirst { it.equals(ruleType, ignoreCase = true) }.coerceAtLeast(0)
     }
     val selectedTargetIndex = remember(target) { targetItems.indexOf(target).coerceAtLeast(0) }
+    val rowModifier = Modifier.clip(RoundedCornerShape(themeCardCornerRadius()))
 
     AppFormDialog(
         show = true,
@@ -590,6 +594,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
         error = error,
     ) {
         WindowDropdownPreference(
+            modifier = rowModifier,
             title = FlyTxt.Component.Editor.Rule.Type,
             items = ruleTypePresets,
             selectedIndex = selectedRuleTypeIndex,
@@ -599,6 +604,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
             },
         )
         WindowDropdownPreference(
+            modifier = rowModifier,
             title = FlyTxt.Component.Editor.Rule.Target,
             items = targetItems,
             selectedIndex = selectedTargetIndex,
@@ -615,6 +621,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
         )
         if (supportsRuleExtra(ruleType)) {
             PreferenceValueItem(
+                modifier = rowModifier,
                 title = FlyTxt.Component.Editor.Rule.Src,
                 summary = null,
                 onClick = { useSrc = !useSrc },
@@ -626,6 +633,7 @@ private fun RuleEditorDialog(title: String, onDismiss: () -> Unit, onConfirm: (S
                 },
             )
             PreferenceValueItem(
+                modifier = rowModifier,
                 title = FlyTxt.Component.Editor.Rule.NoResolve,
                 summary = null,
                 onClick = { useNoResolve = !useNoResolve },

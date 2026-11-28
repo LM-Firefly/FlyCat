@@ -26,51 +26,46 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.Dp
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyDisplayMode
 import com.github.lmfirefly.flycat.core.model.proxy.ProxyGroupInfo
 import com.github.lmfirefly.flycat.core.model.proxy.ProxySortMode
-import com.github.lmfirefly.flycat.feature.proxy.presentation.screen.node.NodeTabs
 import com.github.lmfirefly.flycat.feature.proxy.presentation.viewmodel.ProxyViewModel
 import com.github.lmfirefly.flycat.presentation.component.NoOpNestedScrollConnection
 import com.github.lmfirefly.flycat.presentation.component.navigation.LocalPagerState
 import com.github.lmfirefly.flycat.presentation.component.rememberNestedPagerHandoffConnection
-import com.github.lmfirefly.flycat.presentation.theme.UiDp
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
-/** 组名 tab 条（含上下留白）占用的内容顶部高度；节点页内容以此让位。 */
-internal val ProxyTabBandInset: Dp = UiDp.dp56
-
-/**
- * 顶栏动作（标题回顶/定位当前节点）对标签页模式当前页滚动面的寻址句柄。
- * 当前页每次重组时刷新指向，保证动作作用在用户正在看的那一页。
- */
+/** 标签页顶栏动作与当前滚动页状态的句柄。 */
 internal class ProxyTabsPageActions {
     var scrollTop: (() -> Unit)? = null
     var locateCurrent: (() -> Unit)? = null
+    var activeGroupName by mutableStateOf<String?>(null)
+    var activeListState by mutableStateOf<LazyListState?>(null)
+    var titleCollapsed by mutableStateOf(false)
 }
 
 /**
- * 「标签页模式」：一个可横滑的组名 tab 条 + 每组一页 HorizontalPager。
- * 与钻取式「组列表 ↔ 节点列表」互斥（由 [ProxyPagerContent] 分支选择）；本模式下直接铺开全部分组，翻页即换组，每组保留各自的滚动位置。
+ * 「标签页模式」的组页容器，组名 tab 条由 [ProxyTopBar] 的 tabContent 承载，本组件仅托管 HorizontalPager。
+ * 与钻取式「组列表 ↔ 节点列表」互斥（由 [ProxyPagerContent] 分支选择）；pager 按需组合组页，翻页即换组，每组通过 rememberSaveable 保留列表滚动位置。
  * 子 pager 只有滑到边界才把横滑手势交给主 pager（[rememberNestedPagerHandoffConnection]），避免误翻主页。
  */
 @Composable
@@ -88,22 +83,30 @@ internal fun ProxyGroupTabsPane(
     onTestProxyDelay: (groupName: String, proxyName: String) -> Unit,
     onSelectProxy: (groupName: String, proxyName: String) -> Unit,
     onForceSelectProxy: (groupName: String, proxyName: String) -> Unit,
+    pagerState: PagerState,
     pageActions: ProxyTabsPageActions,
     searchQuery: String = "",
-    onSearchQueryChange: (String) -> Unit = {},
     searchVisible: Boolean = false,
     onSearchVisibleChange: (Boolean) -> Unit = {},
     testProgress: ProxyViewModel.DelayTestProgress? = null,
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState { groups.size }
     val nestedHandoff = rememberNestedPagerHandoffConnection(parentState = LocalPagerState.current, childState = pagerState)
     // 按组名登记各组页的滚动面状态；顶栏动作的实际寻址走 [ProxyTabsPageActions]。
     val groupListStates = remember { mutableStateMapOf<String, LazyListState>() }
+    val activeListState = groups.getOrNull(pagerState.currentPage)?.let { groupListStates[it.name] }
+    LaunchedEffect(activeListState) { snapshotFlow { activeListState?.isProxyTitleCollapsed() == true }.collect { collapsed -> pageActions.titleCollapsed = collapsed } }
+    DisposableEffect(pageActions) {
+        onDispose {
+            pageActions.activeGroupName = null
+            pageActions.activeListState = null
+            pageActions.titleCollapsed = false
+        }
+    }
     val layoutDirection = LocalLayoutDirection.current
     val pagePadding = PaddingValues(
-        top = outerInnerPadding.calculateTopPadding() + ProxyTabBandInset,
+        top = outerInnerPadding.calculateTopPadding(),
         bottom = outerInnerPadding.calculateBottomPadding(),
         start = outerInnerPadding.calculateStartPadding(layoutDirection),
         end = outerInnerPadding.calculateEndPadding(layoutDirection),
@@ -123,13 +126,14 @@ internal fun ProxyGroupTabsPane(
             // 当前页每次重组刷新顶栏动作指向：回顶/定位只作用在用户正在看的那一页。
             if (page == pagerState.currentPage) {
                 SideEffect {
+                    pageActions.activeGroupName = group.name
+                    pageActions.activeListState = listState
                     pageActions.scrollTop = { coroutineScope.launch { if (listState.isScrolledFromTop()) { listState.animateScrollToItem(0) } } }
                     pageActions.locateCurrent = {
                         val proxyIndex = group.proxies.indexOfFirst { proxy -> proxy.name == group.now }
                         if (proxyIndex >= 0) {
                             // 搜索栏固定在滚动列表外，列表无头部偏移；双列每行两个节点。
-                            val listItemIndex = if (displayMode.isSingleColumn) proxyIndex
-                                else proxyIndex / 2
+                            val listItemIndex = if (displayMode.isSingleColumn) proxyIndex else proxyIndex / 2
                             coroutineScope.launch { listState.animateLocateToItem(listItemIndex) }
                         }
                     }
@@ -155,19 +159,9 @@ internal fun ProxyGroupTabsPane(
                 onTestProxyDelay = { proxyName -> onTestProxyDelay(group.name, proxyName) },
                 onScrollDirectionChanged = {},
                 searchQuery = searchQuery,
-                onSearchQueryChange = onSearchQueryChange,
                 searchVisible = searchVisible,
                 onSearchVisibleChange = onSearchVisibleChange,
                 testProgress = testProgress,
-            )
-        }
-        Box(modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(top = outerInnerPadding.calculateTopPadding())) {
-            NodeTabs(
-                groups = groups,
-                selectedIndex = pagerState.currentPage,
-                onSelect = { index ->
-                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                },
             )
         }
     }

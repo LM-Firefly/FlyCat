@@ -315,6 +315,7 @@ fun LogDetailScreen(
     val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
     val isCurrentFileRecording = viewModel.isCurrentFileRecording(fileName) && isRecording
     var logEntries by remember { mutableStateOf<List<LogEntry>>(emptyList()) }
+    val logEntryKeys = remember(logEntries) { stableLogEntryKeys(logEntries) }
     var isLoading by remember { mutableStateOf(true) }
     LaunchedEffect(fileName) {
         logEntries = viewModel.readLogContent(fileName).asReversed()
@@ -403,10 +404,27 @@ fun LogDetailScreen(
             isLoading -> { CenteredText(firstLine = FlyTxt.Log.Detail.Loading, secondLine = "") }
             logEntries.isEmpty() -> { CenteredText(firstLine = if (isCurrentFileRecording) FlyTxt.Log.Detail.WaitingLog else FlyTxt.Log.Detail.LogEmpty, secondLine = if (isCurrentFileRecording) { FlyTxt.Log.Detail.WillShowWhenGenerated } else { FlyTxt.Log.Detail.NoLogContent }) }
             else -> {
-                ScreenLazyColumn(scrollBehavior = scrollBehavior, innerPadding = innerPadding, topPadding = 20.dp) { items(logEntries.size, key = { idx -> "${logEntries[idx].time}_${logEntries[idx].level}_${idx}" }) { index -> LogEntryCard(entry = logEntries[index], index = index, isNewEntry = isCurrentFileRecording && index < 3) } }
+                ScreenLazyColumn(scrollBehavior = scrollBehavior, innerPadding = innerPadding, topPadding = 20.dp) {
+                    items(logEntries.size, key = { index -> logEntryKeys[index] }) { index -> LogEntryCard(entry = logEntries[index], index = index, isNewEntry = isCurrentFileRecording && index < 3) }
+                }
             }
         }
     }
+}
+
+private fun stableLogEntryKeys(entries: List<LogEntry>): List<String> {
+    // 完全相同的时间、级别和消息也可能重复，按从旧到新编号保证 key 唯一且不随新条目插入改变。
+    val occurrences = mutableMapOf<LogEntry, Int>()
+    return entries.asReversed().map { entry ->
+        val duplicateIndex = occurrences[entry] ?: 0
+        occurrences[entry] = duplicateIndex + 1
+        buildString {
+            append(entry.time.length).append(':').append(entry.time)
+            append(entry.level.name.length).append(':').append(entry.level.name)
+            append(entry.message.length).append(':').append(entry.message)
+            append('#').append(duplicateIndex)
+        }
+    }.asReversed()
 }
 
 @Composable

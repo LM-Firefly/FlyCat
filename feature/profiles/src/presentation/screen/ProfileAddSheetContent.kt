@@ -79,6 +79,7 @@ import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 import com.github.lmfirefly.flycat.presentation.icon.flycat.ArrowRight
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Copy
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Eye
+import com.github.lmfirefly.flycat.presentation.icon.flycat.EyeOff
 import com.github.lmfirefly.flycat.presentation.icon.flycat.PackageCheck
 import com.github.lmfirefly.flycat.presentation.icon.flycat.Sparkles
 import com.github.lmfirefly.flycat.presentation.theme.AnimationSpecs
@@ -430,7 +431,7 @@ private fun ManualProfileContent(
                     },
                 )
                 SheetHeaderIconButton(
-                    icon = FlyCat.Eye,
+                    icon = if (ageKeyVisible) FlyCat.EyeOff else FlyCat.Eye,
                     contentDescription = if (ageKeyVisible) FlyTxt.ProfilesPage.AgeKey.HideKey else FlyTxt.ProfilesPage.AgeKey.ShowKey,
                     onClick = { ageKeyVisible = !ageKeyVisible },
                 )

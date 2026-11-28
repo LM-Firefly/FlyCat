@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -39,37 +40,39 @@ val FlyCat.Cloud: ImageVector
             name = "Cloud",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
+            viewportWidth = 26.0f,
+            viewportHeight = 26.0f,
         ).apply {
-            path(
-                stroke = SolidColor(Color.White),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(17.5f, 19f)
-                horizontalLineTo(9f)
-                arcToRelative(
-                    7f,
-                    7f,
-                    0f,
-                    isMoreThanHalf = true,
-                    isPositiveArc = true,
-                    6.71f,
-                    -9f,
-                )
-                horizontalLineToRelative(1.79f)
-                arcToRelative(
-                    4.5f,
-                    4.5f,
-                    0f,
-                    isMoreThanHalf = true,
-                    isPositiveArc = true,
-                    0f,
-                    9f,
-                )
-                close()
+            group(translationX = 1f, translationY = 1f) {
+                path(
+                    stroke = SolidColor(Color.White),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveTo(17.5f, 19f)
+                    horizontalLineTo(9f)
+                    arcToRelative(
+                        7f,
+                        7f,
+                        0f,
+                        isMoreThanHalf = true,
+                        isPositiveArc = true,
+                        6.71f,
+                        -9f,
+                    )
+                    horizontalLineToRelative(1.79f)
+                    arcToRelative(
+                        4.5f,
+                        4.5f,
+                        0f,
+                        isMoreThanHalf = true,
+                        isPositiveArc = true,
+                        0f,
+                        9f,
+                    )
+                    close()
+                }
             }
         }.build()
 
