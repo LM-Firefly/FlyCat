@@ -2,7 +2,7 @@
 aboutLibraries = "15.3.0"
 activityCompose = "1.13.0"
 # Plugin & build-only versions
-androidGradlePlugin = "9.6.0-alpha04"
+androidGradlePlugin = "9.6.0-alpha06"
 androidxTestCore = "1.7.0"
 annotationJvm = "1.11.0"
 bcprov = "1.87"
