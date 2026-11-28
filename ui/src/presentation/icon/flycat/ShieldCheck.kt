@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -36,71 +37,73 @@ val FlyCat.ShieldCheck: ImageVector
             return shieldCheckVector!!
         }
         shieldCheckVector = ImageVector.Builder(
-            name = "IconName",
+            name = "ShieldCheck",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
+            viewportWidth = 26.0f,
+            viewportHeight = 26.0f,
         ).apply {
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(20f, 13f)
-                curveToRelative(0f, 5f, -3.5f, 7.5f, -7.66f, 8.95f)
-                arcToRelative(
-                    1f,
-                    1f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    -0.67f,
-                    -0.01f,
-                )
-                curveTo(7.5f, 20.5f, 4f, 18f, 4f, 13f)
-                verticalLineTo(6f)
-                arcToRelative(
-                    1f,
-                    1f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    1f,
-                    -1f,
-                )
-                curveToRelative(2f, 0f, 4.5f, -1.2f, 6.24f, -2.72f)
-                arcToRelative(
-                    1.17f,
-                    1.17f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    1.52f,
-                    0f,
-                )
-                curveTo(14.51f, 3.81f, 17f, 5f, 19f, 5f)
-                arcToRelative(
-                    1f,
-                    1f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    1f,
-                    1f,
-                )
-                close()
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveToRelative(9f, 12f)
-                lineToRelative(2f, 2f)
-                lineToRelative(4f, -4f)
+            group(translationX = 1f, translationY = 1f) {
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveTo(20f, 13f)
+                    curveToRelative(0f, 5f, -3.5f, 7.5f, -7.66f, 8.95f)
+                    arcToRelative(
+                        1f,
+                        1f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = true,
+                        -0.67f,
+                        -0.01f,
+                    )
+                    curveTo(7.5f, 20.5f, 4f, 18f, 4f, 13f)
+                    verticalLineTo(6f)
+                    arcToRelative(
+                        1f,
+                        1f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = true,
+                        1f,
+                        -1f,
+                    )
+                    curveToRelative(2f, 0f, 4.5f, -1.2f, 6.24f, -2.72f)
+                    arcToRelative(
+                        1.17f,
+                        1.17f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = true,
+                        1.52f,
+                        0f,
+                    )
+                    curveTo(14.51f, 3.81f, 17f, 5f, 19f, 5f)
+                    arcToRelative(
+                        1f,
+                        1f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = true,
+                        1f,
+                        1f,
+                    )
+                    close()
+                }
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveToRelative(9f, 12f)
+                    lineToRelative(2f, 2f)
+                    lineToRelative(4f, -4f)
+                }
             }
         }.build()
 

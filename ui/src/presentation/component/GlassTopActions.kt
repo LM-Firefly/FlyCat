@@ -64,13 +64,13 @@ import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** NexioSchedule 顶栏 chrome 尺寸：42dp 容器承载 22dp 图标。 */
+/** FlyCat 顶栏 chrome 尺寸：42dp 容器承载 22dp 图标。 */
 object GlassTopActionDefaults {
     val ContainerSize = 42.dp
     val IconSize = 22.dp
     /** 药丸形状内每个图标周围的热区扩展边距。 */
     val PillIconHitInset = 8.dp
-    val PillIconGap = 14.dp
+    val PillIconGap = 4.dp
     val PillHorizontalPadding = 10.dp
 }
 
@@ -83,7 +83,7 @@ data class GlassTopAction(
     val iconModifier: Modifier = Modifier,
     /** 图标颜色覆盖；[Color.Unspecified] 表示保持 chrome 自身的 on-surface 颜色。 */
     val tint: Color = Color.Unspecified,
-    /** 无实时 backdrop 时的按钮兜底色；[Color.Unspecified] 使用顶栏按钮默认色。 */
+    /** 按钮填充色；[Color.Unspecified] 使用顶栏按钮默认填充色。 */
     val fallbackFill: Color = Color.Unspecified,
     /** 由此按钮托管的菜单。在此处声明可以将菜单保持在触发它的操作旁边，这样就不需要猜测哪个覆盖层插槽属于哪个图标。 */
     val popup: (@Composable () -> Unit)? = null,
@@ -124,7 +124,7 @@ private val GlassTopAction.anchorIconModifier: Modifier
     get() = anchor?.let { Modifier.glassPopupAnchorContent(it) } ?: Modifier
 
 /**
- * NexioSchedule 风格的磨砂顶栏操作：两个或更多图标共享一个胶囊形底座，单个图标则各自站立于独立圆圈中（与参考顶栏的胶囊+圆形装饰一致）。
+ * FlyCat 风格的磨砂顶栏操作：两个或更多图标共享一个胶囊形底座，单个图标则置于独立圆圈中。
  * 容器在半透明表面色调下对 [backdrop] 进行磨砂处理，并带有加法边缘光轮廓——与浮动底部栏相同的材质配方——在没有实时 backdrop 或 RuntimeShader 时则回退为纯色胶囊。
  * 按压反馈为玻璃质感的轻微缩小，无水波纹效果。
  */
@@ -166,7 +166,7 @@ private fun PillActionSlot(action: GlassTopAction, modifier: Modifier = Modifier
 
 /**
  * 单个磨砂圆形按钮，是 [GlassTopActionPill] 外观的一图标变体。
- * 使用常驻中性玻璃表面与库 FAB 的按压反馈，避免 rc01 GlassIconButton 未把交互源传入表面渲染而丢失按下动画。
+ * 使用常驻中性玻璃表面，并由库 FAB 提供按压反馈。
  * 弹窗锚点经 [GlassTopAction.anchor] 透传，由玻璃表面发布折叠端点材质。
  */
 @Composable
@@ -248,5 +248,5 @@ private fun PillActionIcon(action: GlassTopAction) {
     }
 }
 
-/** 返回回退色，除非此颜色带有明确的色调。 */
+/** 颜色未指定时返回回退色。 */
 private fun Color.takeOr(fallback: Color): Color = if (this == Color.Unspecified) fallback else this

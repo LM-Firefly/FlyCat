@@ -26,11 +26,12 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
 
-/** 与 Eye/Speed 同规格的 24dp 描边放大镜（stroke 2 / round cap），避免 miuix 填充图标线宽不一致。 */
+/** 与 Eye/Speed 同规格的 24dp 描边放大镜（26dp viewport / 2.5 stroke / round cap），避免 miuix 填充图标线宽不一致。 */
 val FlyCat.Search: ImageVector
     get() {
         if (searchVector != null) {
@@ -40,43 +41,45 @@ val FlyCat.Search: ImageVector
             name = "Search",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
+            viewportWidth = 26.0f,
+            viewportHeight = 26.0f,
         ).apply {
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(11f, 3f)
-                arcToRelative(
-                    8f,
-                    8f,
-                    0f,
-                    isMoreThanHalf = true,
-                    isPositiveArc = true,
-                    0f,
-                    16f,
-                )
-                arcToRelative(
-                    8f,
-                    8f,
-                    0f,
-                    isMoreThanHalf = true,
-                    isPositiveArc = true,
-                    0f,
-                    -16f,
-                )
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(21f, 21f)
-                lineToRelative(-4.35f, -4.35f)
+            group(translationX = 1f, translationY = 1f) {
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveTo(11f, 3f)
+                    arcToRelative(
+                        8f,
+                        8f,
+                        0f,
+                        isMoreThanHalf = true,
+                        isPositiveArc = true,
+                        0f,
+                        16f,
+                    )
+                    arcToRelative(
+                        8f,
+                        8f,
+                        0f,
+                        isMoreThanHalf = true,
+                        isPositiveArc = true,
+                        0f,
+                        -16f,
+                    )
+                }
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveTo(21f, 21f)
+                    lineToRelative(-4.35f, -4.35f)
+                }
             }
         }
         .build()
