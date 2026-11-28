@@ -21,7 +21,6 @@
 
 plugins {
     id("flycat-compose-library")
-    id("com.google.devtools.ksp")
 }
 
 android {
@@ -33,5 +32,4 @@ dependencies {
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.ui)
     api(libs.lyricist)
-    ksp(libs.lyricist.processor)
 }
