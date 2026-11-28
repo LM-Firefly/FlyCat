@@ -27,9 +27,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import com.github.lmfirefly.flycat.core.model.profile.LinkOpenMode
 import com.github.lmfirefly.flycat.core.model.profile.ProfileLink
@@ -38,6 +40,7 @@ import com.github.lmfirefly.flycat.presentation.component.card.SectionCard
 import com.github.lmfirefly.flycat.presentation.component.misc.PreferenceEnumItem
 import com.github.lmfirefly.flycat.presentation.theme.AppTheme
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -120,11 +123,12 @@ private fun ProfileLinkList(
     val spacing = AppTheme.spacing
     val opacity = AppTheme.opacity
     val sizes = AppTheme.sizes
+    val rowModifier = Modifier.clip(RoundedCornerShape(themeCardCornerRadius()))
     SectionCard(title = FlyTxt.ProfilesPage.LinkSettings.Title) {
         Column(modifier = Modifier.fillMaxWidth()) {
             links.forEachIndexed { index, link ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().clickable { onOpen(link) }.padding(horizontal = spacing.space16, vertical = spacing.space12),
+                    modifier = rowModifier.fillMaxWidth().clickable { onOpen(link) }.padding(horizontal = spacing.space16, vertical = spacing.space12),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -36,79 +37,81 @@ val FlyCat.Save: ImageVector
             return saveVector!!
         }
         saveVector = ImageVector.Builder(
-            name = "IconName",
+            name = "Save",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
+            viewportWidth = 26.0f,
+            viewportHeight = 26.0f,
         ).apply {
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(12f, 3f)
-                verticalLineToRelative(12f)
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveToRelative(8f, 11f)
-                lineToRelative(4f, 4f)
-                lineToRelative(4f, -4f)
-            }
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(8f, 5f)
-                horizontalLineTo(4f)
-                arcToRelative(
-                    2f,
-                    2f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = false,
-                    -2f,
-                    2f,
-                )
-                verticalLineToRelative(10f)
-                arcToRelative(
-                    2f,
-                    2f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = false,
-                    2f,
-                    2f,
-                )
-                horizontalLineToRelative(16f)
-                arcToRelative(
-                    2f,
-                    2f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = false,
-                    2f,
-                    -2f,
-                )
-                verticalLineTo(7f)
-                arcToRelative(
-                    2f,
-                    2f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = false,
-                    -2f,
-                    -2f,
-                )
-                horizontalLineToRelative(-4f)
+            group(translationX = 1f, translationY = 1f) {
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveTo(12f, 3f)
+                    verticalLineToRelative(12f)
+                }
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveToRelative(8f, 11f)
+                    lineToRelative(4f, 4f)
+                    lineToRelative(4f, -4f)
+                }
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveTo(8f, 5f)
+                    horizontalLineTo(4f)
+                    arcToRelative(
+                        2f,
+                        2f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        -2f,
+                        2f,
+                    )
+                    verticalLineToRelative(10f)
+                    arcToRelative(
+                        2f,
+                        2f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        2f,
+                        2f,
+                    )
+                    horizontalLineToRelative(16f)
+                    arcToRelative(
+                        2f,
+                        2f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        2f,
+                        -2f,
+                    )
+                    verticalLineTo(7f)
+                    arcToRelative(
+                        2f,
+                        2f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        -2f,
+                        -2f,
+                    )
+                    horizontalLineToRelative(-4f)
+                }
             }
         }.build()
 

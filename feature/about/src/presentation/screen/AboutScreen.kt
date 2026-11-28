@@ -77,6 +77,7 @@ import com.github.lmfirefly.flycat.presentation.component.navigation.TopBar
 import com.github.lmfirefly.flycat.presentation.navigation.Navigator
 import com.github.lmfirefly.flycat.presentation.navigation.Route
 import com.github.lmfirefly.flycat.presentation.theme.UiDp
+import com.github.lmfirefly.flycat.presentation.theme.themeCardCornerRadius
 import com.github.lmfirefly.flycat.presentation.util.toast
 import com.github.lmfirefly.flycat.ui.platform.openUrl
 import kotlinx.coroutines.flow.StateFlow
@@ -90,7 +91,7 @@ import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// Kernel version is read directly from BuildConfig (set at build time from mihomo git).
+// 内核版本直接从 BuildConfig 读取（构建时根据 mihomo git 设置）。
 private fun formatKernelVersion(): String {
     val raw = BuildConfigHolder.kernelGitVersion.trimEnd('_')  // "Alpha_944e8e1_" → "Alpha_944e8e1"
     val parts = raw.split("_")
@@ -129,7 +130,6 @@ fun AboutScreen(navigator: Navigator) {
         if (wasDownloading && !downloadProgress.isDownloading) { dialogCandidate = null }
         wasDownloading = downloadProgress.isDownloading
     }
-
     // 与其他页面一致的标准版式：GlassScaffold + 全局壁纸玻璃背景 + 标准 TopBar；应用标识作为普通列表内容随列表滚动，不再做 hero 溶解渐隐。
     GlassScaffold(
         topBar = {
@@ -316,6 +316,7 @@ internal fun UpdateCandidateDialog(candidate: UpdateCandidate?, downloadProgress
                         packageOptions.forEach { packageOption ->
                             val isSelected = selectedPackage == packageOption
                             BasicComponent(
+                                modifier = Modifier.clip(RoundedCornerShape(themeCardCornerRadius())),
                                 title = packageOption.packageDisplayTitle(),
                                 summary = packageOption.packageDisplaySummary(),
                                 endActions = { GlassCheckbox(state = ToggleableState(isSelected), onClick = { selectedPackage = packageOption }) },

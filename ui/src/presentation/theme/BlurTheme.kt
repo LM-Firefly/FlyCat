@@ -46,7 +46,6 @@ import top.yukonga.miuix.kmp.material.GlassColorBlendMode
 import top.yukonga.miuix.kmp.material.GlassColorLayer
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
-import top.yukonga.miuix.kmp.material.sensor.rememberDeviceTilt
 import top.yukonga.miuix.kmp.material.withTilt
 
 /** 全局主题模糊样式（主题设置页写入，玻璃/模糊组件采样）。 */
@@ -117,10 +116,10 @@ fun blurTokenNames(foreground: Boolean): List<String> = presets(foreground).map 
 /** 混色模式下拉选项（序号即 [blurBlendToken] 的令牌索引）。 */
 fun blendDropdownOptions(foreground: Boolean): List<GlassDropdownOption<Int>> = blurTokenNames(foreground).mapIndexed { index, label -> GlassDropdownOption(value = index, label = label) }
 
-/** 滑杆数值显示（两位小数）。 */
+/** 滑杆数值显示（最多两位小数，向零截断）。 */
 fun sliderText(value: Float): String = "${(value * 100).toInt() / 100f}"
 
-/** 噪点数值显示（四位小数）。 */
+/** 噪点数值显示（最多四位小数，向零截断）。 */
 fun noiseText(value: Float): String = "${(value * 10000).toInt() / 10000f}"
 
 private fun logoBlend(dark: Boolean): List<BlendColorEntry> = if (dark) {
@@ -154,7 +153,7 @@ fun themeEdgeStroke(dark: Boolean): EdgeStroke? = when (LocalBlurTheme.current.t
 
 /**
  * 主题驱动的容器描边修饰符：设置为 Disabled 时不描边。
- * 光源经 `withTilt` 跟随设备姿态（同示例 rememberContainerEdgeStrokeState，惯量 0.15/0.12）；裸预设的亮面朝向与带姿态管线的渲染不同，必须走这条链路才能与示例一致。
+ * 光源经 `withTilt` 跟随设备姿态（同示例 rememberContainerEdgeStrokeState，主/次光源灵敏度分别为 0.15/0.12）；裸预设的亮面朝向与带姿态管线的渲染不同，必须走这条链路才能与示例一致。
  * [tint] 非空时以该色重染描边基色与两侧光源（保留各层透明度与强度），供选中态等强调场景使用。
  * [emphasized] 用于焦点态或选中态：提高边缘光强度并以 SrcOver 保留主题色，避免亮色壁纸将染色冲淡。
  */
@@ -175,7 +174,7 @@ fun Modifier.themeEdgeStroke(shape: Shape, tint: Color? = null, emphasized: Bool
             blendMode = BlendMode.SrcOver,
         )
     } else { base }
-    val tilt = rememberDeviceTilt()
+    val tilt = LocalDeviceTilt.current
     val stroke = remember(styledBase, tilt, tint) {
         derivedStateOf {
             styledBase.copy(

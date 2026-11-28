@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 import com.github.lmfirefly.flycat.presentation.icon.FlyCat
@@ -39,49 +40,51 @@ val FlyCat.Activity: ImageVector
             name = "Activity",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
+            viewportWidth = 26.0f,
+            viewportHeight = 26.0f,
         ).apply {
-            path(
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 2f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(22f, 12f)
-                horizontalLineToRelative(-2.48f)
-                arcToRelative(
-                    2f,
-                    2f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = false,
-                    -1.93f,
-                    1.46f,
-                )
-                lineToRelative(-2.35f, 8.36f)
-                arcToRelative(
-                    0.25f,
-                    0.25f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = true,
-                    -0.48f,
-                    0f,
-                )
-                lineTo(9.24f, 2.18f)
-                arcToRelative(
-                    0.25f,
-                    0.25f,
-                    0f,
-                    isMoreThanHalf = false,
-                    isPositiveArc = false,
-                    -0.48f,
-                    0f,
-                )
-                lineToRelative(-2.35f, 8.36f)
-                arcTo(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 4.49f, 12f)
-                horizontalLineTo(2f)
+            group(translationX = 1f, translationY = 1f) {
+                path(
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2.5f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                ) {
+                    moveTo(22f, 12f)
+                    horizontalLineToRelative(-2.48f)
+                    arcToRelative(
+                        2f,
+                        2f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        -1.93f,
+                        1.46f,
+                    )
+                    lineToRelative(-2.35f, 8.36f)
+                    arcToRelative(
+                        0.25f,
+                        0.25f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = true,
+                        -0.48f,
+                        0f,
+                    )
+                    lineTo(9.24f, 2.18f)
+                    arcToRelative(
+                        0.25f,
+                        0.25f,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = false,
+                        -0.48f,
+                        0f,
+                    )
+                    lineToRelative(-2.35f, 8.36f)
+                    arcTo(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 4.49f, 12f)
+                    horizontalLineTo(2f)
+                }
             }
         }.build()
 
