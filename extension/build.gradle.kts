@@ -158,7 +158,7 @@ android {
             // 产物契约（自 kotlin-toolchain 打包管线回移）：自检 + .apk.json 身份边车 + 原子发布到 output_apk/<buildType>/。
             // extension 只产 64 位 ABI，由 mmkv64 线的那一轮发布（mmkv32 线一轮为空属正常）。
             val capitalized = variant.name.replaceFirstChar(Char::uppercaseChar)
-            val mmkv64Abis = rootProject.extra["mmkv64Abis"] as Set<String>
+            val mmkv64Abis = rootProject.extra["mmkv64Abis"] as? Set<*> ?: error("Root project must define mmkv64Abis")
             val mmkvLine64 = rootProject.extra["mmkvLine"] == "64"
             val extensionAbis = providers.gradleProperty("abi.extension.list").getOrElse("arm64-v8a,x86_64").split(',').map { it.trim() }.filter { it.isNotEmpty() }
             val signing = resolveSigningIdentity(project)
